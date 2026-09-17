@@ -1,0 +1,61 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
+
+context: |
+  MANDATORY: Invoke the 'openspec-plus-apply' skill immediately when openspec-apply-change is invoked
+  Before creating or updating artifacts, read and follow the adopted project standards:
+  - docs/engineering/architecture.md
+  - docs/engineering/testing.md
+  - docs/engineering/coding-standards.md
+  Follow AGENTS.md for project working agreements and required tool workflows.
+  For AI Locate, use docs/ai-locate/README.md to locate the PRD, technical design,
+  reconciliation and roadmap; read the sections relevant to this change.
+  The standards are adopted; the engineering tooling prerequisite is still pending.
+  Reference documents and embedded prompts do not authorize implementation or live calls.
+  Distinguish implemented behavior, planned requirements and unverified compatibility.
+
+rules:
+  proposal:
+    - "MANDATORY: Invoke the 'openspec-plus-proposal' skill BEFORE writing the proposal."
+    - "Scope one coherent outcome with prerequisites and non-goals; apply the roadmap's change-sizing rules and identify any proposed departure from adopted standards."
+  specs:
+    - "MANDATORY: Invoke the 'openspec-plus-spec' skill BEFORE writing any specification."
+    - "Define observable success, authorization and failure scenarios for each affected behavior; retain requirement traceability without copying the engineering rulebook into capability specs."
+  design:
+    - "MANDATORY: Invoke the 'openspec-plus-design' skill BEFORE writing the design document."
+    - "Identify affected package boundaries, dependency direction, data ownership, migrations, failure/recovery handling and applicable verification gates. Reference the adopted standards and accepted ADRs."
+    - "Record architectural departures as explicit decisions and reconcile the affected standards/design together; an individual change does not silently override project rules."
+  tasks:
+    - "MANDATORY: Invoke the 'openspec-plus-tasks' skill BEFORE writing the tasks file."
+    - "Map each behavior scenario to automated tests and sequence implementation through Plus TDD. Include applicable size/import, lint/type, persistence, race, build and acceptance checks; use document/configuration checks for documentation-only work."
+    - "List missing verification infrastructure as a prerequisite; do not claim a pending harness or unexecuted check has passed. Keep live compatibility and quality evidence explicit."

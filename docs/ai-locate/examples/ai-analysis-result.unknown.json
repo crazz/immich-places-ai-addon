@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "outcome": "unknown",
+  "selected_candidate_id": null,
+  "observations": [
+    {
+      "id": "obs-1",
+      "kind": "visual",
+      "text": "No distinctive geographic feature can be identified reliably."
+    }
+  ],
+  "candidates": [],
+  "descriptions": [
+    {
+      "language": "en",
+      "status": "complete",
+      "text": "A scene without sufficient distinctive detail to establish its geographic location.",
+      "basis": "scene_only",
+      "candidate_id": null,
+      "unavailable_reason": null
+    }
+  ],
+  "warnings": [
+    "No camera coordinates or viewing direction have been established."
+  ]
+}

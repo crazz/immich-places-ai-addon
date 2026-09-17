@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "outcome": "located",
+  "selected_candidate_id": "candidate-1",
+  "observations": [
+    {
+      "id": "obs-1",
+      "kind": "visual",
+      "text": "Synthetic fixture: a walkway beside water and a landmark ahead."
+    }
+  ],
+  "candidates": [
+    {
+      "id": "candidate-1",
+      "place_name": "Synthetic riverside viewpoint — not a real geolocation",
+      "locality": null,
+      "country_code": null,
+      "camera_location": {
+        "latitude": 50.0,
+        "longitude": 14.0,
+        "granularity": "area",
+        "estimated_radius_m": 250,
+        "radius_basis": "visual_estimate"
+      },
+      "subject": {
+        "name": "Synthetic landmark",
+        "location": {
+          "latitude": 50.001,
+          "longitude": 14.001
+        }
+      },
+      "camera_direction": {
+        "azimuth_deg": 40,
+        "reference": "true_north",
+        "uncertainty_deg": 35,
+        "method": "visual_estimate"
+      },
+      "support_summary": "Synthetic contract fixture only. The numbers must not be used as an actual photo location.",
+      "evidence_refs": [
+        "obs-1"
+      ],
+      "source_refs": [],
+      "uncertainty_notes": [
+        "No real photograph or external source was used."
+      ]
+    }
+  ],
+  "descriptions": [
+    {
+      "language": "en",
+      "status": "complete",
+      "text": "Synthetic example: a riverside walkway with a landmark in the distance.",
+      "basis": "candidate",
+      "candidate_id": "candidate-1",
+      "unavailable_reason": null
+    },
+    {
+      "language": "uk",
+      "status": "complete",
+      "text": "Штучний приклад: набережна з орієнтиром удалині.",
+      "basis": "candidate",
+      "candidate_id": "candidate-1",
+      "unavailable_reason": null
+    }
+  ],
+  "warnings": [
+    "TEST FIXTURE ONLY — not a verified place, position, or direction."
+  ]
+}
