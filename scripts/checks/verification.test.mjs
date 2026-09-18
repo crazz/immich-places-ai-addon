@@ -36,7 +36,7 @@ execute: (command, args, options) => {
 report: line => lines.push(line)
 });
 	assert.equal(result, 0);
-	const names = ['checker-tests', 'size', 'dependencies', 'gofmt', 'lint', 'typegen', 'types', 'go-vet', 'go-tests', 'go-build', 'frontend-build'];
+	const names = ['checker-tests', 'size', 'dependencies', 'gofmt', 'lint', 'typegen', 'types', 'go-vet', 'go-tests', 'go-build', 'frontend-tests', 'frontend-build'];
 	assert.deepEqual(lines.filter(line => line.startsWith('PASS ')), names.map(name => `PASS ${name}`));
 	assert.equal(calls.length, names.length);
 	assert.deepEqual(calls[1].args, ['scripts/checks/size.mjs', '--base', 'base;literal']);
@@ -47,6 +47,9 @@ report: line => lines.push(line)
 	assert.equal(calls[8].options.cwd, `${root}backend`);
 	assert.equal(calls[9].args.at(-1), './...');
 	assert.match(calls[9].args.at(-2), /out\/checks\/immich-places-backend$/);
+	assert.equal(calls[10].command, process.execPath);
+	assert.deepEqual(calls[10].args, ['node_modules/vitest/vitest.mjs', 'run', '--coverage']);
+	assert.equal(calls[10].options.cwd, root);
 	assert.ok(calls.every(call => call.options.shell === false && call.options.stdio === 'inherit'));
 	assert.ok(calls[0].args.includes('scripts/checks/verification.test.mjs'));
 });
@@ -146,4 +149,23 @@ test('rejects an empty checker test inventory instead of allowing an empty pass'
 	t.after(() => rmSync(root, {recursive: true, force: true}));
 	mkdirSync(path.join(root, 'scripts/checks'), {recursive: true});
 	assert.throws(() => verify({root, base: 'HEAD', execute: () => ({status: 0}), report: () => {}}), /No checker tests found/);
+});
+
+test('propagates frontend test failures through a focused verification run', async () => {
+	const {verify} = await import('./verification-runner.mjs');
+	const lines = [];
+	const calls = [];
+	const result = verify({
+		root: fileURLToPath(new URL('../../', import.meta.url)),
+		base: 'HEAD',
+		gate: 'frontend-tests',
+		execute: (command, args) => {
+			calls.push({command, args});
+			return {status: 1};
+		},
+		report: line => lines.push(line)
+	});
+	assert.equal(result, 1);
+	assert.deepEqual(calls, [{command: process.execPath, args: ['node_modules/vitest/vitest.mjs', 'run', '--coverage']}]);
+	assert.deepEqual(lines, ['RUN frontend-tests', 'FAIL frontend-tests: exit 1']);
 });

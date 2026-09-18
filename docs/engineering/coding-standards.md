@@ -1,6 +1,6 @@
 # Coding standards
 
-**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 size/dependency, format/lint/type, backend test and build checks are installed; the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) retains pending frontend harness and AI coverage work.
+**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 repository checks and F02 frontend unit/component tests are installed; the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) retains pending application smoke tests and backend AI coverage enforcement.
 
 This document owns code construction and size rules. See [architecture](architecture.md) for boundaries and [testing](testing.md) for verification. Existing violations do not authorize new violations or an unrelated legacy rewrite.
 
@@ -46,4 +46,4 @@ Future exceptions must identify the exact file/rule, rationale and removal or re
 
 ## Enforcement
 
-`bun run check:size --base <revision>` enforces the physical-line limit and this document's exact inherited baseline/ratchet, including historical policy provenance. It examines tracked and non-ignored new files and fails on invalid inputs. `bun run check` runs it with the other shared local/CI gates. See [testing: available commands](testing.md#available-commands-and-remaining-setup) for comparison bases, read-only gofmt checks and the still-pending frontend harness/AI coverage work. Code review remains responsible for meaningful boundaries and the construction rules that structural checks cannot prove.
+`bun run check:size --base <revision>` enforces the physical-line limit and this document's exact inherited baseline/ratchet, including historical policy provenance. It examines tracked and non-ignored new files and fails on invalid inputs. `bun run check` runs it with the other shared local/CI gates. See [testing: available commands](testing.md#available-commands-and-remaining-setup) for comparison bases, formatting, frontend tests and remaining verification work. Code review remains responsible for meaningful boundaries and the construction rules that structural checks cannot prove.

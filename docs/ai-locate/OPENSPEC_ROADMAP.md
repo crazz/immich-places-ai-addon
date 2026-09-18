@@ -1,6 +1,6 @@
 # Proposed OpenSpec conversion roadmap
 
-**Status:** The 26 product candidates remain proposed. F01 `enforce-engineering-checks` is implemented, verified and archived; F02/F03 frontend harness work remains pending.
+**Status:** The 26 product candidates remain proposed. F01 `enforce-engineering-checks` and F02 `add-frontend-unit-tests` are implemented, verified and archived; F03 application smoke testing remains pending.
 **Baseline:** [PRD](PRD.md), [technical design](TECHNICAL_DESIGN.md), and [reconciliation](RECONCILIATION.md) against `5e70c6165777949c9d8b50ede3b2768bcaa5df87`.  
 **Tooling inspected:** OpenSpec 1.8.0 with the `spec-driven` schema and repository-local OpenSpec Plus rules.
 
@@ -32,7 +32,7 @@ Complete the bounded tooling setup before feature implementation. It is separate
 | ID | Outcome and current status |
 |---|---|
 | F01 `enforce-engineering-checks` | [Archived artifacts](../../openspec/changes/archive/2026-09-18-enforce-engineering-checks/proposal.md); all ten tasks and final review are complete. Installed: exact file-size baseline/ratchet, source dependency checks, checker regressions, shared format/lint/types/Go race-test/build command and read-only CI with pinned toolchains/frozen dependencies. Recorded baseline lint errors and gofmt differences are corrected; inherited warnings remain visible. |
-| F02 | Pending frontend Vitest/React Testing Library harness, meaningful pure-logic/component smoke tests and future AI coverage integration. No frontend unit-test pass is claimed by F01. |
+| F02 `add-frontend-unit-tests` | [Archived artifacts](../../openspec/changes/archive/2026-09-18-add-frontend-unit-tests/proposal.md); all five tasks and inline final review complete. Installed: offline Vitest/React Testing Library harness, seven pagination logic/component tests, full-source V8 coverage and the native 80% line/branch floor for future AI TypeScript. All twelve shared local checks pass; the same command is wired into CI. AI code remains absent/unmeasured. |
 | F03 | Pending deterministic Playwright application smoke harness against the real frontend/backend and local external-service fakes, with matching CI integration. No browser-journey pass is claimed by F01. |
 
 Use the [testing guide](../engineering/testing.md#available-commands-and-remaining-setup) for installed commands, comparison-base selection, formatting and enforcement limits. The [verification baseline](../engineering/verification-baseline.md) retains pre-enforcement evidence separately from completion evidence. Future AI scope must meet the adopted coverage floors; absent AI packages are unmeasured.

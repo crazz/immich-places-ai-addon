@@ -1,6 +1,6 @@
 # Testing rules
 
-**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks are installed; frontend harnesses and new-AI coverage remain pending below. A documented requirement is not evidence of a passing check.
+**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks and F02 frontend unit/component testing are installed. F03 application smoke tests and Go AI coverage enforcement remain pending. AI code is absent and its coverage is unmeasured. A documented requirement is not evidence of a passing check.
 
 This document owns test strategy, coverage and verification gates. Read it with [architecture](architecture.md), [coding standards](coding-standards.md), and the relevant [PRD scenarios](../ai-locate/PRD.md). Product acceptance and live compatibility remain distinct from ordinary regression tests.
 
@@ -19,7 +19,7 @@ Vitest with React Testing Library and Playwright are documented in the official 
 
 ## Test-writing rules
 
-1. Follow the repository's OpenSpec Plus TDD workflow when implementing an OpenSpec change: one failing test observed for the intended reason, minimal production change, green, then assess refactoring before the next test. Every OpenSpec behavior scenario maps to at least one automated test. For documentation-only changes, verify content, references and applicable configuration; do not add artificial application tests.
+1. Follow the repository's OpenSpec Plus TDD workflow for new or changed behavior: one failing test observed for the intended reason, minimal production change, green, then assess refactoring before the next test. Tests added for known existing behavior are characterization tests: assert the known user-visible contract against unchanged application code, and allow them to pass on their first run. Do not manufacture a failure, mutate a temporary copy, or require mutation testing for this work. This user-approved distinction takes precedence over a skill's blanket RED-first rule. Every OpenSpec behavior scenario still maps to at least one automated test. For documentation-only changes, verify content, references and applicable configuration; do not add artificial application tests.
 2. Tests assert externally meaningful behavior. Multiple assertions are welcome when they describe one outcome. For security and writeback, asserting the absence of a forbidden call or the exact outgoing payload is part of the behavior contract.
 3. Mock at nondeterministic/external boundaries. Do not mock the repository when claiming SQL/tenant/transaction correctness, or replace every collaborator with mocks just to test wiring.
 4. Fast tests need no internet, credentials, public map tiles or private photographs. Use synthetic fixtures and deterministic local HTTP services. Separate live suites explicitly; “not run” is not a pass.
@@ -34,6 +34,8 @@ Vitest with React Testing Library and Playwright are documented in the official 
 Required floor for the new AI scope: at least **80% statement coverage for new AI Go code**, and **80% line and branch coverage for new AI TypeScript code**. Measure the new scope explicitly, including untested files; do not impose an invented passing percentage on the existing repository without measuring it first. Exclusions must identify genuinely generated code or data.
 
 These percentages are minimum checks, not proof of quality. Every specified scenario and safety invariant below must be covered regardless of the percentage. No meaningless assertions, tests that mirror implementation, or broad snapshots solely to raise coverage. Report which failure paths remain unverified.
+
+The frontend coverage command uses Vitest's V8 provider and includes untested TypeScript application files. Native thresholds enforce 80% lines and branches for `src/features/ai/` when that code exists. Tests and declaration-only files are excluded; legacy application files remain measured without an invented percentage floor. No AI files means no AI measurement, even when the harness succeeds. Filtered development runs do not establish complete coverage; the shared gate always runs the full suite.
 
 ## Mandatory acceptance/failure scenarios
 
@@ -65,9 +67,9 @@ Use the [Go race detector](https://go.dev/doc/articles/race_detector) on the bac
 | Acceptance journeys | Small deterministic Playwright suite for the affected completed workflows, expanded as capabilities arrive |
 | OpenSpec checks | Structural validation plus requirement/scenario/test traceability; neither replaces application tests |
 
-`bun run check` is the shared local/CI entry point. The installed F01 gates run checker regression tests, the size ratchet, source-based dependency checks, gofmt, existing ESLint, Next.js route type generation, TypeScript, Go vet, race-enabled Go tests and both application builds. Every invoked gate reports `RUN` and `PASS` or `FAIL` with its error; a missing tool, nonzero exit or termination fails the command. A failed type-generation gate explicitly blocks TypeScript checking. Independent gates still run so their results remain visible.
+`bun run check` is the shared local/CI entry point. Its twelve gates run checker regression tests, the size ratchet, source-based dependency checks, gofmt, existing ESLint, Next.js route type generation, TypeScript, Go vet, race-enabled Go tests, frontend unit/component tests with coverage and both application builds. Every invoked gate reports `RUN` and `PASS` or `FAIL` with its error; a missing tool, nonzero exit or termination fails the command. A failed type-generation gate explicitly blocks TypeScript checking. Independent gates still run so their results remain visible.
 
-The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. Frontend Vitest/RTL, Playwright and new-AI coverage enforcement are not installed by F01.
+The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. F02 adds Vitest/RTL and the frontend AI coverage policy through the same shared command; Playwright and Go AI coverage enforcement remain pending.
 
 Keep live-provider/Immich integration, quality evaluation and heavy reference-NAS benchmarks separate from ordinary PR checks. Require the applicable evidence before release, and rerun when relevant behavior/version/configuration changes. No ordinary test run sends private data or mutates the user's real library.
 
@@ -79,7 +81,7 @@ Run these commands from the repository root. npm can run the same scripts, for e
 
 | Command | Purpose |
 |---|---|
-| `bun run check --base 5e70c61` | All eleven F01 gates against the initial adoption base |
+| `bun run check --base 5e70c61` | All twelve installed gates against the initial adoption base |
 | `bun run check` | Same gates using the available main branch's merge base |
 | `bun run check --help` | List gate names and arguments |
 | `bun run check --gate go-tests --base HEAD` | Only the existing backend race suite |
@@ -88,9 +90,15 @@ Run these commands from the repository root. npm can run the same scripts, for e
 | `bun run check:dependencies --base 5e70c61` | Runtime cycles, local import resolution and AI structural boundaries |
 | `bun run check:format` | Read-only gofmt check of tracked and non-ignored new Go files |
 | `bun run check:types --base HEAD` | Next.js `typegen`, then `tsc --noEmit`, including a clean checkout |
+| `bun run test:unit` | Offline Vitest/RTL suite, without watch mode |
+| `bun run test:unit src/shared/components/PaginationFooter.test.tsx` | Focused component tests for development feedback |
+| `bun run test:unit:coverage` | Full frontend suite with text, HTML and JSON summary coverage reports |
+| `bun run check --gate frontend-tests --base HEAD` | The same full frontend coverage run through the shared runner |
 | `bun run lint` / `bun run build` | Existing ESLint and Next.js production build |
 
-Any gate can be selected with `--gate`: `checker-tests`, `size`, `dependencies`, `gofmt`, `lint`, `typegen`, `types`, `go-vet`, `go-tests`, `go-build`, `frontend-build`. Focused checks do not establish a full verification pass. Backend `make test`, `make vet` and `go test -race ./...` remain available.
+Any gate can be selected with `--gate`: `checker-tests`, `size`, `dependencies`, `gofmt`, `lint`, `typegen`, `types`, `go-vet`, `go-tests`, `go-build`, `frontend-tests`, `frontend-build`. Focused checks do not establish a full verification pass. Backend `make test`, `make vet` and `go test -race ./...` remain available.
+
+Frontend tests are co-located as `src/**/*.test.ts` or `.test.tsx`, use explicit Vitest imports, and run in isolated jsdom environments with DOM cleanup after each test. The initial seven tests cover pagination boundaries and numbered-button pointer, keyboard and loading behavior. Empty suites, focused-only tests, assertion failures and coverage failures fail the command; retries are disabled. These tests do not verify full browser journeys, proxy/auth integration or async Server Components. Those belong to F03.
 
 ### Comparison bases
 
@@ -104,7 +112,7 @@ CI fetches complete history. Pull requests use the event's base SHA; pushes use 
 
 Go build output is under ignored `out/checks/`; Next.js output, `next-env.d.ts`, TypeScript build metadata, coverage output, `.gitnexus/` and the local OpenSpec Plus update timestamp are ignored. Temporary regression fixtures are cleaned up. Generated output must not be committed; an existing tracked `backend/coverage.out` remains explicitly classified by its producer in the coding standard.
 
-The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) still owns F02 frontend unit/component tests and F03 deterministic application smoke tests, plus the corresponding future coverage/CI integration. Do not invent a passing `npm test` or coverage result before those entry points exist.
+The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) records F02 frontend unit/component tests and the pending F03 deterministic application smoke tests. Backend AI coverage enforcement must arrive with the first AI Go code. Use the documented commands; no generic `npm test` or browser-test pass is implied.
 
 Build the smallest meaningful harness first; add feature scenarios with their owning changes. Import and coverage rules must grow with real packages. An absent AI package has no measured coverage and cannot count as a successful coverage gate. Existing lint/tests/build failures discovered during setup must be reported and resolved or explicitly recorded as inherited limitations, not silently suppressed.
 

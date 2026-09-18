@@ -39,6 +39,7 @@ const applicationConfig = compat.config({
 		ignorePatterns: [
 			'.eslintrc.js',
 			'.next',
+			'coverage',
 			'eslint.config.mjs',
 			'node_modules',
 			'next-env.d.ts',

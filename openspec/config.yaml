@@ -41,11 +41,15 @@ context: |
   Use GitNexus for codebase exploration, dependency/execution tracing, pre-edit blast radius,
   refactoring and pre-commit change analysis, following the architecture standard's workflow.
   Verify index freshness and unresolved/incomplete graph results against actual source and tests.
+  Use TDD for new or changed behavior. Characterization tests for known existing behavior
+  may pass immediately against unchanged application code; do not manufacture failures
+  or require mutation testing. Follow the adopted testing standard over blanket skill rules.
   For AI Locate, use docs/ai-locate/README.md to locate the PRD, technical design,
   reconciliation and roadmap; read the sections relevant to this change.
-  The standards are adopted; F01 shared local/CI checks are installed.
+  The standards are adopted; F01 shared local/CI checks and F02 frontend tests are installed.
   Read docs/engineering/testing.md for usable commands and comparison-base selection.
-  F02/F03 frontend harnesses and new-AI coverage enforcement remain pending.
+  F02 enforces the frontend AI coverage policy when AI code exists; absent AI is unmeasured.
+  F03 application smoke tests and backend AI coverage enforcement remain pending.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 
