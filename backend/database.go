@@ -183,14 +183,6 @@ func buildAssetFilter(userID, albumID, tagID, gpsFilter, hiddenFilter, startDate
 		default:
 			f.fromClause += ` AND a.isHidden = 0`
 		}
-		if startDate != "" {
-			f.fromClause += ` AND a.dateTimeOriginal >= ?`
-			f.args = append(f.args, startDate)
-		}
-		if endDate != "" {
-			f.fromClause += ` AND a.dateTimeOriginal < ?`
-			f.args = append(f.args, endDate+"T99")
-		}
 	} else {
 		f.fromClause = `FROM assets WHERE userID = ?`
 		f.args = append(f.args, userID)
@@ -212,15 +204,14 @@ func buildAssetFilter(userID, albumID, tagID, gpsFilter, hiddenFilter, startDate
 		default:
 			f.fromClause += ` AND isHidden = 0`
 		}
-		if startDate != "" {
-			f.fromClause += ` AND dateTimeOriginal >= ?`
-			f.args = append(f.args, startDate)
-		}
-		if endDate != "" {
-			f.fromClause += ` AND dateTimeOriginal < ?`
-			f.args = append(f.args, endDate+"T99")
-		}
 	}
+	dateColumn := "dateTimeOriginal"
+	if f.aliased {
+		dateColumn = "a.dateTimeOriginal"
+	}
+	dateClause, dateArgs := captureRangeSQL(dateColumn, startDate, endDate)
+	f.fromClause += dateClause
+	f.args = append(f.args, dateArgs...)
 	return f
 }
 
@@ -264,7 +255,7 @@ func (d *Database) countAssetsByDay(ctx context.Context, userID, albumID, tagID,
 		dateCol = "a.dateTimeOriginal"
 	}
 
-	query := fmt.Sprintf(`SELECT DATE(%s) as day, COUNT(*) as cnt %s AND %s IS NOT NULL GROUP BY day`, dateCol, f.fromClause, dateCol)
+	query := fmt.Sprintf(`SELECT %s as day, COUNT(*) as cnt %s AND %s IS NOT NULL GROUP BY day`, captureDaySQL(dateCol), f.fromClause, captureDaySQL(dateCol))
 
 	rows, err := d.db.QueryContext(ctx, query, f.args...)
 	if err != nil {
@@ -322,14 +313,9 @@ func buildMarkerFilter(userID, albumID, tagID, startDate, endDate string, bounds
 		f.args = append(f.args, userID)
 	}
 
-	if startDate != "" {
-		f.fromClause += fmt.Sprintf(` AND %sdateTimeOriginal >= ?`, f.prefix)
-		f.args = append(f.args, startDate)
-	}
-	if endDate != "" {
-		f.fromClause += fmt.Sprintf(` AND %sdateTimeOriginal < ?`, f.prefix)
-		f.args = append(f.args, endDate+"T99")
-	}
+	dateClause, dateArgs := captureRangeSQL(f.prefix+"dateTimeOriginal", startDate, endDate)
+	f.fromClause += dateClause
+	f.args = append(f.args, dateArgs...)
 
 	if bounds != nil {
 		f.fromClause += fmt.Sprintf(` AND %slatitude BETWEEN ? AND ?`, f.prefix)

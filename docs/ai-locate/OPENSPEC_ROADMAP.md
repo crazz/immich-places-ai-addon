@@ -46,7 +46,7 @@ The initial UI harness is complete here and is not additional CH01 setup. Expand
 | Area | Stable capability | Candidate changes |
 |---|---|---|
 | Providers | `ai-provider-configuration` | CH01–CH03 |
-| Selection | `ai-selection-snapshots` | CH04–CH06 |
+| Selection | `catalog-capture-dates` (CH04 foundation), `ai-selection-snapshots` (CH05–CH06) | CH04–CH06 |
 | Analysis | `ai-location-proposals` | CH07–CH10 |
 | Jobs | `ai-analysis-jobs` | CH11–CH13 |
 | Results/review | `ai-results-and-review` | CH14–CH17 |
@@ -65,7 +65,7 @@ Dependencies below are product planning constraints, not claimed CLI-enforced sc
 | CH01 `add-private-ai-provider-profiles` | Create/edit/disable private, encrypted, revisioned profiles with settings UI. Include global AI disablement, session/ownership/origin protection, credential cleanup policy and profile UI tests using the prerequisite harness. No profile save sends an image or tests a connection. | — |
 | CH02 `enforce-ai-provider-egress-policy` | Approved destinations, redirect/credential rules, DNS/address validation and administrator network configuration for provider requests. Prove disallowed destinations never receive a request. | CH01 |
 | CH03 `add-ai-provider-capability-tests` | Explicit synthetic-image test records image/JSON/strict-schema support and actionable failures against a profile revision; no private photo or automatic capability fallback that expands data sharing. | CH02 |
-| CH04 `align-source-local-capture-dates` | Make capture-date filtering and day counts agree across applicable catalog modes; reject reversed ranges and retain missing/offsetless-date semantics. Preserve independent gallery sort order. | — |
+| CH04 `align-source-local-capture-dates` | Implemented: shared source-local catalog date filtering/counts, invalid/reversed range handling and unchanged gallery ordering. See the [maintained contract](../../openspec/specs/catalog-capture-dates/spec.md). Undated-group presentation and AI selection/eligibility remain later FR-01 work. | — |
 | CH05 `freeze-explicit-ai-selections` | Resolve explicitly selected image IDs into an expiring user-bound snapshot with deduplication, eligibility/exclusions and source/filter metadata. Later catalog changes cannot expand it. | CH04 |
 | CH06 `freeze-all-matching-ai-selections` | Add all-matching selection using the same resolver, preserving album/folder/tag/GPS/visibility/date scope, exact counts and the configured batch limit. | CH05 |
 | CH07 `validate-ai-analysis-results` | Canonical schema and semantic validation for outcomes, candidate/source references, coordinates, camera versus subject, nullable direction and requested-language statuses. Malformed or unsupported claims cannot become writable results. | — |

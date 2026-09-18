@@ -6,7 +6,7 @@ Version 1.0 + checkout reconciliation + adopted engineering standards · 17 Sept
 
 Reconciled with [`5e70c61`](https://github.com/crazz/immich-places-ai-addon/tree/5e70c6165777949c9d8b50ede3b2768bcaa5df87). Start with [RECONCILIATION.md](RECONCILIATION.md) for confirmed behavior, required integration corrections, and remaining gates.
 
-Before planning, implementation or review, read the adopted [architecture](../engineering/architecture.md), [testing](../engineering/testing.md) and [coding standards](../engineering/coding-standards.md). These own engineering policy; this package owns AI product requirements and integration planning. [ADR-07](../engineering/decisions/ADR-07-ai-internal-packages.md) records the accepted internal-package amendment. The [tooling prerequisite](OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) remains pending.
+Before planning, implementation or review, read the adopted [architecture](../engineering/architecture.md), [testing](../engineering/testing.md) and [coding standards](../engineering/coding-standards.md). These own engineering policy; this package owns AI product requirements and integration planning. [ADR-07](../engineering/decisions/ADR-07-ai-internal-packages.md) records the accepted internal-package amendment. The F01–F03 [tooling prerequisite](OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) is complete; backend AI coverage enforcement remains due with the first AI Go code.
 
 ## Files
 
@@ -31,6 +31,10 @@ This reconciliation imports and updates planning documentation only. No applicat
 
 Subsequent standards adoption updated agent instructions, OpenSpec configuration and the planning documents. It did not implement application behavior, test harnesses or CI checks. The original reconciliation report remains historical evidence for the pinned source checkout.
 
+Subsequent F01–F03 implementation installed shared engineering checks, frontend unit/component tests and deterministic browser smoke journeys. See the dated [verification baseline](../engineering/verification-baseline.md) for actual results; the historical reconciliation above does not describe current tooling availability.
+
 ## Main design decisions
 
 Extend the existing Go/Next.js/SQLite application. Treat AI as a proposal producer. Retain camera/subject separation, nullable heading, selected-language descriptions, durable jobs/results, and explicit field-level approval. Use an exact-target API writer that does not inherit implicit stack expansion. Keep full results locally and mirror optional extended metadata only when supported and approved.
+
+CH04 implements the catalog date-query portion of FR-01: [maintained capture-date contract](../../openspec/specs/catalog-capture-dates/spec.md). It preserves recorded calendar days and raw timestamps, rejects reversed ranges, and keeps undated assets in unbounded browsing. The undated-group UI and AI selection/eligibility remain planned.

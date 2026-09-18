@@ -23,8 +23,8 @@ The following exceptions were verified against `5e70c6165777949c9d8b50ede3b2768b
 | `backend/syncService_test.go` | 1467 |
 | `backend/handlers_test.go` | 1373 |
 | `backend/database_test.go` | 1301 |
-| `backend/database.go` | 996 |
-| `backend/handlers.go` | 932 |
+| `backend/database.go` | 982 |
+| `backend/handlers.go` | 926 |
 | `backend/syncService.go` | 700 |
 | `src/shared/services/backendApi.ts` | 589 |
 | `src/features/map/overview/overviewLayerClusterSync.ts` | 568 |

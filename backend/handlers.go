@@ -108,6 +108,9 @@ func parseDateRangeParams(r *http.Request) (string, string, error) {
 			return "", "", errors.New("endDate must be a valid date (YYYY-MM-DD)")
 		}
 	}
+	if startDate != "" && endDate != "" && startDate > endDate {
+		return "", "", errors.New("startDate must not be after endDate")
+	}
 	return startDate, endDate, nil
 }
 
@@ -392,19 +395,10 @@ func (h *Handlers) handleGetMapMarkers(w http.ResponseWriter, r *http.Request) {
 	}
 	albumID := r.URL.Query().Get("albumID")
 	tagID := r.URL.Query().Get("tagID")
-	startDate := r.URL.Query().Get("startDate")
-	endDate := r.URL.Query().Get("endDate")
-	if startDate != "" {
-		if _, err := time.Parse("2006-01-02", startDate); err != nil {
-			writeError(w, http.StatusBadRequest, "startDate must be a valid date (YYYY-MM-DD)")
-			return
-		}
-	}
-	if endDate != "" {
-		if _, err := time.Parse("2006-01-02", endDate); err != nil {
-			writeError(w, http.StatusBadRequest, "endDate must be a valid date (YYYY-MM-DD)")
-			return
-		}
+	startDate, endDate, err := parseDateRangeParams(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 	limit, err := queryInt(r, "limit", defaultMapMarkersLimit)
 	if err != nil {
