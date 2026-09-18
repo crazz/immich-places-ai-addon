@@ -36,7 +36,7 @@ execute: (command, args, options) => {
 report: line => lines.push(line)
 });
 	assert.equal(result, 0);
-	const names = ['checker-tests', 'size', 'dependencies', 'gofmt', 'lint', 'typegen', 'types', 'go-vet', 'go-tests', 'go-build', 'frontend-tests', 'frontend-build'];
+	const names = ['checker-tests', 'size', 'dependencies', 'gofmt', 'lint', 'typegen', 'types', 'go-vet', 'go-tests', 'go-build', 'frontend-tests', 'frontend-build', 'smoke'];
 	assert.deepEqual(lines.filter(line => line.startsWith('PASS ')), names.map(name => `PASS ${name}`));
 	assert.equal(calls.length, names.length);
 	assert.deepEqual(calls[1].args, ['scripts/checks/size.mjs', '--base', 'base;literal']);
@@ -50,6 +50,7 @@ report: line => lines.push(line)
 	assert.equal(calls[10].command, process.execPath);
 	assert.deepEqual(calls[10].args, ['node_modules/vitest/vitest.mjs', 'run', '--coverage']);
 	assert.equal(calls[10].options.cwd, root);
+	assert.deepEqual(calls[12].args, ['node_modules/@playwright/test/cli.js', 'test']);
 	assert.ok(calls.every(call => call.options.shell === false && call.options.stdio === 'inherit'));
 	assert.ok(calls[0].args.includes('scripts/checks/verification.test.mjs'));
 });
@@ -168,4 +169,43 @@ test('propagates frontend test failures through a focused verification run', asy
 	assert.equal(result, 1);
 	assert.deepEqual(calls, [{command: process.execPath, args: ['node_modules/vitest/vitest.mjs', 'run', '--coverage']}]);
 	assert.deepEqual(lines, ['RUN frontend-tests', 'FAIL frontend-tests: exit 1']);
+});
+
+test('focused smoke execution builds both artifacts before running the browser', async () => {
+	const {verify} = await import('./verification-runner.mjs');
+	const lines = [];
+	const result = verify({
+		root: fileURLToPath(new URL('../../', import.meta.url)),
+		base: 'HEAD',
+		gate: 'smoke',
+		execute: () => ({status: 0}),
+		report: line => lines.push(line)
+	});
+	assert.equal(result, 0);
+	assert.deepEqual(lines, ['RUN go-build', 'PASS go-build', 'RUN frontend-build', 'PASS frontend-build', 'RUN smoke', 'PASS smoke']);
+});
+
+test('blocks smoke after either build fails while retaining independent results', async () => {
+	const {verify} = await import('./verification-runner.mjs');
+	for (const broken of ['go-build', 'frontend-build']) {
+		for (const gate of [undefined, 'smoke']) {
+			const lines = [];
+			const calls = [];
+			const result = verify({
+				root: fileURLToPath(new URL('../../', import.meta.url)),
+				base: 'HEAD',
+				gate,
+				execute: (command, args) => {
+					calls.push(args);
+					const fails = broken === 'go-build' ? command === 'go' && args[0] === 'build' : args[1] === 'build';
+					return {status: fails ? 1 : 0};
+				},
+				report: line => lines.push(line)
+			});
+			assert.equal(result, 1);
+			assert.ok(lines.includes(`BLOCKED smoke: ${broken} failed`), lines.join('\n'));
+			assert.ok(!calls.some(args => args[0].includes('@playwright')));
+			assert.ok(lines.includes(`PASS ${broken === 'go-build' ? 'frontend-build' : 'go-build'}`));
+		}
+	}
 });

@@ -1,6 +1,6 @@
 # Proposed OpenSpec conversion roadmap
 
-**Status:** The 26 product candidates remain proposed. F01 `enforce-engineering-checks` and F02 `add-frontend-unit-tests` are implemented, verified and archived; F03 application smoke testing remains pending.
+**Status:** The 26 product candidates remain proposed. F01 `enforce-engineering-checks`, F02 `add-frontend-unit-tests` and F03 `add-application-smoke-tests` are implemented, verified and archived.
 **Baseline:** [PRD](PRD.md), [technical design](TECHNICAL_DESIGN.md), and [reconciliation](RECONCILIATION.md) against `5e70c6165777949c9d8b50ede3b2768bcaa5df87`.  
 **Tooling inspected:** OpenSpec 1.8.0 with the `spec-driven` schema and repository-local OpenSpec Plus rules.
 
@@ -33,13 +33,13 @@ Complete the bounded tooling setup before feature implementation. It is separate
 |---|---|
 | F01 `enforce-engineering-checks` | [Archived artifacts](../../openspec/changes/archive/2026-09-18-enforce-engineering-checks/proposal.md); all ten tasks and final review are complete. Installed: exact file-size baseline/ratchet, source dependency checks, checker regressions, shared format/lint/types/Go race-test/build command and read-only CI with pinned toolchains/frozen dependencies. Recorded baseline lint errors and gofmt differences are corrected; inherited warnings remain visible. |
 | F02 `add-frontend-unit-tests` | [Archived artifacts](../../openspec/changes/archive/2026-09-18-add-frontend-unit-tests/proposal.md); all five tasks and inline final review complete. Installed: offline Vitest/React Testing Library harness, seven pagination logic/component tests, full-source V8 coverage and the native 80% line/branch floor for future AI TypeScript. All twelve shared local checks pass; the same command is wired into CI. AI code remains absent/unmeasured. |
-| F03 | Pending deterministic Playwright application smoke harness against the real frontend/backend and local external-service fakes, with matching CI integration. No browser-journey pass is claimed by F01. |
+| F03 `add-application-smoke-tests` | [Archived artifacts](../../openspec/changes/archive/2026-09-18-add-application-smoke-tests/proposal.md); all six tasks and inline review complete. Installed: three Chromium journeys for authentication/browsing, manual confirmation and GPX preview/confirmation against real production builds and temporary SQLite, with synthetic Immich/tiles and blocked external egress. All thirteen shared local checks pass; CI uses the same command, installs Chromium and retains failure evidence. Live compatibility and future AI acceptance remain separate. |
 
 Use the [testing guide](../engineering/testing.md#available-commands-and-remaining-setup) for installed commands, comparison-base selection, formatting and enforcement limits. The [verification baseline](../engineering/verification-baseline.md) retains pre-enforcement evidence separately from completion evidence. Future AI scope must meet the adopted coverage floors; absent AI packages are unmeasured.
 
 The setup does not need to invent empty AI packages to enforce architecture. The first change introducing an internal package must include the matching import rules and backend Docker build update/verification. Split the tooling setup if its implementation reveals independently verifiable work; do not fold a broad cleanup into it.
 
-Until setup is complete, the standards apply through planning/review and direct verification, but pending checks must be reported as unavailable. The initial UI harness is owned here rather than by CH01. Product planning may continue while this prerequisite is pending.
+The initial UI harness is complete here and is not additional CH01 setup. Expand its behavior coverage as product capabilities arrive. Backend AI coverage enforcement remains due with the first AI Go code; unexecuted live and quality checks must still be reported explicitly.
 
 ## Capability areas
 

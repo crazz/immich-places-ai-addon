@@ -9,6 +9,7 @@
 		"lint": "eslint .",
 		"test:unit": "vitest run",
 		"test:unit:coverage": "vitest run --coverage",
+		"test:smoke": "node scripts/checks/verify.mjs --gate smoke",
 		"check": "node scripts/checks/verify.mjs",
 		"check:tools": "node scripts/checks/verify.mjs --gate checker-tests",
 		"check:size": "node scripts/checks/size.mjs",
@@ -38,6 +39,7 @@
 	},
 	"devDependencies": {
 		"@next/eslint-plugin-next": "16.1.6",
+		"@playwright/test": "1.63.0",
 		"@tailwindcss/postcss": "^4.2.1",
 		"@testing-library/dom": "10.4.2",
 		"@testing-library/jest-dom": "7.0.1",

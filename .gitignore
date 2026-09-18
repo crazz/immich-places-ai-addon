@@ -17,3 +17,5 @@ immich-openapi-specs.json
 .gitnexus/
 openspec/.plus/last-update-check
 coverage/
+playwright-report/
+test-results/

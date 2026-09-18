@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-const outputDirectories = new Set(['node_modules', '.next', 'out', 'coverage', '.git', '.gitnexus']);
+const outputDirectories = new Set(['node_modules', '.next', 'out', 'coverage', 'playwright-report', 'test-results', '.git', '.gitnexus']);
 const manifests = new Set(['package.json', 'go.mod', 'go.sum', 'bun.lock', 'bun.lockb', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']);
 const documentExtensions = new Set(['.md', '.mdx', '.rst', '.txt', '.docx', '.pdf']);
 const mediaExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.mp3', '.woff', '.woff2']);

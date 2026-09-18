@@ -1,6 +1,6 @@
 # Testing rules
 
-**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks and F02 frontend unit/component testing are installed. F03 application smoke tests and Go AI coverage enforcement remain pending. AI code is absent and its coverage is unmeasured. A documented requirement is not evidence of a passing check.
+**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks, F02 frontend unit/component testing and F03 application smoke tests are installed. Go AI coverage enforcement remains pending. AI code is absent and its coverage is unmeasured. A documented requirement is not evidence of a passing check.
 
 This document owns test strategy, coverage and verification gates. Read it with [architecture](architecture.md), [coding standards](coding-standards.md), and the relevant [PRD scenarios](../ai-locate/PRD.md). Product acceptance and live compatibility remain distinct from ordinary regression tests.
 
@@ -67,9 +67,9 @@ Use the [Go race detector](https://go.dev/doc/articles/race_detector) on the bac
 | Acceptance journeys | Small deterministic Playwright suite for the affected completed workflows, expanded as capabilities arrive |
 | OpenSpec checks | Structural validation plus requirement/scenario/test traceability; neither replaces application tests |
 
-`bun run check` is the shared local/CI entry point. Its twelve gates run checker regression tests, the size ratchet, source-based dependency checks, gofmt, existing ESLint, Next.js route type generation, TypeScript, Go vet, race-enabled Go tests, frontend unit/component tests with coverage and both application builds. Every invoked gate reports `RUN` and `PASS` or `FAIL` with its error; a missing tool, nonzero exit or termination fails the command. A failed type-generation gate explicitly blocks TypeScript checking. Independent gates still run so their results remain visible.
+`bun run check` is the shared local/CI entry point. Its thirteen gates run checker regression tests, the size ratchet, source-based dependency checks, gofmt, existing ESLint, Next.js route type generation, TypeScript, Go vet, race-enabled Go tests, frontend unit/component tests with coverage, both application builds and browser smoke tests. Every invoked gate reports `RUN` and `PASS` or `FAIL` with its error; a missing tool, nonzero exit or termination fails the command. Failed route generation blocks TypeScript checking; either failed application build blocks smoke execution. Independent gates still run so their results remain visible.
 
-The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. F02 adds Vitest/RTL and the frontend AI coverage policy through the same shared command; Playwright and Go AI coverage enforcement remain pending.
+The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. CI installs the pinned Playwright Chromium runtime and retains browser failure reports for seven days. Go AI coverage enforcement remains pending.
 
 Keep live-provider/Immich integration, quality evaluation and heavy reference-NAS benchmarks separate from ordinary PR checks. Require the applicable evidence before release, and rerun when relevant behavior/version/configuration changes. No ordinary test run sends private data or mutates the user's real library.
 
@@ -81,7 +81,7 @@ Run these commands from the repository root. npm can run the same scripts, for e
 
 | Command | Purpose |
 |---|---|
-| `bun run check --base 5e70c61` | All twelve installed gates against the initial adoption base |
+| `bun run check --base 5e70c61` | All thirteen installed gates against the initial adoption base |
 | `bun run check` | Same gates using the available main branch's merge base |
 | `bun run check --help` | List gate names and arguments |
 | `bun run check --gate go-tests --base HEAD` | Only the existing backend race suite |
@@ -94,11 +94,25 @@ Run these commands from the repository root. npm can run the same scripts, for e
 | `bun run test:unit src/shared/components/PaginationFooter.test.tsx` | Focused component tests for development feedback |
 | `bun run test:unit:coverage` | Full frontend suite with text, HTML and JSON summary coverage reports |
 | `bun run check --gate frontend-tests --base HEAD` | The same full frontend coverage run through the shared runner |
+| `node node_modules/@playwright/test/cli.js install --with-deps chromium` | Install the pinned browser and OS dependencies; run once after dependency installation or a Playwright upgrade |
+| `bun run test:smoke --base HEAD` | Build both applications, then run all three browser smoke journeys |
+| `bun run check --gate smoke --base HEAD` | Same build prerequisites and browser suite through shared verification |
+| `node node_modules/@playwright/test/cli.js test manual.spec.ts` | Focused browser development run against already-built current artifacts |
 | `bun run lint` / `bun run build` | Existing ESLint and Next.js production build |
 
-Any gate can be selected with `--gate`: `checker-tests`, `size`, `dependencies`, `gofmt`, `lint`, `typegen`, `types`, `go-vet`, `go-tests`, `go-build`, `frontend-tests`, `frontend-build`. Focused checks do not establish a full verification pass. Backend `make test`, `make vet` and `go test -race ./...` remain available.
+Any gate can be selected with `--gate`: `checker-tests`, `size`, `dependencies`, `gofmt`, `lint`, `typegen`, `types`, `go-vet`, `go-tests`, `go-build`, `frontend-tests`, `frontend-build`, `smoke`. Focused checks do not establish a full verification pass. Backend `make test`, `make vet` and `go test -race ./...` remain available.
 
-Frontend tests are co-located as `src/**/*.test.ts` or `.test.tsx`, use explicit Vitest imports, and run in isolated jsdom environments with DOM cleanup after each test. The initial seven tests cover pagination boundaries and numbered-button pointer, keyboard and loading behavior. Empty suites, focused-only tests, assertion failures and coverage failures fail the command; retries are disabled. These tests do not verify full browser journeys, proxy/auth integration or async Server Components. Those belong to F03.
+Frontend tests are co-located as `src/**/*.test.ts` or `.test.tsx`, use explicit Vitest imports, and run in isolated jsdom environments with DOM cleanup after each test. The initial seven tests cover pagination boundaries and numbered-button pointer, keyboard and loading behavior. Empty suites, focused-only tests, assertion failures and coverage failures fail the command; retries are disabled. Full browser journeys and proxy/auth integration use the separate smoke suite.
+
+### Browser smoke environment
+
+The three `tests/e2e/*.spec.ts` journeys exercise authentication/browsing, manual placement and GPX import. Playwright runs Chromium with one worker and no retries against the production Next.js standalone output, a compiled Go backend, normal migrations and a fresh temporary SQLite directory. Each test owns its synthetic account/key. Loopback ports 3080 (frontend), 8089 (backend) and 8090 (fake Immich) must be free; existing servers are never reused. Startup is bounded to 30 seconds per server, tests to 30 seconds each and the suite to three minutes. Graceful shutdown has an eight-second fallback; normal teardown removes temporary data.
+
+Browser map tiles are synthetic. Unexpected browser destinations fail the test, and a local deny proxy prevents backend external calls. Known optional Nominatim requests after a save/reload are explicitly denied to exercise the existing offline label fallback and recorded in fixture evidence. Unknown external destinations and unknown Immich fixture routes fail verification. Application APIs, auth cookies, migrations, GPX matching and confirmed location writes remain real. No private photos, credentials or live library are used.
+
+Failed runs retain screenshots and traces under `test-results/` and an HTML report under `playwright-report/`; synthetic upstream writes and blocked-geocoding attempts are attached as JSON. Both directories are generated by Playwright and excluded from handwritten-source checks and Git. Inspect the report with `node node_modules/@playwright/test/cli.js show-report`. A direct Playwright invocation does not rebuild artifacts; use the shared smoke command for complete verification. Browser installation needs network access; test execution uses local services only. An uninstalled browser fails visibly.
+
+These checks characterize existing non-AI behavior, exact unstacked asset writes and persisted readback after browser reload. They do not establish database recovery after process restart, all stack semantics, live compatibility, AI flag enforcement or AI acceptance scenarios; add those as their capabilities arrive.
 
 ### Comparison bases
 
@@ -112,7 +126,7 @@ CI fetches complete history. Pull requests use the event's base SHA; pushes use 
 
 Go build output is under ignored `out/checks/`; Next.js output, `next-env.d.ts`, TypeScript build metadata, coverage output, `.gitnexus/` and the local OpenSpec Plus update timestamp are ignored. Temporary regression fixtures are cleaned up. Generated output must not be committed; an existing tracked `backend/coverage.out` remains explicitly classified by its producer in the coding standard.
 
-The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) records F02 frontend unit/component tests and the pending F03 deterministic application smoke tests. Backend AI coverage enforcement must arrive with the first AI Go code. Use the documented commands; no generic `npm test` or browser-test pass is implied.
+The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) records the installed F01–F03 harnesses. Backend AI coverage enforcement must arrive with the first AI Go code. Use the documented commands and recorded results; no generic `npm test` or unexecuted verification pass is implied.
 
 Build the smallest meaningful harness first; add feature scenarios with their owning changes. Import and coverage rules must grow with real packages. An absent AI package has no measured coverage and cannot count as a successful coverage gate. Existing lint/tests/build failures discovered during setup must be reported and resolved or explicitly recorded as inherited limitations, not silently suppressed.
 

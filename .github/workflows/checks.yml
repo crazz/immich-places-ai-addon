@@ -39,6 +39,8 @@ jobs:
       - name: Download backend dependencies
         working-directory: backend
         run: go mod download
+      - name: Install the pinned Chromium runtime
+        run: node node_modules/@playwright/test/cli.js install --with-deps chromium
       - name: Confirm dependency files are unchanged
         run: git diff --exit-code -- bun.lock package.json backend/go.mod backend/go.sum
       - name: Run shared verification with an explicit comparison base
@@ -51,3 +53,13 @@ jobs:
           fi
           base="$(git rev-parse --verify --end-of-options "${base}^{commit}")"
           bun run check --base "$base"
+      - name: Retain browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: application-smoke-failure
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

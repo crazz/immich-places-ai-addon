@@ -1,6 +1,6 @@
 # Coding standards
 
-**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 repository checks and F02 frontend unit/component tests are installed; the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) retains pending application smoke tests and backend AI coverage enforcement.
+**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 repository checks, F02 frontend unit/component tests and F03 browser smoke tests are installed; the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) retains pending backend AI coverage enforcement.
 
 This document owns code construction and size rules. See [architecture](architecture.md) for boundaries and [testing](testing.md) for verification. Existing violations do not authorize new violations or an unrelated legacy rewrite.
 
@@ -11,6 +11,7 @@ This document owns code construction and size rules. See [architecture](architec
 - Include Go, TypeScript/JavaScript, CSS, handwritten declarations, SQL migrations, shell/other executable scripts, Dockerfiles, Makefiles and executable CI configuration. Handwritten tests and test helpers follow the same limit.
 - Exclude documentation, lockfiles, dependency manifests, binary/media assets and non-executable fixture data. An executable fixture or a test disguised as data is still code.
 - Dependency/build/tool output under `node_modules/`, `.next/`, `out/`, `coverage/`, `.git/` and `.gitnexus/`, plus the generated root `next-env.d.ts`, is outside handwritten-source scope. The inherited `backend/coverage.out` is also excluded: it is a Go coverage profile, the output format produced by `go test -coverprofile=coverage.out` from `backend/`. Other generated/vendor exclusions must name their exact path and producer; do not exclude all declarations, tests, SQL, or configuration.
+- Playwright produces `playwright-report/` (HTML/assets) and `test-results/` (screenshots, traces and attachments); these exact output directories are excluded. Executable browser fixtures under `tests/e2e/` remain handwritten source.
 - Do not delete useful comments, compress statements or create `part1`/`part2` files to pass. Split by coherent responsibility. Documentation is exempt from the code limit but should remain focused.
 
 ## Inherited size baseline

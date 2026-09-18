@@ -6,10 +6,12 @@ import {verificationGates} from './verification-gates.mjs';
 
 export function verify({root, base, gate: selected, execute = spawnSync, report = console.log}) {
 	const failures = new Set();
-	const gates = verificationGates(root, base).filter(gate => !selected || gate.name === selected || selected === 'types' && gate.name === 'typegen');
+	const prerequisites = {types: ['typegen'], smoke: ['go-build', 'frontend-build']};
+	const gates = verificationGates(root, base).filter(gate => !selected || gate.name === selected || prerequisites[selected]?.includes(gate.name));
 	for (const gate of gates) {
-		if (gate.name === 'types' && failures.has('typegen')) {
-			report('BLOCKED types: typegen failed');
+		const failedPrerequisite = prerequisites[gate.name]?.find(name => failures.has(name));
+		if (failedPrerequisite) {
+			report(`BLOCKED ${gate.name}: ${failedPrerequisite} failed`);
 			continue;
 		}
 		report(`RUN ${gate.name}`);

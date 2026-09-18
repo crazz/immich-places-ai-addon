@@ -46,10 +46,10 @@ context: |
   or require mutation testing. Follow the adopted testing standard over blanket skill rules.
   For AI Locate, use docs/ai-locate/README.md to locate the PRD, technical design,
   reconciliation and roadmap; read the sections relevant to this change.
-  The standards are adopted; F01 shared local/CI checks and F02 frontend tests are installed.
+  The standards are adopted; F01 shared checks, F02 frontend tests and F03 browser smoke tests are installed.
   Read docs/engineering/testing.md for usable commands and comparison-base selection.
   F02 enforces the frontend AI coverage policy when AI code exists; absent AI is unmeasured.
-  F03 application smoke tests and backend AI coverage enforcement remain pending.
+  Backend AI coverage enforcement remains pending and must arrive with the first AI Go code.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 

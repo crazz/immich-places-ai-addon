@@ -40,6 +40,8 @@ const applicationConfig = compat.config({
 			'.eslintrc.js',
 			'.next',
 			'coverage',
+			'playwright-report',
+			'test-results',
 			'eslint.config.mjs',
 			'node_modules',
 			'next-env.d.ts',
@@ -234,13 +236,13 @@ const toolingRules = Object.fromEntries(applicationConfig.flatMap(config =>
 export default [
 	...applicationConfig.map(config => Object.keys(config).length === 1 && config.ignores
 		? config
-		: {...config, ignores: [...(config.ignores ?? []), 'scripts/checks/**/*.mjs']}),
+		: {...config, ignores: [...(config.ignores ?? []), 'scripts/checks/**/*.mjs', 'tests/e2e/**/*.mjs']}),
 	{
-		files: ['scripts/checks/**/*.mjs'],
+		files: ['scripts/checks/**/*.mjs', 'tests/e2e/**/*.mjs'],
 		languageOptions: {
 			ecmaVersion: 2022,
 			sourceType: 'module',
-			globals: {Buffer: 'readonly', console: 'readonly', process: 'readonly'}
+			globals: {Buffer: 'readonly', console: 'readonly', process: 'readonly', URL: 'readonly'}
 		},
 		plugins: {import: applicationConfig.find(config => config.plugins?.import).plugins.import},
 		rules: {...js.configs.recommended.rules, ...toolingRules}
