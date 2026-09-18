@@ -141,4 +141,3 @@ func TestGPXPreviewUnauthenticated(t *testing.T) {
 		t.Errorf("expected 401, got %d", rec.Code)
 	}
 }
-

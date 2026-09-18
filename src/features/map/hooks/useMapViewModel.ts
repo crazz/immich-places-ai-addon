@@ -4,7 +4,7 @@ import {useCallback, useMemo, useState} from 'react';
 
 import {useMapMarkers} from '@/features/map/hooks/useMapMarkers';
 import {hasGPXPendingEntries} from '@/features/selection/selectionStateHelpers';
-import {useMapScene, useSelection, useView} from '@/shared/context/AppContext';
+import {useMapScene, useView} from '@/shared/context/AppContext';
 import {MAP_LOCATION_SOURCE_REMOVE_LOCATION} from '@/utils/map';
 
 import type {TViewportBounds} from '@/shared/types/api';

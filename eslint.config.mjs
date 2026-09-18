@@ -11,8 +11,7 @@ const compat = new FlatCompat({
 	allConfig: js.configs.all
 });
 
-export default [
-	...compat.config({
+const applicationConfig = compat.config({
 		root: true,
 		env: {
 			browser: true,
@@ -225,5 +224,24 @@ export default [
 			],
 			'import/consistent-type-specifier-style': ['error', 'prefer-top-level']
 		}
-	})
+});
+
+const toolingRules = Object.fromEntries(applicationConfig.flatMap(config =>
+	Object.entries(config.rules ?? {}).filter(([name]) => !name.includes('/') || name.startsWith('import/'))
+));
+
+export default [
+	...applicationConfig.map(config => Object.keys(config).length === 1 && config.ignores
+		? config
+		: {...config, ignores: [...(config.ignores ?? []), 'scripts/checks/**/*.mjs']}),
+	{
+		files: ['scripts/checks/**/*.mjs'],
+		languageOptions: {
+			ecmaVersion: 2022,
+			sourceType: 'module',
+			globals: {Buffer: 'readonly', console: 'readonly', process: 'readonly'}
+		},
+		plugins: {import: applicationConfig.find(config => config.plugins?.import).plugins.import},
+		rules: {...js.configs.recommended.rules, ...toolingRules}
+	}
 ];

@@ -1,6 +1,6 @@
 # Coding standards
 
-**Status:** Adopted 17 September 2026. Binding for new and changed code; automated enforcement is pending the tooling prerequisite in the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite).
+**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 size/dependency, format/lint/type, backend test and build checks are installed; the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) retains pending frontend harness and AI coverage work.
 
 This document owns code construction and size rules. See [architecture](architecture.md) for boundaries and [testing](testing.md) for verification. Existing violations do not authorize new violations or an unrelated legacy rewrite.
 
@@ -10,7 +10,7 @@ This document owns code construction and size rules. See [architecture](architec
 - Count newline-delimited lines, including a final nonempty line without a newline. An empty file has zero lines; CRLF counts as one line ending. Apply the check to tracked files and new files intended for inclusion.
 - Include Go, TypeScript/JavaScript, CSS, handwritten declarations, SQL migrations, shell/other executable scripts, Dockerfiles, Makefiles and executable CI configuration. Handwritten tests and test helpers follow the same limit.
 - Exclude documentation, lockfiles, dependency manifests, binary/media assets and non-executable fixture data. An executable fixture or a test disguised as data is still code.
-- Dependency/build/tool output under `node_modules/`, `.next/`, `out/`, `coverage/`, `.git/` and `.gitnexus/`, plus the generated root `next-env.d.ts`, is outside handwritten-source scope. Other generated/vendor exclusions must name their exact path and producer; do not exclude all declarations, tests, SQL, or configuration.
+- Dependency/build/tool output under `node_modules/`, `.next/`, `out/`, `coverage/`, `.git/` and `.gitnexus/`, plus the generated root `next-env.d.ts`, is outside handwritten-source scope. The inherited `backend/coverage.out` is also excluded: it is a Go coverage profile, the output format produced by `go test -coverprofile=coverage.out` from `backend/`. Other generated/vendor exclusions must name their exact path and producer; do not exclude all declarations, tests, SQL, or configuration.
 - Do not delete useful comments, compress statements or create `part1`/`part2` files to pass. Split by coherent responsibility. Documentation is exempt from the code limit but should remain focused.
 
 ## Inherited size baseline
@@ -19,7 +19,7 @@ The following exceptions were verified against `5e70c6165777949c9d8b50ede3b2768b
 
 | File | Adoption ceiling (physical lines) |
 |---|---:|
-| `backend/syncService_test.go` | 1580 |
+| `backend/syncService_test.go` | 1467 |
 | `backend/handlers_test.go` | 1373 |
 | `backend/database_test.go` | 1301 |
 | `backend/database.go` | 996 |
@@ -46,4 +46,4 @@ Future exceptions must identify the exact file/rule, rationale and removal or re
 
 ## Enforcement
 
-The size check and its baseline ratchet are required tooling work, not installed checks today. Until automated, reviewers and agents must verify the limits directly. Once installed, use the same documented checks locally and in CI. See [testing: verification gates and tooling status](testing.md#verification-gates-and-tooling-status) for the remaining enforcement work.
+`bun run check:size --base <revision>` enforces the physical-line limit and this document's exact inherited baseline/ratchet, including historical policy provenance. It examines tracked and non-ignored new files and fails on invalid inputs. `bun run check` runs it with the other shared local/CI gates. See [testing: available commands](testing.md#available-commands-and-remaining-setup) for comparison bases, read-only gofmt checks and the still-pending frontend harness/AI coverage work. Code review remains responsible for meaningful boundaries and the construction rules that structural checks cannot prove.

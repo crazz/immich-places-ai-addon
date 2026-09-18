@@ -1,6 +1,6 @@
 # Testing rules
 
-**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. Required tooling not yet installed is listed below; a documented requirement is not evidence of a passing check.
+**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks are installed; frontend harnesses and new-AI coverage remain pending below. A documented requirement is not evidence of a passing check.
 
 This document owns test strategy, coverage and verification gates. Read it with [architecture](architecture.md), [coding standards](coding-standards.md), and the relevant [PRD scenarios](../ai-locate/PRD.md). Product acceptance and live compatibility remain distinct from ordinary regression tests.
 
@@ -65,23 +65,46 @@ Use the [Go race detector](https://go.dev/doc/articles/race_detector) on the bac
 | Acceptance journeys | Small deterministic Playwright suite for the affected completed workflows, expanded as capabilities arrive |
 | OpenSpec checks | Structural validation plus requirement/scenario/test traceability; neither replaces application tests |
 
-Use one documented local check entry point and the same commands in CI. Pin tool versions and use the committed lockfile. The existing Go Makefile provides test/vet commands, but the new frontend harness, coverage gates, size/import checks and CI wiring still need implementation. Do not claim these checks are active today.
+`bun run check` is the shared local/CI entry point. The installed F01 gates run checker regression tests, the size ratchet, source-based dependency checks, gofmt, existing ESLint, Next.js route type generation, TypeScript, Go vet, race-enabled Go tests and both application builds. Every invoked gate reports `RUN` and `PASS` or `FAIL` with its error; a missing tool, nonzero exit or termination fails the command. A failed type-generation gate explicitly blocks TypeScript checking. Independent gates still run so their results remain visible.
+
+The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. Frontend Vitest/RTL, Playwright and new-AI coverage enforcement are not installed by F01.
 
 Keep live-provider/Immich integration, quality evaluation and heavy reference-NAS benchmarks separate from ordinary PR checks. Require the applicable evidence before release, and rerun when relevant behavior/version/configuration changes. No ordinary test run sends private data or mutates the user's real library.
 
 ## Available commands and remaining setup
 
-The pinned checkout has the following entry points; their existence does not imply they passed in this environment:
+Use **Node.js 22.23.2, Go 1.25.14 and Bun 1.4.2**, the versions pinned in CI and verified locally. Put their binaries on `PATH`, install frontend dependencies with `bun install --frozen-lockfile`, and run `go mod download` from `backend/`. Keep `bun.lock`, `backend/go.mod` and `backend/go.sum` unchanged. CI checks that installation did not modify them; the Go vet/test/build gates use `-mod=readonly` and CI sets `GOTOOLCHAIN=local`.
 
-| Working directory | Existing command | Purpose |
-|---|---|---|
-| `backend/` | `make test` | Existing Go test suite |
-| `backend/` | `make vet` | Existing Go static checks |
-| `backend/` | `go test -race ./...` | Required race-enabled suite when the toolchain is available |
-| Repository root | `npm run lint` | Existing ESLint configuration |
-| Repository root | `npm run build` | Existing frontend production build |
+Run these commands from the repository root. npm can run the same scripts, for example `npm run check -- --base 5e70c61`; Bun supplies the frozen dependency installation.
 
-The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) must add the shared local/CI entry point, file-size ratchet, dependency checks, frontend test/coverage harness, deterministic application acceptance harness and required CI jobs. It must pin tool versions and document exact commands and coverage scope. Do not invent a passing `npm test` or a coverage result before those entry points exist.
+| Command | Purpose |
+|---|---|
+| `bun run check --base 5e70c61` | All eleven F01 gates against the initial adoption base |
+| `bun run check` | Same gates using the available main branch's merge base |
+| `bun run check --help` | List gate names and arguments |
+| `bun run check --gate go-tests --base HEAD` | Only the existing backend race suite |
+| `bun run check:tools --base HEAD` | Node built-in checker regression suite |
+| `bun run check:size --base 5e70c61` | Handwritten file sizes and historical exception ratchet |
+| `bun run check:dependencies --base 5e70c61` | Runtime cycles, local import resolution and AI structural boundaries |
+| `bun run check:format` | Read-only gofmt check of tracked and non-ignored new Go files |
+| `bun run check:types --base HEAD` | Next.js `typegen`, then `tsc --noEmit`, including a clean checkout |
+| `bun run lint` / `bun run build` | Existing ESLint and Next.js production build |
+
+Any gate can be selected with `--gate`: `checker-tests`, `size`, `dependencies`, `gofmt`, `lint`, `typegen`, `types`, `go-vet`, `go-tests`, `go-build`, `frontend-build`. Focused checks do not establish a full verification pass. Backend `make test`, `make vet` and `go test -race ./...` remain available.
+
+### Comparison bases
+
+Use an explicit base for review and reproducibility. `--base` must resolve to an available Git commit. Without it, the checker tries the merge base with `origin/main`, then local `main`; if neither exists it fails and asks for `--base`. Use `5e70c61` for this initial adoption review, or the actual target/base commit for subsequent changes. `HEAD` is useful for focused execution but does not compare already committed branch changes with their review target.
+
+CI fetches complete history. Pull requests use the event's base SHA; pushes use the event's previous SHA. When a new branch push has an empty/all-zero previous SHA, CI uses `HEAD^`, a real parent commit. If that parent or the supplied base is unavailable, verification fails rather than substituting the current tree. A force-push whose previous revision cannot be fetched therefore needs its comparison history restored before it can pass.
+
+### Formatting and enforcement boundaries
+
+`check:format` never writes files. Correct reported Go paths with `gofmt -w <paths>` and rerun it. Existing ESLint rules enforce the frontend's formatting/naming conventions; use a scoped `eslint --fix <paths>` for mechanical corrections and review the diff. The gate retains three inherited warnings recorded in the [historical baseline](verification-baseline.md); it does not suppress them or relax application lint rules.
+
+Go build output is under ignored `out/checks/`; Next.js output, `next-env.d.ts`, TypeScript build metadata, coverage output, `.gitnexus/` and the local OpenSpec Plus update timestamp are ignored. Temporary regression fixtures are cleaned up. Generated output must not be committed; an existing tracked `backend/coverage.out` remains explicitly classified by its producer in the coding standard.
+
+The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) still owns F02 frontend unit/component tests and F03 deterministic application smoke tests, plus the corresponding future coverage/CI integration. Do not invent a passing `npm test` or coverage result before those entry points exist.
 
 Build the smallest meaningful harness first; add feature scenarios with their owning changes. Import and coverage rules must grow with real packages. An absent AI package has no measured coverage and cannot count as a successful coverage gate. Existing lint/tests/build failures discovered during setup must be reported and resolved or explicitly recorded as inherited limitations, not silently suppressed.
 

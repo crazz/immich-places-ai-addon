@@ -221,6 +221,8 @@ The key belongs to the **frontend** container, not the backend. Unlike `HERE_API
 - If startup fails on `ENCRYPTION_KEY`, confirm `.env` is in the project root and contains the key.
 - If the map shows an "API KEY REQUIRED" watermark, set `CARTO_API_KEY` and recreate the frontend container — see [CARTO basemap](#carto-basemap).
 
+Contributor verification commands, pinned toolchains and remaining test infrastructure are documented in the [engineering testing guide](docs/engineering/testing.md#available-commands-and-remaining-setup).
+
 ## Security usage note
 
 As with any software, there may still be bugs, edge-case errors, or incomplete hardening details.

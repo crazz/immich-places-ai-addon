@@ -97,11 +97,11 @@ export function buildNextPendingLocations(
 	for (const assetID of nextAssetIDs) {
 		const existing = prev[assetID];
 		if (existing?.source === 'gpx-import' && nextPendingLocation.source !== MAP_LOCATION_SOURCE_REMOVE_LOCATION) {
-			const coordinatesChanged =
+			const haveCoordinatesChanged =
 				existing.isAlreadyApplied &&
 				(options.latitude !== existing.latitude || options.longitude !== existing.longitude);
 			let isAlreadyApplied = options.isAlreadyApplied ?? existing.isAlreadyApplied;
-			if (coordinatesChanged) {
+			if (haveCoordinatesChanged) {
 				isAlreadyApplied = false;
 			}
 			next[assetID] = createPendingLocation({

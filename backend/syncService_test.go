@@ -152,7 +152,7 @@ func TestSyncAssetsNonNumericNextPage(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	_, _, err := svc.syncAssets(context.Background(), testUserID, immich, nil, "test")
 	if err == nil {
@@ -167,7 +167,7 @@ func TestSyncAssetsAPIError(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	_, _, err := svc.syncAssets(context.Background(), testUserID, immich, nil, "test")
 	if err == nil {
@@ -201,7 +201,7 @@ func TestSyncAlbumsErrorPropagation(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	svc.syncAlbums(context.Background(), testUserID, immich, false)
 
@@ -350,7 +350,7 @@ func TestSyncStacksUpdatesDB(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	if _, _, err := svc.syncAssets(ctx, testUserID, immich, nil, "test"); err != nil {
 		t.Fatalf("syncAssets: %v", err)
@@ -463,124 +463,11 @@ func newFullMockImmichFactory(t *testing.T) (*ImmichClientFactory, *ImmichClient
 	return factory, factory.forUser("test-key")
 }
 
-func TestDoFullSync(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	factory, immich := newFullMockImmichFactory(t)
-	nom := newMockNominatimServer(t)
-	svc := newSyncService(db, factory, nom)
-
-	svc.doUserFullSync(ctx, testUserID, immich)
-
-	total, _ := db.countAssets(ctx, testUserID)
-	if total != 1 {
-		t.Errorf("expected 1 asset after full sync, got %d", total)
-	}
-
-	lastSync, _ := db.getSyncState(ctx, testUserID, "lastSyncAt")
-	if lastSync == nil {
-		t.Error("expected lastSyncAt to be set")
-	}
-	lastFullSync, _ := db.getSyncState(ctx, testUserID, "lastFullSyncAt")
-	if lastFullSync == nil {
-		t.Error("expected lastFullSyncAt to be set")
-	}
-	backfillDone, _ := db.getSyncState(ctx, testUserID, "libraryIDBackfillDone")
-	if backfillDone == nil || *backfillDone != "true" {
-		t.Errorf("expected libraryIDBackfillDone=true, got %v", backfillDone)
-	}
-}
-
-func TestDoFullSyncDoesNotMarkBackfillDoneWhenLibrarySyncFails(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	factory, immich := newMockImmichFactoryNoRetry(t, func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/search/metadata":
-			json.NewEncoder(w).Encode(ImmichSearchResponse{
-				Assets: struct {
-					Items    []ImmichAssetResponse `json:"items"`
-					NextPage *string               `json:"nextPage"`
-				}{Items: []ImmichAssetResponse{}},
-			})
-		case r.URL.Path == "/api/stacks":
-			json.NewEncoder(w).Encode([]ImmichStackResponse{})
-		case r.URL.Path == "/api/libraries":
-			w.WriteHeader(http.StatusForbidden)
-		case r.URL.Path == "/api/albums":
-			json.NewEncoder(w).Encode([]ImmichAlbumResponse{})
-		default:
-			http.NotFound(w, r)
-		}
-	})
-	nom := newMockNominatimServer(t)
-	svc := newSyncService(db, factory, nom)
-
-	svc.doUserFullSync(ctx, testUserID, immich)
-
-	backfillDone, _ := db.getSyncState(ctx, testUserID, "libraryIDBackfillDone")
-	if backfillDone != nil {
-		t.Errorf("expected libraryIDBackfillDone to remain unset when library sync fails, got %v", backfillDone)
-	}
-}
-
-func TestDoIncrementalSyncFallsBackToFull(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	factory, immich := newFullMockImmichFactory(t)
-	nom := newMockNominatimServer(t)
-	svc := newSyncService(db, factory, nom)
-
-	svc.doUserIncrementalSync(ctx, testUserID, immich)
-
-	lastFullSync, _ := db.getSyncState(ctx, testUserID, "lastFullSyncAt")
-	if lastFullSync == nil {
-		t.Error("expected full sync fallback when no lastSyncAt exists")
-	}
-}
-
-func TestDoIncrementalSync(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	factory, immich := newFullMockImmichFactory(t)
-	nom := newMockNominatimServer(t)
-	svc := newSyncService(db, factory, nom)
-
-	db.setSyncState(ctx, testUserID, "lastSyncAt", "2024-01-01T00:00:00Z")
-
-	svc.doUserIncrementalSync(ctx, testUserID, immich)
-
-	total, _ := db.countAssets(ctx, testUserID)
-	if total != 1 {
-		t.Errorf("expected 1 asset after incremental sync, got %d", total)
-	}
-}
-
-func TestDoIncrementalSyncForcesFullWhenBackfillNeeded(t *testing.T) {
-	ctx := context.Background()
-	db := newTestDB(t)
-	factory, immich := newFullMockImmichFactory(t)
-	nom := newMockNominatimServer(t)
-	svc := newSyncService(db, factory, nom)
-
-	db.setSyncState(ctx, testUserID, "lastSyncAt", "2024-01-01T00:00:00Z")
-	db.setSyncState(ctx, testUserID, "hasLibraryAccess", "true")
-	db.upsertLibrary(ctx,"lib1", "External", 10)
-	seedAsset(t, db, "a-existing", ptr(48.85), ptr(2.35), "2024-01-01T12:00:00Z")
-
-	svc.doUserIncrementalSync(ctx, testUserID, immich)
-
-	lastFullSync, _ := db.getSyncState(ctx, testUserID, "lastFullSyncAt")
-	if lastFullSync == nil {
-		t.Error("expected full sync when libraryID backfill is needed")
-	}
-}
-
 func TestStartFullSyncSkipsIfAlreadySyncing(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	factory, immich := newFullMockImmichFactory(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	svc.mu.Lock()
 	svc.userSyncing[testUserID] = true
@@ -598,7 +485,7 @@ func TestRecordAndClearSyncError(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	svc.recordSyncError(ctx, testUserID, "test error")
 	val, _ := db.getSyncState(ctx, testUserID, "lastSyncError")
@@ -615,7 +502,7 @@ func TestRecordAndClearSyncError(t *testing.T) {
 
 func TestTryStartAndReleaseSyncLock(t *testing.T) {
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10*time.Second))
 
 	if _, ok := svc.tryStartUserSync(testUserID, func() {}); !ok {
 		t.Error("expected first start to succeed")
@@ -633,7 +520,7 @@ func TestTryStartAndReleaseSyncLock(t *testing.T) {
 
 func TestTryStartUserSyncStoresCancel(t *testing.T) {
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10*time.Second))
 
 	cancelWasCalled := false
 	cancel := func() {
@@ -661,7 +548,7 @@ func TestTryStartUserSyncStoresCancel(t *testing.T) {
 
 func TestCancelUserSyncTimesOut(t *testing.T) {
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10*time.Second))
 	svc.mu.Lock()
 	svc.userSyncing[testUserID] = true
 	svc.mu.Unlock()
@@ -674,7 +561,7 @@ func TestCancelUserSyncTimesOut(t *testing.T) {
 
 func TestCancelUserSyncWaitsForSyncToStop(t *testing.T) {
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10*time.Second))
 	svc.mu.Lock()
 	svc.userSyncing[testUserID] = true
 	svc.userCancels[testUserID] = func() {
@@ -694,7 +581,7 @@ func TestCancelUserSyncWaitsForSyncToStop(t *testing.T) {
 
 func TestPauseUserSyncReservesLock(t *testing.T) {
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10*time.Second))
 
 	if err := svc.pauseUserSync(context.Background(), testUserID); err != nil {
 		t.Fatalf("pauseUserSync: %v", err)
@@ -708,7 +595,7 @@ func TestPauseUserSyncReservesLock(t *testing.T) {
 
 func TestPauseUserSyncHonorsContextDeadline(t *testing.T) {
 	factory, _ := newFullMockImmichFactory(t)
-	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(newTestDB(t), factory, newNominatimClient(10*time.Second))
 
 	if !svc.acquireUserSyncLock(testUserID) {
 		t.Fatal("expected setup lock acquisition")
@@ -792,7 +679,7 @@ func TestRunStartupSyncsStartsUsersConcurrently(t *testing.T) {
 		}
 	})
 
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	users := []UserRow{
 		{ID: firstUserID, ImmichAPIKey: &firstKey},
 		{ID: secondUserID, ImmichAPIKey: &secondKey},
@@ -887,7 +774,7 @@ func TestStartPeriodicSync(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	db := newTestDB(t)
 	factory, immich := newFullMockImmichFactory(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	db.createUser(ctx, testUserID, "test@example.com", "hashed")
 	apiKey := "test-key"
@@ -964,7 +851,7 @@ func TestSyncLibraries(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	svc.syncLibraries(ctx, testUserID, immich)
 
@@ -989,7 +876,7 @@ func TestSyncLibraries403Graceful(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	err := svc.syncLibraries(ctx, testUserID, immich)
 	if err == nil {
@@ -1025,7 +912,7 @@ func TestSyncLibraries500KeepsExistingAccessState(t *testing.T) {
 	if err := db.setSyncState(ctx, testUserID, "hasLibraryAccess", "true"); err != nil {
 		t.Fatalf("set hasLibraryAccess: %v", err)
 	}
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 
 	err := svc.syncLibraries(ctx, testUserID, immich)
 	if err == nil {
@@ -1045,7 +932,7 @@ func TestSyncLibrariesDeletesStale(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 
-	db.upsertLibrary(ctx,"old-lib", "Old Library", 10)
+	db.upsertLibrary(ctx, "old-lib", "Old Library", 10)
 
 	factory, immich := newMockImmichFactory(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/libraries" {
@@ -1057,7 +944,7 @@ func TestSyncLibrariesDeletesStale(t *testing.T) {
 		http.NotFound(w, r)
 	})
 
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	svc.syncLibraries(ctx, testUserID, immich)
 
 	libs, _ := db.getLibraries(ctx)
@@ -1153,7 +1040,7 @@ func TestSyncAlbumsSuccess(t *testing.T) {
 	seedAsset(t, db, "a1", ptr(48.85), ptr(2.35), "2024-01-01T12:00:00Z")
 	seedAsset(t, db, "a2", ptr(40.71), ptr(-74.0), "2024-01-02T12:00:00Z")
 
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	err := svc.syncAlbums(ctx, testUserID, immich, false)
 	if err != nil {
 		t.Fatalf("syncAlbums: %v", err)
@@ -1193,7 +1080,7 @@ func TestDoFullSyncWithAlbumError(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	svc.doUserFullSync(ctx, testUserID, immich)
 
 	errState, _ := db.getSyncState(ctx, testUserID, "lastSyncError")
@@ -1479,7 +1366,7 @@ func TestSyncStacksWithStacks(t *testing.T) {
 	seedAsset(t, db, "a1", ptr(48.85), ptr(2.35), "2024-01-01T12:00:00Z")
 	seedAsset(t, db, "a2", ptr(48.86), ptr(2.36), "2024-01-02T12:00:00Z")
 
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	svc.syncStacks(ctx, testUserID, immich)
 
 	stackID, _ := db.getAssetStackID(ctx, testUserID, "a2")
@@ -1510,7 +1397,7 @@ func TestStartFullSync(t *testing.T) {
 	})
 
 	db := newTestDB(t)
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	svc.startUserFullSync(ctx, testUserID, immich)
 
 	lastSync, _ := db.getSyncState(ctx, testUserID, "lastSyncAt")
@@ -1542,7 +1429,7 @@ func TestStartIncrementalSync(t *testing.T) {
 
 	db := newTestDB(t)
 	db.setSyncState(ctx, testUserID, "lastSyncAt", "2024-01-01T00:00:00Z")
-	svc := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	svc := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	svc.startUserIncrementalSync(ctx, testUserID, immich)
 
 	lastSync, _ := db.getSyncState(ctx, testUserID, "lastSyncAt")

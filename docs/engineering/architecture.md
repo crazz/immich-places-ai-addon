@@ -56,6 +56,31 @@ flowchart TD
 - Use additive, ordered migrations; never edit an applied migration. Verify fresh and upgraded databases, and state a recovery strategy. Do not assume destructive down-migrations are safe.
 - Keep secrets, image bytes and private payloads out of ordinary logs, serialized errors and telemetry. Bind image/context egress to consent and administrator destination policy.
 
+## Codebase analysis and change verification
+
+Use GitNexus as the first tool for codebase relationships during planning, implementation, debugging, refactoring and review. These project-owned rules supplement the generated GitNexus section in `AGENTS.md` and remain in force when that section is regenerated.
+
+Bind every query to `immich-places-ai-addon` and confirm the repository path, checkout and indexed revision. Read the repository context and the relevant local GitNexus skill before using its workflow. Refresh a stale index before relying on it; include uncommitted source changes in the freshness assessment. Use the CLI fallback when MCP is unavailable. If indexing or analysis remains unavailable, report that limitation and the source/test evidence used instead; never report the GitNexus gate as passed.
+
+| Work | Required GitNexus use |
+|---|---|
+| Understand a feature, debug behavior or plan integration | Start with `query` for concepts and execution flows, then `context` for relevant symbols. Use `trace` when following a path between symbols. Verify the actual source at the identified boundaries. |
+| Edit an existing function, class, method or shared contract | Run upstream `impact` first; inspect direct callers, affected processes and tests. Report the affected behavior and risk before editing. Warn on HIGH/CRITICAL risk; a lower shared-axis score does not waive that warning. |
+| Rename, move, extract or reorganize code | Inspect callers and dependencies first. Preview symbol renames with `rename`, review both graph and text matches, then verify the resulting diff. Do not use blind find-and-replace for symbol renames. |
+| Change package or feature dependencies | Inspect import relationships and run `check` for cycles. For frontend/backend API contracts, use `route_map`, `api_impact` and `shape_check` where the indexed language and route support apply. Retain the repository's source-based boundary checks. |
+| Investigate security-sensitive data/control flow | Use `explain` or `pdg_query` when the required PDG index is available. Confirm authorization, validation and mutation boundaries in source and behavioral tests; no finding is not proof of safety. |
+| Review a change or prepare a commit | Run `detect_changes` against the intended checkout, using all local changes before a commit and an explicit base for branch review. Inspect unexpected symbols/processes and choose regression tests for affected behavior. Re-run after subsequent relevant edits. |
+
+Treat `UNKNOWN`, empty results for new/unindexed symbols, stale data, `partial`, `truncated`, and lower-bound results as uncertainty, not evidence of no impact. Retry, refresh, disambiguate or paginate as applicable, then verify unresolved relationships with targeted source searches and tests. A capped cycle listing is not a clean cycle check. Report remaining gaps; do not keep retrying an unchanged query or silently bypass a mandatory check.
+
+Use `rg` for literal/configuration/file searches and to investigate unsupported or unresolved relationships after the graph query. GitNexus narrows where to look and what to test; it does not replace source reading, type checks, deterministic import rules, behavioral tests or human review. Documentation-only changes need document/configuration verification rather than artificial symbol-impact calls; any commit still requires the change analysis above.
+
+## Installed checks and limits
+
+The F01 [shared verification command](testing.md#available-commands-and-remaining-setup) installs source-based dependency checks alongside size, formatting, lint, types, backend tests and builds. `bun run check:dependencies --base <revision>` resolves static frontend imports/re-exports through the existing TypeScript configuration, reports inherited runtime cycles and rejects new cycles or any AI cycle. Inbound imports to `src/features/ai/` use its root public index; internal AI imports and existing shared contracts remain allowed. Go core packages under `backend/internal/ai/` cannot import executable, concrete adapter/client/driver packages; analysis cannot transitively reach writer/mutation packages.
+
+These structural checks are independent of GitNexus and do not prove runtime authorization, absence of side effects or computed/dynamic loading behavior. Concrete rules must grow with real AI packages; Go builds remain authoritative for Go language validity and import cycles. There is no AI implementation or measured AI coverage at this stage. F02/F03 frontend harness and behavioral coverage work remains pending.
+
 ## Decisions and changes
 
 Record a consequential architectural departure in an ADR with its requirement, alternatives, consequences and affected documents. Amend the applicable standard and technical design together; an individual change's design cannot silently override them. Routine choices within the accepted boundaries need no extra approval. Keep future Research/search interfaces deferred until an accepted consumer requires them.

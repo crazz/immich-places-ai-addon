@@ -38,9 +38,14 @@ context: |
   - docs/engineering/testing.md
   - docs/engineering/coding-standards.md
   Follow AGENTS.md for project working agreements and required tool workflows.
+  Use GitNexus for codebase exploration, dependency/execution tracing, pre-edit blast radius,
+  refactoring and pre-commit change analysis, following the architecture standard's workflow.
+  Verify index freshness and unresolved/incomplete graph results against actual source and tests.
   For AI Locate, use docs/ai-locate/README.md to locate the PRD, technical design,
   reconciliation and roadmap; read the sections relevant to this change.
-  The standards are adopted; the engineering tooling prerequisite is still pending.
+  The standards are adopted; F01 shared local/CI checks are installed.
+  Read docs/engineering/testing.md for usable commands and comparison-base selection.
+  F02/F03 frontend harnesses and new-AI coverage enforcement remain pending.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 

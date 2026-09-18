@@ -6,7 +6,13 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"check": "node scripts/checks/verify.mjs",
+		"check:tools": "node scripts/checks/verify.mjs --gate checker-tests",
+		"check:size": "node scripts/checks/size.mjs",
+		"check:dependencies": "node scripts/checks/dependencies.mjs",
+		"check:format": "node scripts/checks/format-go.mjs",
+		"check:types": "node scripts/checks/verify.mjs --gate types"
 	},
 	"dependencies": {
 		"@radix-ui/react-context-menu": "^2.2.16",

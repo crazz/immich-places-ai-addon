@@ -65,7 +65,7 @@ export function PhotoCardMenu({asset, isSelected, children}: TPhotoCardMenuProps
 		return (
 			entry.source === 'gpx-import' &&
 			!entry.isAlreadyApplied &&
-			entry.hasExistingLocation === true &&
+			(entry.hasExistingLocation ?? false) &&
 			entry.originalLatitude != null &&
 			entry.originalLongitude != null &&
 			(entry.latitude !== entry.originalLatitude || entry.longitude !== entry.originalLongitude)

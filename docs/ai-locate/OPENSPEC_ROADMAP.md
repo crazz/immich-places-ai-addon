@@ -1,6 +1,6 @@
 # Proposed OpenSpec conversion roadmap
 
-**Status:** Revised decomposition for review; no OpenSpec changes or implementation tasks have been generated.  
+**Status:** The 26 product candidates remain proposed. F01 `enforce-engineering-checks` is implemented, verified and archived; F02/F03 frontend harness work remains pending.
 **Baseline:** [PRD](PRD.md), [technical design](TECHNICAL_DESIGN.md), and [reconciliation](RECONCILIATION.md) against `5e70c6165777949c9d8b50ede3b2768bcaa5df87`.  
 **Tooling inspected:** OpenSpec 1.8.0 with the `spec-driven` schema and repository-local OpenSpec Plus rules.
 
@@ -27,12 +27,15 @@ At formal proposal time, split a candidate again if its design reveals independe
 
 ## Engineering tooling prerequisite
 
-Complete a bounded tooling setup before feature implementation. It is separate from the 26 product candidates and introduces no AI product capability. No OpenSpec artifacts or implementation have been generated for it by this adoption.
+Complete the bounded tooling setup before feature implementation. It is separate from the 26 product candidates and introduces no AI product capability. The work is split into three independently verifiable changes:
 
-- Install the file-size check using the exact inherited baseline/ratchet in the coding standards, plus dependency-boundary checks that expand with real AI packages.
-- Establish Vitest/React Testing Library and a minimal deterministic Playwright harness against the real application with local external-service fakes. Include meaningful smoke/regression coverage; feature scenarios arrive with their owning changes.
-- Wire existing Go/lint/build checks and the new checks through one documented local entry point and matching CI jobs. Define new-AI coverage scope without treating absent code as a measured pass.
-- Pin tooling, document actual commands and resolve or explicitly record inherited check failures. Verify the existing checkout without an unrelated legacy rewrite.
+| ID | Outcome and current status |
+|---|---|
+| F01 `enforce-engineering-checks` | [Archived artifacts](../../openspec/changes/archive/2026-09-18-enforce-engineering-checks/proposal.md); all ten tasks and final review are complete. Installed: exact file-size baseline/ratchet, source dependency checks, checker regressions, shared format/lint/types/Go race-test/build command and read-only CI with pinned toolchains/frozen dependencies. Recorded baseline lint errors and gofmt differences are corrected; inherited warnings remain visible. |
+| F02 | Pending frontend Vitest/React Testing Library harness, meaningful pure-logic/component smoke tests and future AI coverage integration. No frontend unit-test pass is claimed by F01. |
+| F03 | Pending deterministic Playwright application smoke harness against the real frontend/backend and local external-service fakes, with matching CI integration. No browser-journey pass is claimed by F01. |
+
+Use the [testing guide](../engineering/testing.md#available-commands-and-remaining-setup) for installed commands, comparison-base selection, formatting and enforcement limits. The [verification baseline](../engineering/verification-baseline.md) retains pre-enforcement evidence separately from completion evidence. Future AI scope must meet the adopted coverage floors; absent AI packages are unmeasured.
 
 The setup does not need to invent empty AI packages to enforce architecture. The first change introducing an internal package must include the matching import rules and backend Docker build update/verification. Split the tooling setup if its implementation reveals independently verifiable work; do not fold a broad cleanup into it.
 

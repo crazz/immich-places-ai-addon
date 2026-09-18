@@ -19,7 +19,7 @@ func newTestLibraryHandlers(t *testing.T, immichHandler http.HandlerFunc) (*Libr
 		baseURL:    server.URL,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
 	}
-	syncService := newSyncService(db, factory, newNominatimClient(10 * time.Second))
+	syncService := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	syncService.shutdownCtx = context.Background()
 	handlers := newLibraryHandlers(db, factory, syncService)
 
@@ -59,8 +59,8 @@ func TestHandleGetLibrariesWithData(t *testing.T) {
 
 	ctx := context.Background()
 	db.setSyncState(ctx, testUserID, "hasLibraryAccess", "true")
-	db.upsertLibrary(ctx,"lib1", "Photos", 100)
-	db.upsertLibrary(ctx,"lib2", "Archive", 50)
+	db.upsertLibrary(ctx, "lib1", "Photos", 100)
+	db.upsertLibrary(ctx, "lib2", "Archive", 50)
 
 	req := withTestUser(httptest.NewRequest("GET", "/libraries", nil))
 	rec := httptest.NewRecorder()
@@ -83,7 +83,7 @@ func TestHandleUpdateLibrarySuccess(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	db.upsertLibrary(ctx,"lib1", "Photos", 100)
+	db.upsertLibrary(ctx, "lib1", "Photos", 100)
 	db.setSyncState(ctx, testUserID, "hasLibraryAccess", "true")
 
 	req := withTestUser(httptest.NewRequest("PUT", "/libraries/lib1", strings.NewReader(`{"isHidden":true}`)))

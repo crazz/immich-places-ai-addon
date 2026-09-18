@@ -90,4 +90,3 @@ func (h *Handlers) handleGPXPreview(w http.ResponseWriter, r *http.Request) {
 		DetectedTimezone: trackTimezone.String(),
 	})
 }
-
