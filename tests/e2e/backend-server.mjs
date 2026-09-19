@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const dataDir = mkdtempSync(path.join(tmpdir(), 'immich-places-smoke-'));
 const binary = fileURLToPath(new URL('../../out/checks/immich-places-backend', import.meta.url));
+const aiEnabled = process.env.SMOKE_AI_ENABLED === 'true';
 const child = spawn(binary, [], {
 	cwd: dataDir,
 	stdio: 'inherit',
@@ -19,8 +20,11 @@ const child = spawn(binary, [], {
 		ENCRYPTION_KEY: 'synthetic-smoke-encryption-key',
 		ALLOW_INSECURE: 'true',
 		REGISTRATION_ENABLED: 'true',
-		AI_ENABLED: process.env.SMOKE_AI_ENABLED === 'true' ? 'true' : 'false',
+		AI_ENABLED: aiEnabled ? 'true' : 'false',
 		AI_PUBLIC_ORIGIN: 'http://127.0.0.1:3080',
+		AI_PROVIDER_EGRESS_POLICY: aiEnabled
+			? '[{"baseURL":"http://127.0.0.1:8090/v1","addressClass":"local","allowedCIDRs":["127.0.0.0/8"]}]'
+			: '[]',
 		SYNC_INTERVAL_MS: '3600000',
 		HTTP_PROXY: 'http://127.0.0.1:8090',
 		HTTPS_PROXY: 'http://127.0.0.1:8090',

@@ -2,6 +2,15 @@ import {backendFetch, parseJSON} from '@/shared/services/backendApi.fetch';
 import {getBackendBaseURL} from '@/utils/backendUrls';
 import {isRecord} from '@/utils/typeGuards';
 
+import {isCapabilityReport} from './capabilityTypes';
+import {raceAbort, withCompleteOperationDeadline} from './completeOperation';
+
+import type {TCapabilityReport} from './capabilityTypes';
+
+export type {
+	TCapabilityReport, TCapabilityObservation, TObservationStatus
+} from './capabilityTypes';
+
 export type TProviderInput = {
 	name: string;
 	baseURL: string;
@@ -14,9 +23,12 @@ export type TProviderProfile = Omit<TProviderInput, 'secret'> & {
 	id: string;
 	revision: number;
 	hasSecret: boolean;
+	capabilityReport?: TCapabilityReport;
 };
 
 export type TProviderList = {enabled: boolean; items: TProviderProfile[]};
+
+export const CAPABILITY_TEST_TIMEOUT_MS = 130_000;
 
 export class ProviderAPIError extends Error {
 	constructor(message: string, readonly code: string) {
@@ -25,10 +37,16 @@ export class ProviderAPIError extends Error {
 }
 
 function isProvider(value: unknown): value is TProviderProfile {
-	return isRecord(value) && typeof value.id === 'string' && typeof value.name === 'string' &&
-		typeof value.baseURL === 'string' && typeof value.model === 'string' &&
-		typeof value.enabled === 'boolean' && typeof value.hasSecret === 'boolean' &&
-		typeof value.revision === 'number' && Number.isSafeInteger(value.revision) && value.revision > 0;
+	if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string' ||
+		typeof value.baseURL !== 'string' || typeof value.model !== 'string' ||
+		typeof value.enabled !== 'boolean' || typeof value.hasSecret !== 'boolean' ||
+		typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision <= 0) {
+		return false;
+	}
+	if (value.capabilityReport === undefined || value.capabilityReport === null) {
+		return true;
+	}
+	return isCapabilityReport(value.capabilityReport);
 }
 
 function isProviderList(value: unknown): value is TProviderList {
@@ -66,4 +84,16 @@ export async function saveProvider(input: TProviderInput, profile?: TProviderPro
 	});
 	await checkResponse(response);
 	return parseJSON(response, isProvider, 'Invalid provider response');
+}
+
+export async function testProvider(profile: TProviderProfile, signal?: AbortSignal): Promise<TCapabilityReport> {
+	return withCompleteOperationDeadline(CAPABILITY_TEST_TIMEOUT_MS, signal, async deadlineSignal => {
+		const response = await backendFetch(`${getBackendBaseURL()}/ai/providers/${encodeURIComponent(profile.id)}/test`, {
+			method: 'POST',
+			headers: new Headers([['Content-Type', 'application/json']]),
+			body: JSON.stringify({expectedRevision: profile.revision})
+		}, {signal: deadlineSignal, timeoutMs: CAPABILITY_TEST_TIMEOUT_MS});
+		await raceAbort(deadlineSignal, checkResponse(response));
+		return raceAbort(deadlineSignal, parseJSON(response, isCapabilityReport, 'Invalid capability report'));
+	});
 }

@@ -1,11 +1,14 @@
 'use client';
 
 import {Description} from '@radix-ui/react-dialog';
-import {useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 
 import {DialogShell} from '@/shared/components/DialogShell';
 
+import {createCancelRegistry} from './cancelRegistry';
+import {CapabilityTestFlightProvider} from './capabilityTestFlight';
 import {ProviderForm} from './ProviderForm';
+import {ProviderTestControls} from './ProviderTestControls';
 import {useProviderList} from './useProviderList';
 
 import type {TProviderProfile} from './providerApi';
@@ -16,20 +19,24 @@ function ProviderDialog({onCloseAction}: {onCloseAction: () => void}): ReactElem
 	const [selected, setSelected] = useState<TProviderProfile | 'new' | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const [savedRevision, setSavedRevision] = useState<number | null>(null);
+	const cancelRegistry = useRef(createCancelRegistry()).current;
+	const registerCancel = useCallback((cancel: () => void) => cancelRegistry.register(cancel), [cancelRegistry]);
 	return (
 		<DialogShell
 			isOpen={true}
 			onClose={() => {
 				if (!isSaving) {
+					cancelRegistry.cancelAll();
 					onCloseAction();
 				}
 			}}
 			title={'AI providers'}
 			subtitle={'Private settings. Saving sends no images or provider requests.'}>
 			<Description className={'sr-only'}>
-				{'Manage private provider profiles. Destinations and capabilities have not been verified.'}
+				{'Manage private provider profiles. Capability results reflect explicit synthetic tests only.'}
 			</Description>
 			<div className={'max-h-[75vh] overflow-y-auto p-4 text-(--color-text)'}>
+				<CapabilityTestFlightProvider>
 				{isLoading && <p role={'status'}>{'Loading provider settings…'}</p>}
 				{error && <p role={'alert'}>{error}</p>}
 				{data && !data.enabled && <p>{'AI is disabled by the administrator.'}</p>}
@@ -56,6 +63,11 @@ function ProviderDialog({onCloseAction}: {onCloseAction: () => void}): ReactElem
 									<p className={'font-medium'}>{profile.name}</p>
 									<p className={'break-all text-xs'}>{profile.baseURL}</p>
 									<p className={'text-xs'}>{`${profile.model} · ${profile.enabled ? 'Enabled' : 'Disabled'} · Revision ${profile.revision}`}</p>
+									<ProviderTestControls
+										profile={profile}
+										onReloadAction={reload}
+										onRegisterCancelAction={registerCancel}
+									/>
 									<button className={'mt-2 text-sm underline'} onClick={() => setSelected(profile)}>
 										{`Edit ${profile.name}`}
 									</button>
@@ -83,6 +95,7 @@ function ProviderDialog({onCloseAction}: {onCloseAction: () => void}): ReactElem
 						{'Reload profiles'}
 					</button>
 				)}
+				</CapabilityTestFlightProvider>
 			</div>
 		</DialogShell>
 	);

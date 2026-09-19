@@ -8,13 +8,17 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"immich-places-backend/internal/ai/capabilities"
 	"immich-places-backend/internal/ai/providers"
 )
 
 type aiProviderHandlers struct {
-	db      *Database
-	enabled bool
-	origin  string
+	db         *Database
+	enabled    bool
+	origin     string
+	policy     providers.EgressPolicy
+	dispatcher *providers.Dispatcher
+	limiter    *capabilities.Limiter
 }
 
 type aiProviderRequest struct {
@@ -22,12 +26,20 @@ type aiProviderRequest struct {
 	ExpectedRevision int `json:"expectedRevision"`
 }
 
-func newAIProviderHandler(db *Database, cfg *Config) http.Handler {
-	h := &aiProviderHandlers{db: db, enabled: cfg.AIEnabled, origin: cfg.AIPublicOrigin}
+func newAIProviderHandler(db *Database, cfg *Config, dispatcher *providers.Dispatcher) http.Handler {
+	h := &aiProviderHandlers{
+		db:         db,
+		enabled:    cfg.AIEnabled,
+		origin:     cfg.AIPublicOrigin,
+		policy:     cfg.AIProviderEgressPolicy,
+		dispatcher: dispatcher,
+		limiter:    capabilities.NewLimiter(2, 1),
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ai/providers", h.list)
 	mux.HandleFunc("POST /ai/providers", h.save)
 	mux.HandleFunc("PUT /ai/providers/{id}", h.save)
+	mux.HandleFunc("POST /ai/providers/{id}/test", h.testProvider)
 	return sessionMiddlewareWithErrors(db, mux, func(w http.ResponseWriter, status int, message string) {
 		code := "UNAUTHENTICATED"
 		if status == http.StatusInternalServerError {
@@ -41,7 +53,10 @@ func (h *aiProviderHandlers) list(w http.ResponseWriter, r *http.Request) {
 	items := make([]aiProviderProfile, 0)
 	if h.enabled {
 		var err error
-		items, err = h.db.listAIProviders(r.Context(), getUserFromContext(r).ID)
+		items, err = h.db.listAIProviders(r.Context(), getUserFromContext(r).ID, capabilities.ApplicabilityContext{
+			AIEnabled:                true,
+			CurrentPolicyFingerprint: policyFingerprint(h.policy),
+		})
 		if err != nil {
 			writeAIProviderFailure(w, err)
 			return

@@ -72,7 +72,7 @@ func TestSettingsAndExistingWorkflowsStayOfflineFromProviders(t *testing.T) {
 		}
 	}
 
-	disabledAI := newAIProviderHandler(db, &Config{})
+	disabledAI := newAIProviderHandler(db, &Config{}, nil)
 	disabledList := aiRequest(disabledAI, "GET", "/ai/providers", "", "", true)
 	var list struct {
 		Enabled bool

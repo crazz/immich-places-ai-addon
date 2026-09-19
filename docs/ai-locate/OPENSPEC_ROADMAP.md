@@ -1,6 +1,6 @@
 # Proposed OpenSpec conversion roadmap
 
-**Status:** F01–F03 tooling and the first product batch, CH04 capture-date consistency and CH01 private provider settings, are implemented and verified. CH02–CH03 have complete planning artifacts; implementation is pending. The remaining product candidates are proposed.
+**Status:** F01–F03 tooling and the first product batch, CH04 capture-date consistency, CH01 private provider settings, CH02 egress policy and CH03 capability tests, are implemented at this checkout when their shared verification passes. Later product candidates remain proposed.
 **Baseline:** [PRD](PRD.md), [technical design](TECHNICAL_DESIGN.md), and [reconciliation](RECONCILIATION.md) against `5e70c6165777949c9d8b50ede3b2768bcaa5df87`.  
 **Tooling inspected:** OpenSpec 1.8.0 with the `spec-driven` schema and repository-local OpenSpec Plus rules.
 
@@ -62,9 +62,9 @@ Dependencies below are product planning constraints, not claimed CLI-enforced sc
 
 | ID / proposed change name | Bounded outcome and acceptance boundary | Depends on |
 |---|---|---|
-| CH01 `add-private-ai-provider-profiles` | Implemented: private encrypted revisioned profiles, settings UI, default-off installation control, session/ownership/origin protection, credential cleanup and backend AI coverage. See the [maintained contract](../../openspec/specs/ai-provider-configuration/spec.md) and [operator guide](../ai-provider-settings.md). Saving sends no image or provider request; destination approval and capability tests remain CH02/CH03. | — |
-| CH02 `enforce-ai-provider-egress-policy` | [Planning artifacts ready](../../openspec/changes/enforce-ai-provider-egress-policy/proposal.md), implementation pending: approved destinations, redirect/credential rules, DNS/address validation and bounded internal dispatch. Reuse the existing NAS codex-proxy through explicit endpoint/network approval. | CH01 |
-| CH03 `add-ai-provider-capability-tests` | [Planning artifacts ready](../../openspec/changes/add-ai-provider-capability-tests/proposal.md), implementation pending: explicit synthetic-image tests, separate image/JSON/strict observations, revision-bound private evidence and Settings UI. Select the model in the addon profile; no private photo, implicit fallback or proxy redeployment. | CH02 |
+| CH01 `add-private-ai-provider-profiles` | Implemented: private encrypted revisioned profiles, settings UI, default-off installation control, session/ownership/origin protection, credential cleanup and backend AI coverage. See the [maintained contract](../../openspec/specs/ai-provider-configuration/spec.md) and [operator guide](../ai-provider-settings.md). Saving sends no image or provider request. | — |
+| CH02 `enforce-ai-provider-egress-policy` | Implemented: approved destinations, redirect/credential rules, DNS/address validation and bounded internal dispatch. Reuse the existing NAS codex-proxy through explicit endpoint/network approval. | CH01 |
+| CH03 `add-ai-provider-capability-tests` | Implemented: explicit synthetic-image tests, separate image/JSON/strict observations, revision-bound private evidence and Settings UI. Select the model in the addon profile; no private photo, implicit fallback or proxy redeployment. Sol/`gpt-5.6-sol` live availability and GATE-03 remain unverified until an authorized live test records observations. | CH02 |
 | CH04 `align-source-local-capture-dates` | Implemented: shared source-local catalog date filtering/counts, invalid/reversed range handling and unchanged gallery ordering. See the [maintained contract](../../openspec/specs/catalog-capture-dates/spec.md). Undated-group presentation and AI selection/eligibility remain later FR-01 work. | — |
 | CH05 `freeze-explicit-ai-selections` | Resolve explicitly selected image IDs into an expiring user-bound snapshot with deduplication, eligibility/exclusions and source/filter metadata. Later catalog changes cannot expand it. | CH04 |
 | CH06 `freeze-all-matching-ai-selections` | Add all-matching selection using the same resolver, preserving album/folder/tag/GPS/visibility/date scope, exact counts and the configured batch limit. | CH05 |
@@ -171,7 +171,7 @@ After implementation and verification, reconcile/sync the change's deltas and ar
 |---|---|
 | GATE-01 — Repository baseline | Complete at `5e70c61`; refresh affected evidence at each actual implementation base |
 | GATE-02 — Immich compatibility | Verify image access for CH08 and metadata reads for CH16/CH18. Verify mutation methods/rights/readback on authorized disposable fixtures before claiming CH19–CH22 live compatibility. Package references to v3.2.2 are not evidence of the deployed version |
-| GATE-03 — Provider capability | CH03 records the first endpoint/model's observed support; CH09 validates its analysis integration. Fixture success is not a live provider pass |
+| GATE-03 — Provider capability | CH03 supplies the explicit test path; live NAS endpoint/model evidence (candidate `gpt-5.6-sol` via `codex-proxy`) remains required before closing. Fixture success is not a live provider pass. CH09 validates analysis integration later |
 | GATE-04 — Operating decisions | Allowed destinations before live provider use; cleanup/retention policies before sensitive persistence is enabled; owner-approved hardware/benchmark data before performance and quality evaluation |
 
 Record these decisions before marking an affected design implementation-ready. Unaffected work can proceed against explicit contracts and fixtures. No planning action authorizes private-photo upload, live write tests or production rollout by itself.

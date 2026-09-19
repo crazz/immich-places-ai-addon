@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"testing"
+
+	"immich-places-backend/internal/ai/capabilities"
 )
 
 func TestAIProviderStorageFailureRollsBackRevisionAndErasure(t *testing.T) {
@@ -23,7 +25,7 @@ func TestAIProviderStorageFailureRollsBackRevisionAndErasure(t *testing.T) {
 	if _, err := db.updateAIProvider(ctx, testUserID, "kept", 1, input); err == nil {
 		t.Fatal("failed version insert must roll back the entire edit")
 	}
-	profiles, err := db.listAIProviders(ctx, testUserID)
+	profiles, err := db.listAIProviders(ctx, testUserID, capabilities.ApplicabilityContext{})
 	if err != nil || len(profiles) != 1 || profiles[0].ID != "kept" || profiles[0].Revision != 1 || !profiles[0].Enabled || !profiles[0].HasSecret {
 		t.Fatalf("partial write survived rollback: %+v, %v", profiles, err)
 	}

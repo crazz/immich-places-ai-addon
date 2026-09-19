@@ -1,12 +1,15 @@
 package providers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/netip"
 	"net/url"
+	"sort"
 	"strings"
 )
 
@@ -247,4 +250,29 @@ func MatchEgressDestination(policy EgressPolicy, baseURL string) (EgressRule, er
 		}
 	}
 	return EgressRule{}, fmt.Errorf("destination not approved")
+}
+
+func FingerprintPolicy(policy EgressPolicy) string {
+	type stableRule struct {
+		BaseURL      string   `json:"baseURL"`
+		AddressClass string   `json:"addressClass"`
+		AllowedCIDRs []string `json:"allowedCIDRs,omitempty"`
+	}
+	rules := make([]stableRule, 0, len(policy.Rules))
+	for _, rule := range policy.Rules {
+		cidrs := append([]string(nil), rule.AllowedCIDRs...)
+		sort.Strings(cidrs)
+		rules = append(rules, stableRule{
+			BaseURL:      rule.BaseURL,
+			AddressClass: rule.AddressClass,
+			AllowedCIDRs: cidrs,
+		})
+	}
+	sort.Slice(rules, func(i, j int) bool { return rules[i].BaseURL < rules[j].BaseURL })
+	raw, err := json.Marshal(rules)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
 }

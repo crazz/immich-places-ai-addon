@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 	_ "time/tzdata"
+
+	"immich-places-backend/internal/aiadapters/providerhttp"
 )
 
 type contextKey string
@@ -36,6 +38,9 @@ func main() {
 		log.Fatalf("[Server] Failed to initialize database: %v", err)
 	}
 	defer db.close()
+	if err := db.interruptRunningAIProviderCapabilities(context.Background()); err != nil {
+		log.Fatalf("[Server] Failed to interrupt residual capability checks: %v", err)
+	}
 
 	immichFactory := newImmichClientFactory(cfg.ImmichURL, cfg.Debug)
 	geocodeTimeout := time.Duration(cfg.GeocodeTimeoutSecs) * time.Second
@@ -97,10 +102,13 @@ func main() {
 	protectedMux.HandleFunc("POST /dawarich/sync", dawarichHandlers.handleDawarichTriggerSync)
 	protectedMux.HandleFunc("GET /geocode/search", handlers.handleGeocodeSearch)
 
+	capabilityTransport := newAIProviderCapabilityTransport(providerhttp.Options{})
+	providerDispatcher := newAIProviderDispatcher(db, cfg.AIEnabled, cfg.AIProviderEgressPolicy, capabilityTransport)
+
 	mainMux := http.NewServeMux()
 	mainMux.HandleFunc("GET /health", handlers.handleHealth)
 	mainMux.Handle("/auth/", authMux)
-	mainMux.Handle("/ai/", newAIProviderHandler(db, cfg))
+	mainMux.Handle("/ai/", newAIProviderHandler(db, cfg, providerDispatcher))
 	mainMux.Handle("/", sessionMiddleware(db, protectedMux))
 
 	handler := requestHardeningMiddleware(mainMux)

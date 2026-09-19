@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"testing"
+
+	"immich-places-backend/internal/ai/capabilities"
 )
 
 func TestAIProviderIsolationUsesOwnerForSameProfileID(t *testing.T) {
@@ -24,7 +26,7 @@ func TestAIProviderIsolationUsesOwnerForSameProfileID(t *testing.T) {
 	if _, err := db.db.ExecContext(ctx, "DELETE FROM users WHERE ID=?", testUserID); err != nil {
 		t.Fatal(err)
 	}
-	other, err := db.listAIProviders(ctx, "other")
+	other, err := db.listAIProviders(ctx, "other", capabilities.ApplicabilityContext{})
 	if err != nil || len(other) != 1 || !other[0].Enabled || !other[0].HasSecret || other[0].Revision != 1 {
 		t.Fatalf("another owner's identical ID was changed: %+v, %v", other, err)
 	}

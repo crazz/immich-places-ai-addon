@@ -29,11 +29,14 @@ type LookupIPFunc func(ctx context.Context, host string) ([]net.IP, error)
 type Options struct {
 	LookupIP LookupIPFunc
 	RootCAs  *x509.CertPool
+	// MaxResponseBytes tightens the response ceiling for one client; zero keeps the general default.
+	MaxResponseBytes int
 }
 
 type Client struct {
-	lookup  LookupIPFunc
-	rootCAs *x509.CertPool
+	lookup      LookupIPFunc
+	rootCAs     *x509.CertPool
+	maxResponse int
 }
 
 func New(opts Options) *Client {
@@ -41,7 +44,11 @@ func New(opts Options) *Client {
 	if lookup == nil {
 		lookup = defaultLookupIP
 	}
-	return &Client{lookup: lookup, rootCAs: opts.RootCAs}
+	maxResponse := opts.MaxResponseBytes
+	if maxResponse <= 0 {
+		maxResponse = maxResponseBytes
+	}
+	return &Client{lookup: lookup, rootCAs: opts.RootCAs, maxResponse: maxResponse}
 }
 
 func defaultLookupIP(ctx context.Context, host string) ([]net.IP, error) {
@@ -160,12 +167,12 @@ func (c *Client) doPinnedRequest(ctx context.Context, canonical providers.Canoni
 	if encoding != "" && !strings.EqualFold(encoding, "identity") {
 		return providers.DispatchResult{}, providers.NewTransportFailure(providers.FailureEncoding, requestID, 0, nil)
 	}
-	limited := io.LimitReader(resp.Body, maxResponseBytes+1)
+	limited := io.LimitReader(resp.Body, int64(c.maxResponse)+1)
 	payload, err := io.ReadAll(limited)
 	if err != nil {
 		return providers.DispatchResult{}, mapRequestError(requestID, err)
 	}
-	if len(payload) > maxResponseBytes {
+	if len(payload) > c.maxResponse {
 		return providers.DispatchResult{}, limitFailure(requestID)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {

@@ -1,4 +1,4 @@
-import {connectAccount, expect, fixtureState, test} from './app-fixture';
+import {connectAccount, expect, fixtureState, providerState, test} from './app-fixture';
 
 test('manages a private profile through the real session, proxy and database without external writes', async ({page, account}) => {
 	await connectAccount(page, account);
@@ -29,4 +29,42 @@ test('manages a private profile through the real session, proxy and database wit
 	expect(JSON.stringify(profiles)).not.toContain('synthetic-provider-secret');
 	expect(await page.evaluate(() => JSON.stringify({...localStorage, ...sessionStorage}))).not.toContain('synthetic-provider-secret');
 	expect((await fixtureState(page.request, account.key)).writes).toEqual([]);
+	expect((await providerState(page.request)).requests).toEqual([]);
+});
+
+test('tests a saved provider through the real proxy and reloads persisted capability results', async ({page, account}) => {
+	test.setTimeout(60_000);
+	await connectAccount(page, account);
+	await page.getByRole('button', {name: 'Settings', exact: true}).click();
+	await page.getByRole('button', {name: 'AI providers', exact: true}).click();
+	await page.getByRole('button', {name: 'Create provider'}).click();
+	await page.getByLabel('Name', {exact: true}).fill('Loopback synthetic');
+	await page.getByLabel('API base URL', {exact: true}).fill('http://127.0.0.1:8090/v1');
+	await page.getByLabel('Model', {exact: true}).fill('manual-model');
+	await page.getByLabel('API key', {exact: true}).fill('synthetic-provider-secret');
+	await page.getByRole('button', {name: 'Save provider'}).click();
+	await expect(page.getByText('Saved revision 1', {exact: true})).toBeVisible();
+	await expect(page.getByText(/Synthetic-image test of this destination\/model/i)).toBeVisible();
+	await expect(page.getByText(/provider usage/i)).toBeVisible();
+	await page.getByRole('button', {name: 'Test provider'}).click();
+	await expect(page.getByRole('status').filter({hasText: /Testing provider/i})).toBeVisible();
+	await expect(page.getByText(/Image: supported/i)).toBeVisible({timeout: 45_000});
+	await expect(page.getByText(/JSON: supported/i)).toBeVisible();
+	await expect(page.getByText(/Strict: supported/i)).toBeVisible();
+	const beforeReload = await providerState(page.request);
+	expect(beforeReload.requests).toHaveLength(3);
+	for (const entry of beforeReload.requests) {
+		expect(entry.path).toBe('/v1/chat/completions');
+		expect(entry.authorization).toBe('Bearer synthetic-provider-secret');
+		expect(entry.model).toBe('manual-model');
+		expect(entry.hasImage).toBe(true);
+		expect(entry.stream).toBe(false);
+	}
+	await page.getByRole('button', {name: 'Reload profiles'}).click();
+	await expect(page.getByText(/Image: supported/i)).toBeVisible();
+	await expect(page.getByText(/JSON: supported/i)).toBeVisible();
+	await expect(page.getByText(/Strict: supported/i)).toBeVisible();
+	expect((await providerState(page.request)).requests).toHaveLength(3);
+	expect(JSON.stringify(await (await page.request.get('/api/backend/ai/providers')).json())).not.toContain('synthetic-provider-secret');
+	expect(await page.evaluate(() => JSON.stringify({...localStorage, ...sessionStorage}))).not.toContain('synthetic-provider-secret');
 });

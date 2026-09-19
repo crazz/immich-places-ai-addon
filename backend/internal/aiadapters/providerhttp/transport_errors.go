@@ -22,14 +22,18 @@ func upstreamFailure(requestID string, status int, body []byte) error {
 func allowlistedProviderCode(body []byte) string {
 	var envelope struct {
 		Error struct {
-			Code string `json:"code"`
+			Code  string `json:"code"`
+			Param string `json:"param"`
 		} `json:"error"`
 	}
 	if json.Unmarshal(body, &envelope) != nil {
 		return ""
 	}
+	if envelope.Error.Code == "unsupported_value" && envelope.Error.Param == "response_format" {
+		return "unsupported_response_format"
+	}
 	switch envelope.Error.Code {
-	case "invalid_api_key", "rate_limit_exceeded", "insufficient_quota", "context_length_exceeded":
+	case "invalid_api_key", "rate_limit_exceeded", "insufficient_quota", "context_length_exceeded", "model_not_found", "unsupported_response_format":
 		return envelope.Error.Code
 	default:
 		return ""

@@ -7,7 +7,15 @@ import (
 	"strings"
 
 	"immich-places-backend/internal/ai/providers"
+	"immich-places-backend/internal/aiadapters/providerhttp"
 )
+
+// newAIProviderCapabilityTransport bounds capability probe responses more tightly than the
+// general provider transport default.
+func newAIProviderCapabilityTransport(opts providerhttp.Options) *providerhttp.Client {
+	opts.MaxResponseBytes = providerhttp.MaxCapabilityResponseBytes
+	return providerhttp.New(opts)
+}
 
 func newAIProviderDispatcher(db *Database, enabled bool, policy providers.EgressPolicy, transport providers.Transport) *providers.Dispatcher {
 	return &providers.Dispatcher{

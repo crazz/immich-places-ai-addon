@@ -3,15 +3,17 @@ package main
 import (
 	"context"
 
+	"immich-places-backend/internal/ai/capabilities"
 	"immich-places-backend/internal/ai/providers"
 )
 
 type aiProviderProfile struct {
 	providers.Config
-	ID        string `json:"id"`
-	Revision  int    `json:"revision"`
-	Enabled   bool   `json:"enabled"`
-	HasSecret bool   `json:"hasSecret"`
+	ID               string               `json:"id"`
+	Revision         int                  `json:"revision"`
+	Enabled          bool                 `json:"enabled"`
+	HasSecret        bool                 `json:"hasSecret"`
+	CapabilityReport *capabilities.Report `json:"capabilityReport,omitempty"`
 }
 
 type aiProviderInputError struct{ message string }
@@ -48,7 +50,7 @@ func (d *Database) createAIProvider(ctx context.Context, userID, id string, inpu
 	return aiProviderProfile{Config: input.Config, ID: id, Revision: 1, Enabled: input.Enabled, HasSecret: ciphertext != nil}, nil
 }
 
-func (d *Database) listAIProviders(ctx context.Context, userID string) ([]aiProviderProfile, error) {
+func (d *Database) listAIProviders(ctx context.Context, userID string, apply capabilities.ApplicabilityContext) ([]aiProviderProfile, error) {
 	rows, err := d.db.QueryContext(ctx, `SELECT p.id, p.activeRevision, p.enabled, v.name, v.baseURL, v.model, v.secretCiphertext IS NOT NULL
 		FROM ai_provider_profiles p JOIN ai_provider_versions v ON v.userID = p.userID AND v.profileID = p.id AND v.revision = p.activeRevision
 		WHERE p.userID = ? ORDER BY v.name, p.id`, userID)
@@ -62,6 +64,17 @@ func (d *Database) listAIProviders(ctx context.Context, userID string) ([]aiProv
 		if err := rows.Scan(&profile.ID, &profile.Revision, &profile.Enabled, &profile.Name, &profile.BaseURL, &profile.Model, &profile.HasSecret); err != nil {
 			return nil, err
 		}
+		report, err := d.loadAIProviderCapability(ctx, userID, profile.ID, profile.Revision, capabilities.ApplicabilityContext{
+			AIEnabled:                apply.AIEnabled,
+			ProfileEnabled:           profile.Enabled,
+			ActiveRevision:           profile.Revision,
+			CurrentProtocolVersion:   capabilities.ProtocolVersion,
+			CurrentPolicyFingerprint: apply.CurrentPolicyFingerprint,
+		})
+		if err != nil {
+			return nil, err
+		}
+		profile.CapabilityReport = report
 		profiles = append(profiles, profile)
 	}
 	return profiles, rows.Err()

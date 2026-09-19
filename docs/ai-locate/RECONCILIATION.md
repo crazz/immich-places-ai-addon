@@ -123,7 +123,7 @@ Structural fixture success does not establish live strict-schema support, model 
 |---|---|
 | GATE-01 — Repository reconciliation | **Complete for `5e70c61`.** Source paths, interfaces, migration sequence, selection/save behavior, and test inventory reconciled. Reopen for a different implementation checkout |
 | GATE-02 — Immich compatibility | **Open.** Record the deployed version and verify methods, readback, rights, metadata support, and library/sidecar behavior with authorized disposable fixtures |
-| GATE-03 — Provider capability | **Open.** Choose the first endpoint/model and test image support, transport/schema subset, failure modes, usage and bounded retries |
+| GATE-03 — Provider capability | **Open.** CH03 delivers the explicit synthetic test and Settings evidence path; fixture/CI success is not a live NAS pass. Choose/test the first endpoint/model (candidate `gpt-5.6-sol` via existing `codex-proxy`) with an authorized live procedure before closing this gate |
 | GATE-04 — Operational decisions | **Open.** Resolve retention, allowlists, reference hardware and quality fixture; proposed numeric defaults remain unbenchmarked |
 | Release verification | **Open.** Application, migration, recovery, UI, compatibility, and quality scenarios remain future implementation/release work |
 

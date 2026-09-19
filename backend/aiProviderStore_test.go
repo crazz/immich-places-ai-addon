@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"immich-places-backend/internal/ai/capabilities"
 	"immich-places-backend/internal/ai/providers"
 )
 
@@ -104,7 +105,7 @@ func TestAIProviderCreateListAndReopen(t *testing.T) {
 	}
 	defer reopened.close()
 	for _, user := range []string{testUserID, "other"} {
-		profiles, err := reopened.listAIProviders(ctx, user)
+		profiles, err := reopened.listAIProviders(ctx, user, capabilities.ApplicabilityContext{})
 		if err != nil {
 			t.Fatal(err)
 		}

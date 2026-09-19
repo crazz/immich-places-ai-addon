@@ -12,9 +12,23 @@ const TILE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQV
 type TAccount = {email: string; key: string};
 type TWrite = {ids: string[]; latitude: number; longitude: number};
 type TFixtureState = {writes: TWrite[]; errors: string[]};
+type TProviderRequest = {
+	path: string;
+	authorization: string;
+	model: string;
+	hasImage: boolean;
+	stream: boolean;
+};
+type TProviderState = {requests: TProviderRequest[]; errors: string[]};
 
 export async function fixtureState(request: APIRequestContext, key: string): Promise<TFixtureState> {
 	const response = await request.get(`http://127.0.0.1:8090/__state/${key}`);
+	expect(response.ok()).toBe(true);
+	return response.json();
+}
+
+export async function providerState(request: APIRequestContext): Promise<TProviderState> {
+	const response = await request.get('http://127.0.0.1:8090/__provider_state');
 	expect(response.ok()).toBe(true);
 	return response.json();
 }

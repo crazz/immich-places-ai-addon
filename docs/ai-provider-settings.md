@@ -1,6 +1,6 @@
 # Private AI provider settings
 
-Provider settings store each user's private configuration. Saving a profile never contacts a provider, sends a photo or changes Immich. An installation destination allowlist gates internal provider dispatch; connection/capability tests and analysis arrive in later changes. A saved profile remains unverified until those callers exist. This change exposes no public provider-dispatch HTTP route.
+Provider settings store each user's private configuration. Saving a profile never contacts a provider, sends a photo or changes Immich. An installation destination allowlist gates internal provider dispatch. Owners can run an explicit Settings capability test that uses only bundled synthetic images; that test records observed image/JSON/strict compatibility for the saved revision and does not authorize private photographs or claim geolocation quality.
 
 ## Enable the settings
 
@@ -35,7 +35,31 @@ Before enabling dispatch:
 AI_PROVIDER_EGRESS_POLICY=[{"baseURL":"http://codex-proxy:3466/v1","addressClass":"local","allowedCIDRs":["192.168.144.0/20"]}]
 ```
 
-Do not commit a broad private-network allowance or auto-populate approval from a user profile. After changing the policy, restart the backend so new connections load the updated allowlist. Live NAS model compatibility remains an operator verification step outside ordinary regression gates.
+Do not commit a broad private-network allowance or auto-populate approval from a user profile. After changing the policy, restart the backend so new connections load the updated allowlist.
+
+The proxy's own default model remains an independent operator setting (historically `gpt-5.6-luna` on the inspected image). Enter the addon profile model manually. The first intended stronger-model candidate is `gpt-5.6-sol`; public documentation is not proof that this NAS account/runtime can reach it. Sol availability through this proxy is **unverified** until an authorized live test records actual observations. Do not change the proxy global default, upgrade its container or silently fall back to another model when Sol is unavailable — create a new profile revision with a chosen model instead.
+
+## Explicit synthetic capability test
+
+Saved enabled profiles expose a labeled **Test provider** action separate from saving. Unsaved edits are not testable; save first. The UI discloses the destination/model, that only bundled synthetic images are sent, that up to three Chat Completions requests may consume provider usage, that the local proxy can forward this synthetic input to its upstream model service, and that cancelling only stops local waiting and cannot reverse upstream usage.
+
+The backend shares one roughly 120-second provider-work deadline across the three probes; the Settings client uses a 130-second complete-operation deadline with cancel/close abort. Each probe uses a 64 KiB response ceiling, tighter than the general provider transport default. Concurrent starts are rejected (busy). Reload reads the last persisted report and never resubmits the POST. Observations are revision-bound and become non-applicable after profile, protocol or destination-policy changes; they are not a TTL guarantee.
+
+An unapproved destination, missing session, foreign or disabled profile, stale revision or busy slot fails as a structured error before a test is accepted. Once a test is accepted and its outcome is persisted, the request succeeds and returns that report, including failed lifecycles and unsuccessful observations: HTTP success describes the test operation, not provider compatibility.
+
+A successful fixture or live result is observed synthetic compatibility only. It is not permission to send private photographs and not a geolocation quality score. GATE-03 remains open until an authorized live procedure supplies recorded evidence for the chosen endpoint/model.
+
+### Opt-in live evidence (not ordinary CI)
+
+Ordinary regression and smoke suites use a deterministic local provider fixture and never call NAS, OpenAI or the real Immich library. When an operator separately authorizes a live check against the installed `codex-proxy`:
+
+1. Approve the exact proxy base URL and network CIDR as above.
+2. Save an enabled profile with the manually entered candidate model (for example `gpt-5.6-sol`) and a usable key.
+3. Run **Test provider** once from Settings.
+4. Record proxy/runtime image, endpoint, requested and any reported model, protocol/revision, timestamp and the three observation states. Label usage unknown when the provider omits usage fields.
+5. If Sol is unavailable, report that fact and choose another model in a new revision; do not modify the proxy default.
+
+Fixture success in CI does not close GATE-03 for the NAS.
 
 ## Editing and credentials
 
@@ -47,7 +71,7 @@ Every save creates a revision. A stale edit fails with a conflict; reload the pr
 - Choose **Remove all stored keys for this profile** and save to clear credential material from every revision of that profile. Non-secret history remains.
 - Disabling a profile retains its encrypted keys. It does not remove them.
 
-Credentials use the existing backend `ENCRYPTION_KEY`. Preserve that key together with a consistent database backup; replacing it without migrating encrypted data prevents reuse of stored keys. Responses disclose only `hasSecret`, never the plaintext or ciphertext. Cancel/close discards an entered key without saving it. The application does not persist provider settings or keys in browser storage.
+Credentials use the existing backend `ENCRYPTION_KEY`. Preserve that key together with a consistent database backup; replacing it without migrating encrypted data prevents reuse of stored keys. Responses disclose only `hasSecret`, never the plaintext or ciphertext. Cancel/close discards an entered key without saving it. The application does not persist provider settings or keys in browser storage. Capability reports never include secrets or raw provider responses.
 
 ## Stopping dispatch and rollback
 
@@ -56,15 +80,15 @@ To stop subsequent provider dispatch without removing saved profiles:
 1. Set `AI_ENABLED=false`, or set `AI_PROVIDER_EGRESS_POLICY=[]`, then restart the backend.
 2. In-flight admitted requests cannot be recalled; the restart closes old connections and prevents new dispatches.
 
-Take a consistent database backup before upgrading. Binary rollback retains existing profile/version rows from migration 018 and requires no down migration:
+Take a consistent database backup before upgrading. Migrations 018 (profiles) and 019 (capability checks) are additive. Normal binary rollback retains the upgraded SQLite database and safe capability observations; do not run a destructive down migration:
 
 1. Stop the current backend.
 2. Keep the upgraded SQLite database and `ENCRYPTION_KEY`.
 3. Run the previous backend executable with AI disabled (or with an empty egress policy).
-4. Do not run migration 018's destructive down migration as routine rollback.
+4. Do not run migration 018/019 destructive down migrations as routine rollback.
 
 Key removal and account deletion affect the active database. They do not rewrite backups or promise forensic erasure of old SQLite pages/WAL files. Protect backups, database files and the encryption key with the installation's existing access controls and retention policy. No Immich AI write needs reconciliation for configuration or egress-policy rollback.
 
 ## Migration and cleanup
 
-Migration 018 adds user-scoped profile/version tables to the existing SQLite database. Fresh installation, upgrade from version 17, reopen, concurrent revision conflicts and transaction rollback are tested with real SQLite. Account deletion cascades through its provider profiles and versions; this change does not add an account-deletion UI or endpoint.
+Migration 018 adds user-scoped profile/version tables. Migration 019 adds `ai_provider_capability_checks` keyed by owner, profile and revision. Fresh installation, upgrade, reopen, concurrent revision conflicts and transaction rollback are tested with real SQLite. Account deletion cascades through provider profiles, versions and capability rows; this change does not add an account-deletion UI or endpoint.

@@ -21,7 +21,7 @@ func aiTestHandler(t *testing.T, enabled bool) (*Database, http.Handler) {
 	if err := db.createSession(context.Background(), hex.EncodeToString(hash[:]), testUserID, time.Now().Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	return db, newAIProviderHandler(db, &Config{AIEnabled: enabled, AIPublicOrigin: aiTestOrigin})
+	return db, newAIProviderHandler(db, &Config{AIEnabled: enabled, AIPublicOrigin: aiTestOrigin}, nil)
 }
 
 func aiRequest(handler http.Handler, method, path, body, origin string, authenticated bool) *httptest.ResponseRecorder {

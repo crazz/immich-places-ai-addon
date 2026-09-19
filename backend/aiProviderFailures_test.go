@@ -5,6 +5,8 @@ import (
 	"errors"
 	"sync"
 	"testing"
+
+	"immich-places-backend/internal/ai/capabilities"
 )
 
 func TestAIProviderFailedEditsPreserveRevision(t *testing.T) {
@@ -37,7 +39,7 @@ func TestAIProviderFailedEditsPreserveRevision(t *testing.T) {
 			if _, err := db.updateAIProvider(ctx, testUserID, "profile", revision, input); err == nil {
 				t.Fatal("invalid edit succeeded")
 			}
-			profiles, err := db.listAIProviders(ctx, testUserID)
+			profiles, err := db.listAIProviders(ctx, testUserID, capabilities.ApplicabilityContext{})
 			if err != nil || len(profiles) != 1 || profiles[0].Revision != 1 {
 				t.Fatalf("failed edit changed current revision: %+v, error = %v", profiles, err)
 			}

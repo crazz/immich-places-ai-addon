@@ -4,6 +4,7 @@ const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
 const users = new Map();
 const errors = [];
 const blockedGeocoding = [];
+const providerRequests = [];
 
 function catalog() {
 	return [
@@ -11,11 +12,11 @@ function catalog() {
 		['22222222-2222-4222-8222-222222222222', '2026-08-03T12:00:00Z']
 	].map(([id, date]) => ({
 		id,
-type: 'IMAGE',
-originalFileName: `${id}.png`,
-originalPath: `/synthetic/${id}.png`,
+		type: 'IMAGE',
+		originalFileName: `${id}.png`,
+		originalPath: `/synthetic/${id}.png`,
 		fileCreatedAt: date,
-libraryId: null,
+		libraryId: null,
 		exifInfo: {latitude: null, longitude: null, city: null, state: null, country: null, dateTimeOriginal: date}
 	}));
 }
@@ -23,6 +24,52 @@ libraryId: null,
 function respond(response, status, body) {
 	response.writeHead(status, {'Content-Type': 'application/json'});
 	response.end(JSON.stringify(body));
+}
+
+function recordProviderError(message) {
+	errors.push(message);
+	throw new Error(message);
+}
+
+async function handleProvider(request, response, url, raw) {
+	if (request.method !== 'POST' || url.pathname !== '/v1/chat/completions') {
+		recordProviderError(`Unexpected provider route: ${request.method} ${url.pathname}`);
+	}
+	let payload;
+	try {
+		payload = raw ? JSON.parse(raw) : {};
+	} catch {
+		recordProviderError('Provider body was not JSON');
+	}
+	const messages = Array.isArray(payload.messages) ? payload.messages : [];
+	const content = messages.flatMap(message => Array.isArray(message.content) ? message.content : []);
+	const hasImage = content.some(part => part?.type === 'image_url' && typeof part.image_url?.url === 'string' && part.image_url.url.startsWith('data:image/'));
+	if (!hasImage) {
+		recordProviderError('Synthetic provider request missing image_url data URL');
+	}
+	if (payload.stream !== false) {
+		recordProviderError('Synthetic provider request must set stream:false');
+	}
+	if (typeof payload.model !== 'string' || payload.model.length === 0) {
+		recordProviderError('Synthetic provider request missing model');
+	}
+	providerRequests.push({
+		path: url.pathname,
+		authorization: request.headers.authorization ?? '',
+		model: payload.model,
+		hasImage: true,
+		stream: payload.stream
+	});
+	const bodyText = raw;
+	let assistant = 'color: blue\nshape: circle';
+	if (bodyText.includes('"json_object"') || bodyText.includes('"json_schema"')) {
+		assistant = '{"color":"blue","shape":"circle"}';
+	}
+	return respond(response, 200, {
+		id: 'cmpl-smoke',
+		model: payload.model,
+		choices: [{message: {role: 'assistant', content: assistant}, finish_reason: 'stop'}]
+	});
 }
 
 async function handle(request, response) {
@@ -33,9 +80,22 @@ async function handle(request, response) {
 	if (request.method === 'GET' && url.pathname === '/health') {
 		return respond(response, 200, {ready: true});
 	}
+	if (request.method === 'GET' && url.pathname === '/__provider_state') {
+		return respond(response, 200, {requests: providerRequests, errors});
+	}
 	if (request.method === 'GET' && url.pathname.startsWith('/__state/')) {
 		const state = users.get(url.pathname.slice('/__state/'.length));
 		return respond(response, 200, {writes: state?.writes ?? [], errors, blockedGeocoding});
+	}
+	if (url.pathname.startsWith('/v1/')) {
+		let raw = '';
+		for await (const chunk of request) {
+			raw += chunk;
+			if (raw.length > 300_000) {
+				throw new Error('Oversized provider fixture request');
+			}
+		}
+		return handleProvider(request, response, url, raw);
 	}
 	const key = request.headers['x-api-key'];
 	if (typeof key !== 'string' || !key.startsWith('smoke-')) {

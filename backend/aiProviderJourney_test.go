@@ -59,7 +59,7 @@ func TestAIProviderHTTPJourneyMakesNoExternalCalls(t *testing.T) {
 	if err := json.Unmarshal(listed.Body.Bytes(), &list); err != nil || listed.Code != 200 || !list.Enabled || len(list.Items) != 1 || list.Items[0].Enabled || list.Items[0].Revision != 2 {
 		t.Fatalf("list = %s, error = %v", listed.Body.String(), err)
 	}
-	disabledHandler := newAIProviderHandler(db, &Config{})
+	disabledHandler := newAIProviderHandler(db, &Config{}, nil)
 	disabled := aiRequest(disabledHandler, "GET", "/ai/providers", "", "", true)
 	if err := json.Unmarshal(disabled.Body.Bytes(), &list); err != nil || list.Enabled || len(list.Items) != 0 {
 		t.Fatalf("disabled list exposed stored profiles: %s", disabled.Body.String())
