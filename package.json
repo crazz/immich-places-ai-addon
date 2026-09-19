@@ -6,7 +6,16 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"test:unit": "vitest run",
+		"test:unit:coverage": "vitest run --coverage",
+		"test:smoke": "node scripts/checks/verify.mjs --gate smoke",
+		"check": "node scripts/checks/verify.mjs",
+		"check:tools": "node scripts/checks/verify.mjs --gate checker-tests",
+		"check:size": "node scripts/checks/size.mjs",
+		"check:dependencies": "node scripts/checks/dependencies.mjs",
+		"check:format": "node scripts/checks/format-go.mjs",
+		"check:types": "node scripts/checks/verify.mjs --gate types"
 	},
 	"dependencies": {
 		"@radix-ui/react-context-menu": "^2.2.16",
@@ -30,14 +39,21 @@
 	},
 	"devDependencies": {
 		"@next/eslint-plugin-next": "16.1.6",
+		"@playwright/test": "1.63.0",
 		"@tailwindcss/postcss": "^4.2.1",
+		"@testing-library/dom": "10.4.2",
+		"@testing-library/jest-dom": "7.0.1",
+		"@testing-library/react": "16.3.3",
+		"@testing-library/user-event": "14.6.7",
 		"@types/leaflet": "^1.9.21",
 		"@types/leaflet.markercluster": "^1.5.6",
-		"@types/node": "^20",
+		"@types/node": "22.20.3",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
 		"@typescript-eslint/eslint-plugin": "^8.41.0",
 		"@typescript-eslint/parser": "^8.41.0",
+		"@vitejs/plugin-react": "6.1.1",
+		"@vitest/coverage-v8": "5.0.1",
 		"eslint": "^9.22.0",
 		"eslint-config-next": "16.1.6",
 		"eslint-config-prettier": "^10.1.8",
@@ -47,7 +63,10 @@
 		"eslint-plugin-react-hooks": "^5.2.0",
 		"eslint-plugin-tsdoc": "^0.5.0",
 		"eslint-plugin-unused-imports": "^4.2.0",
+		"jsdom": "30.1.0",
 		"tailwindcss": "^4.2.1",
-		"typescript": "^5"
+		"typescript": "^5",
+		"vite": "8.3.0",
+		"vitest": "5.0.1"
 	}
 }

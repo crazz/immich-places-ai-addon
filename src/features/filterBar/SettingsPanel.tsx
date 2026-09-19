@@ -1,5 +1,6 @@
 'use client';
 
+import {ProviderSettings} from '@/features/ai';
 import {optionButtonClass} from '@/features/filterBar/constant';
 import {HiddenFilterGroup} from '@/features/filterBar/HiddenFilterGroup';
 import {NumericOptionGroup} from '@/features/filterBar/NumericOptionGroup';
@@ -53,6 +54,7 @@ export function SettingsPanel({
 }: TSettingsPanelProps): ReactElement {
 	return (
 		<div className={'flex flex-col gap-1.5 px-3 pb-2.5'}>
+			<ProviderSettings />
 			<div className={'flex gap-1.5'}>
 				<NumericOptionGroup
 					label={'Per Page'}

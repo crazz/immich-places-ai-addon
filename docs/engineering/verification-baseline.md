@@ -1,0 +1,98 @@
+# Verification baseline
+
+Recorded 18 September 2026 before enforcement implementation.
+
+## Checkout and tools
+
+- Planning checkpoint: `4fbb57d172f2c720f984e0f894852fda72417224`, branch `codex/engineering-foundation`.
+- Application source is unchanged from `5e70c6165777949c9d8b50ede3b2768bcaa5df87` at this checkpoint.
+- Native macOS arm64 verification: Go 1.25.14, Node.js 22.23.2 and Bun 1.4.2. Temporary toolchain archives were verified against publisher checksums/package integrity.
+- Dependencies installed with the committed Bun lockfile frozen; neither dependency manifest nor lockfile changed.
+
+## Actual results
+
+| Check | Result |
+|---|---|
+| Backend `go test -race ./...` | Passed; package test execution reported 77.236 seconds, excluding initial dependency download/compilation |
+| Backend `go vet ./...` | Passed |
+| Backend `go build` | Passed; output written outside the repository |
+| Frontend ESLint | Failed: five errors, three warnings |
+| TypeScript `tsc --noEmit` | Passed |
+| Frontend production build | Passed with inherited deprecation warnings |
+| Go formatting | Five files differ from gofmt output |
+| Frontend unit/browser suites | Not available at this baseline |
+
+ESLint errors: an unused `useSelection` import in `useMapViewModel.ts` (three rule reports), an unnecessary nullable-boolean comparison in `PhotoCardMenu.tsx`, and the boolean name `coordinatesChanged` in `selectionStateHelpers.ts`.
+
+Formatting differences: `backend/gpxService.go`, `backend/handlersGPX.go`, `backend/handlersGPX_test.go`, `backend/handlersLibraries_test.go`, and `backend/syncService_test.go`.
+
+Inherited warnings: unused hook-lint suppression in `useDawarich.ts`, image optimization guidance in `HeaderTitle.tsx`, and a hook dependency warning in `useOverviewLayerReconcile.ts`. The production build also reports the Next.js middleware convention and Node.js module registration deprecations. These are recorded findings, not waived future failures or a claim of warning-free output.
+
+## Follow-up and evidence boundary
+
+The first enforcement change owns the focused lint-error and formatting corrections needed for a green initial gate. Feature implementation and broad refactoring have not started at this baseline. The engineering standards remain the source of truth for required future checks.
+
+Raw local logs for this run are under `/tmp/immich-ai-validation-20260918/`; they are temporary execution evidence, not repository fixtures. No live Immich/provider compatibility, browser journeys, container build, performance benchmark or AI quality evaluation was established by these checks.
+
+GitNexus refreshed to the planning checkpoint with 4,838 nodes and 12,177 edges. Its process extraction reported truncation; an absent graph flow is not proof that the path is absent. The pre-checkpoint change analysis reported documentation/tooling files and no affected application symbols.
+
+The checkpoint preserves imported Markdown hard breaks and original skill text; Git's generic whitespace check reported those trailing spaces. No source-code whitespace failure was concealed by that observation.
+
+## F01 enforcement follow-up — 18 September 2026
+
+The earlier sections remain the pre-enforcement record. The implemented F01 command is `bun run check --base 5e70c61`, using the same Node.js 22.23.2, Go 1.25.14 and Bun 1.4.2 toolchains. Frozen Bun installation completed without dependency changes. The full shared command passed all eleven gates after the bounded corrections below:
+
+| Gate | Actual follow-up result |
+|---|---|
+| Checker regression suite | 59 tests passed, no skipped/todo tests: 28 size, 20 dependency and 11 verification/formatting tests |
+| File-size ratchet | Passed for 290 handwritten files against the explicit adoption base |
+| Dependencies | Passed: 198 frontend files, 365 runtime edges and 50 backend Go files |
+| Go formatting | Passed for 51 Go files, including the parser helper |
+| ESLint | Passed with zero errors; the same three inherited warnings remain visible |
+| Route types and TypeScript | Next.js `typegen` and `tsc --noEmit` passed; also verified without pre-existing `.next` or `next-env.d.ts` |
+| Go vet | Passed |
+| Backend race suite | Passed; package execution reported 66.093 seconds |
+| Go and frontend builds | Passed; frontend middleware-convention deprecation remains visible |
+| CI configuration | Actionlint 1.7.12 passed; workflow base selection checked with explicit, empty/all-zero, invalid and unavailable-parent revisions |
+
+The first full enforcement run failed `TestDoIncrementalSyncFallsBackToFull` during temporary-directory cleanup. Source tracing showed asynchronous frequent-location enrichment could outlive five existing full/incremental sync test fixtures. Those tests now register a wait-group join before mock-server/database cleanup. They were extracted into `backend/syncServiceLifecycle_test.go` with every assertion retained; the original file's size ceiling decreased from 1580 to 1467 lines. The five exact cases then passed one fixed `-race -count=20` run (23.109 seconds), followed by the passing full command. Production sync behavior was unchanged; the failure was not hidden by retries, sleeps or disabled work.
+
+The original five frontend lint errors and five gofmt differences are corrected. The check workflow uses read-only repository permissions on pull requests/pushes, immutable action references and frozen dependency installation; no remote workflow execution or branch-protection configuration is claimed by this local verification. Generated build/index/coverage state and temporary test fixtures are excluded from source control.
+
+Execution evidence remains under `/tmp/immich-ai-validation-20260918/`: `verification-shared-gate-01.log` preserves the failure, `verification-lifecycle-green.log` records the bounded fixture verification, and `verification-shared-gate-02.log` records the passing shared command. The per-test RED/GREEN/refactor record is `verification-tdd.md`. A final test-fixture portability refactor isolates the missing-Go regression from the host's executable paths without changing its assertions; its focused tests and lint passed separately.
+
+The final integration review found inconsistent handling of repeated comparison-base options between focused and shared commands. All three now use one parser and reject repeated options. Two additional CLI regressions passed their individual RED/GREEN/refactor cycles, preserving all existing assertions. The final shared command exited 0 with all eleven gates passing: 61 checker tests (29 size, 21 dependency, 11 verification/formatting), 291 handwritten files and 199 frontend dependency inputs with 368 runtime edges. The unchanged backend race suite reused Go's valid cached result; the fresh 66.093-second run above remains its execution evidence. Final review has no outstanding findings. Evidence: `cli-alignment-tdd.md`, `cli-alignment-cli-matrix.log` and `f01-final-shared-gate.log` in the same temporary log directory.
+
+F02 frontend unit/component coverage and F03 deterministic browser/application journeys remain pending. AI implementation is absent and AI coverage is unmeasured. These results do not establish live Immich/provider compatibility, model quality, container-build compatibility or performance acceptance.
+
+## F02 frontend testing follow-up — 18 September 2026
+
+F02 installs Vitest/React Testing Library with seven known-behavior tests for pagination logic, pointer selection, keyboard activation and loading controls. Application code is unchanged. The user chose ordinary characterization against existing code, so these tests may pass immediately; no mutations or manufactured failures were used. New runner behavior followed test-first development: the existing required-gate test failed because the frontend gate was absent, then passed after adding it. A focused failure-propagation test covers the runner's existing error contract.
+
+The full shared command `bun run check --base fc3f9ae` passed all twelve gates on the pinned toolchains: 62 checker tests, seven frontend tests, the 296-file size check, 203 frontend dependency inputs/370 runtime edges/50 Go files, formatting, lint, route types/TypeScript, Go vet, the cached backend race result and both builds. The three inherited lint warnings and middleware deprecation remain visible. The first cumulative run found ESLint scanning generated coverage-report JavaScript; the exact generated `coverage/` output is now excluded under the existing coding-standard policy. The corrected full command exited 0.
+
+Coverage includes 171 frontend application files, including untested files. Initial legacy coverage is 0.60% lines and 0.68% branches; no legacy floor is imposed. Native thresholds enforce 80% lines and branches for future `src/features/ai/` code. Synthetic configuration preflight verified untested AI failure, covered AI success and absent AI scope; actual AI code is absent and unmeasured. Browser journeys, broad legacy UI coverage, backend AI coverage, live compatibility and model quality remain outside this evidence.
+
+Frozen Bun installation reported no changes. Application dependency declarations and existing resolved package versions are retained, except for the planned development-only Node type upgrade. Vite's native alias resolution avoids an extra plugin. GitNexus reported low impact for the runner and no indexed import cycles; unresolved configuration-constant references and truncated global flow extraction were checked against source, and do not establish absence of other paths. All implementation and final review were performed in this task following the user's no-subagent instruction.
+
+Local evidence is under `/tmp/immich-ai-validation-20260918/`: `f02-slice1-review.md`, `f02-runner-red.log`, `f02-runner-green.log`, `f02-runner-final.log`, `f02-final-shared-gate.log` (initial failure) and `f02-final-shared-gate-02.log` (all gates pass). Reports are generated under ignored `coverage/`. No remote CI execution or deployment is claimed.
+
+## F03 application smoke follow-up — 18 September 2026
+
+F03 installs Playwright 1.63.0 with three Chromium journeys against the built Next.js standalone server, compiled Go backend, real migrated temporary SQLite and synthetic local Immich/tiles. The journeys cover registration/key setup, synchronized browsing, session continuity/logout/login, manual preview/cancel/confirmation and malformed/valid GPX preview/confirmation. Both write journeys assert zero pre-confirmation mutations, exact unstacked asset IDs/coordinates and persisted application readback after reload with the unrelated photo unchanged. Existing application code remains unchanged; these are ordinary characterization tests.
+
+`bun run check --base 2c5cfa8` exited 0 with all thirteen gates passing: 66 checker tests, seven frontend tests, three browser journeys (6.7 seconds including startup), 306 handwritten files, 212 frontend dependency inputs/375 runtime edges/50 Go files, formatting, lint, types, Go vet, cached backend race tests and both production builds. The three inherited lint warnings and Next.js middleware deprecation remain visible. Frozen Bun installation reported no changes across 645 packages. The CI workflow passes actionlint; remote CI has not been run.
+
+The shared runner now builds both artifacts for a focused smoke run and blocks browser execution after either build failure. Those new orchestration behaviors and generated-output scope followed observed RED/GREEN checks. Browser failure propagation is also covered. Initial browser failures exposed test assumptions about the default album/GPS view, API GPS filtering and optional geocoding; fixtures now use the actual UI controls, explicitly read all assets and deny optional Nominatim calls locally. No public API was contacted. Passing and failing teardown left no smoke database directories.
+
+GitNexus reports low impact for shared-runner and source-scope changes, and a complete cycle check reports zero cycles. Its unresolved configuration/helper references were verified against source and tests. The harness is intentionally Chromium-only, uses unstacked synthetic assets and checks persistence after browser reload; it does not prove process-restart recovery, all legacy behavior, live Immich support, AI flag enforcement or AI quality. All planning, implementation, review and tests occurred inline following the user's instruction.
+
+Local evidence under `/tmp/immich-ai-validation-20260918/` includes `f03-auth-01.log` and `f03-placement-01.log` (initial test assumptions), their `-02` passing runs, `f03-runner-red-01.log` through `-03.log` and matching green logs, `f03-scope-red.log`, `f03-checker-focused.log`, `f03-full-check-01.log`, `f03-browser-final.log`, `f03-final-review.md` and `f03-graph-cycles.json`. Playwright produces ignored `test-results/` traces/screenshots/synthetic state and `playwright-report/` HTML. No container build, deployment, live service or model-quality pass is claimed.
+
+## First product batch — CH04 and CH01
+
+CH04 was completed at `b7c470f`: catalog filtering/counting follows recorded source calendar dates, with invalid/reversed range handling and regression evidence in its [archived verification](../../openspec/changes/archive/2026-09-18-align-source-local-capture-dates/verification.md). All thirteen shared gates passed for that change.
+
+CH01 adds default-off private provider settings, revisioned SQLite persistence and encrypted credential lifecycle. Its [archived verification](../../openspec/changes/archive/2026-09-19-add-private-ai-provider-profiles/verification.md) maps every scenario to tests and records the inline reviews and limitations. All thirteen gates have passing evidence across the full run and focused corrections: 69 checker tests, complete backend race tests, 12 frontend tests, both production builds, three AI-disabled legacy journeys and one AI-enabled provider journey. Backend AI coverage is 91.56% of statements (141/154); frontend AI coverage is 100% lines (86/86) and 96.43% branches (81/84). These figures measure AI scope, not the whole application.
+
+The first CH01 full run found an outdated checker assumption about the smoke command and a missing local Chromium path. Both were corrected and the affected gates passed again; successful backend tests were retained. A final same-ID cross-owner cleanup test passed separately with the race detector. The backend Docker image and synthetic Compose configuration also passed. OpenSpec validation, the size ratchet, source dependency rules and a complete GitNexus cycle check pass. Cross-language route/shape graph extraction is unavailable for this Go/proxy path and global execution-flow extraction is incomplete; source review, HTTP contract tests and the real browser path provide the missing evidence. Existing warnings remain visible. No remote CI, published image, live provider call, private-photo processing or deployment is claimed.

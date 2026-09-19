@@ -65,7 +65,7 @@ func coordsMatch(current *float64, target float64) bool {
 }
 
 type gpxFile struct {
-	XMLName xml.Name `xml:"gpx"`
+	XMLName xml.Name   `xml:"gpx"`
 	Tracks  []gpxTrack `xml:"trk"`
 }
 

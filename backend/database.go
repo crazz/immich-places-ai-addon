@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -44,8 +45,12 @@ func newDatabase(dataDir string, encryptionKey string) (*Database, error) {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 
-	dbPath := filepath.Join(dataDir, "immich-places.db")
-	db, err := sql.Open("sqlite", dbPath)
+	dbPath, err := filepath.Abs(filepath.Join(dataDir, "immich-places.db"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve database path: %w", err)
+	}
+	dsn := url.URL{Scheme: "file", Path: dbPath, RawQuery: "_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"}
+	db, err := sql.Open("sqlite", dsn.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -53,13 +58,6 @@ func newDatabase(dataDir string, encryptionKey string) (*Database, error) {
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		return nil, fmt.Errorf("failed to set WAL mode: %w", err)
 	}
-	if _, err := db.Exec("PRAGMA foreign_keys=ON"); err != nil {
-		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
-	}
-	if _, err := db.Exec("PRAGMA busy_timeout=5000"); err != nil {
-		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
-	}
-
 	if err := runMigrations(db); err != nil {
 		return nil, fmt.Errorf("migrations: %w", err)
 	}
@@ -183,14 +181,6 @@ func buildAssetFilter(userID, albumID, tagID, gpsFilter, hiddenFilter, startDate
 		default:
 			f.fromClause += ` AND a.isHidden = 0`
 		}
-		if startDate != "" {
-			f.fromClause += ` AND a.dateTimeOriginal >= ?`
-			f.args = append(f.args, startDate)
-		}
-		if endDate != "" {
-			f.fromClause += ` AND a.dateTimeOriginal < ?`
-			f.args = append(f.args, endDate+"T99")
-		}
 	} else {
 		f.fromClause = `FROM assets WHERE userID = ?`
 		f.args = append(f.args, userID)
@@ -212,15 +202,14 @@ func buildAssetFilter(userID, albumID, tagID, gpsFilter, hiddenFilter, startDate
 		default:
 			f.fromClause += ` AND isHidden = 0`
 		}
-		if startDate != "" {
-			f.fromClause += ` AND dateTimeOriginal >= ?`
-			f.args = append(f.args, startDate)
-		}
-		if endDate != "" {
-			f.fromClause += ` AND dateTimeOriginal < ?`
-			f.args = append(f.args, endDate+"T99")
-		}
 	}
+	dateColumn := "dateTimeOriginal"
+	if f.aliased {
+		dateColumn = "a.dateTimeOriginal"
+	}
+	dateClause, dateArgs := captureRangeSQL(dateColumn, startDate, endDate)
+	f.fromClause += dateClause
+	f.args = append(f.args, dateArgs...)
 	return f
 }
 
@@ -264,7 +253,7 @@ func (d *Database) countAssetsByDay(ctx context.Context, userID, albumID, tagID,
 		dateCol = "a.dateTimeOriginal"
 	}
 
-	query := fmt.Sprintf(`SELECT DATE(%s) as day, COUNT(*) as cnt %s AND %s IS NOT NULL GROUP BY day`, dateCol, f.fromClause, dateCol)
+	query := fmt.Sprintf(`SELECT %s as day, COUNT(*) as cnt %s AND %s IS NOT NULL GROUP BY day`, captureDaySQL(dateCol), f.fromClause, captureDaySQL(dateCol))
 
 	rows, err := d.db.QueryContext(ctx, query, f.args...)
 	if err != nil {
@@ -322,14 +311,9 @@ func buildMarkerFilter(userID, albumID, tagID, startDate, endDate string, bounds
 		f.args = append(f.args, userID)
 	}
 
-	if startDate != "" {
-		f.fromClause += fmt.Sprintf(` AND %sdateTimeOriginal >= ?`, f.prefix)
-		f.args = append(f.args, startDate)
-	}
-	if endDate != "" {
-		f.fromClause += fmt.Sprintf(` AND %sdateTimeOriginal < ?`, f.prefix)
-		f.args = append(f.args, endDate+"T99")
-	}
+	dateClause, dateArgs := captureRangeSQL(f.prefix+"dateTimeOriginal", startDate, endDate)
+	f.fromClause += dateClause
+	f.args = append(f.args, dateArgs...)
 
 	if bounds != nil {
 		f.fromClause += fmt.Sprintf(` AND %slatitude BETWEEN ? AND ?`, f.prefix)

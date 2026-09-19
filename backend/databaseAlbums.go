@@ -101,16 +101,7 @@ func albumGPSPredicate(gpsFilter string) string {
 // filter. Unlike getAlbumsWithGPSCount it keeps albums whose count is zero, which is
 // what the "missing location" and "all" views need.
 func (d *Database) getAlbumsByGPSFilter(ctx context.Context, userID, gpsFilter, startDate, endDate string) ([]AlbumRow, error) {
-	dateFilter := ""
-	var dateArgs []interface{}
-	if startDate != "" {
-		dateFilter += ` AND ast.dateTimeOriginal >= ?`
-		dateArgs = append(dateArgs, startDate)
-	}
-	if endDate != "" {
-		dateFilter += ` AND ast.dateTimeOriginal < ?`
-		dateArgs = append(dateArgs, endDate+"T99")
-	}
+	dateFilter, dateArgs := captureRangeSQL("ast.dateTimeOriginal", startDate, endDate)
 	var args []interface{}
 	args = append(args, dateArgs...)
 	args = append(args, dateArgs...)
@@ -148,16 +139,7 @@ func (d *Database) getAlbumsByGPSFilter(ctx context.Context, userID, gpsFilter, 
 }
 
 func (d *Database) getAlbumsWithGPSCount(ctx context.Context, userID, startDate, endDate string) ([]AlbumRow, error) {
-	dateFilter := ""
-	var dateArgs []interface{}
-	if startDate != "" {
-		dateFilter += ` AND ast.dateTimeOriginal >= ?`
-		dateArgs = append(dateArgs, startDate)
-	}
-	if endDate != "" {
-		dateFilter += ` AND ast.dateTimeOriginal < ?`
-		dateArgs = append(dateArgs, endDate+"T99")
-	}
+	dateFilter, dateArgs := captureRangeSQL("ast.dateTimeOriginal", startDate, endDate)
 	var args []interface{}
 	args = append(args, dateArgs...)
 	args = append(args, dateArgs...)

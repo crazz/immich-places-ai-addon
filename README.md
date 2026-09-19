@@ -41,6 +41,11 @@ The app has two parts:
 - Local SQLite database — no changes to Immich until you explicitly save
 - Confirmation bar to review and save/cancel pending coordinate changes
 
+**AI foundation**
+
+- Optional [private provider settings](docs/ai-provider-settings.md), disabled by default: encrypted credentials, revisioned edits and profile enable/disable.
+- Saving settings makes no provider request. Destination approval, capability testing and photo analysis remain planned.
+
 ## Prerequisites
 
 - An existing Immich instance already running (local or remote).
@@ -220,6 +225,8 @@ The key belongs to the **frontend** container, not the backend. Unlike `HERE_API
 - Backend logs: `docker compose logs -f backend`
 - If startup fails on `ENCRYPTION_KEY`, confirm `.env` is in the project root and contains the key.
 - If the map shows an "API KEY REQUIRED" watermark, set `CARTO_API_KEY` and recreate the frontend container — see [CARTO basemap](#carto-basemap).
+
+Contributor verification commands, pinned toolchains and remaining test infrastructure are documented in the [engineering testing guide](docs/engineering/testing.md#available-commands-and-remaining-setup).
 
 ## Security usage note
 

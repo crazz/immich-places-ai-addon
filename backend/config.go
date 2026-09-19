@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
+	"immich-places-backend/internal/ai/providers"
 )
 
 type Config struct {
@@ -28,6 +30,10 @@ type Config struct {
 	GeocodeTimeoutSecs     int    `env:"GEOCODE_TIMEOUT" envDefault:"10"`
 	NeighborWindowHours    int    `env:"SUGGESTIONS_NEIGHBOR_WINDOW_HOURS" envDefault:"6"`
 	Debug                  bool   `env:"DEBUG" envDefault:"false"`
+	AIEnabled              bool   `env:"AI_ENABLED" envDefault:"false"`
+	AIPublicOrigin         string `env:"AI_PUBLIC_ORIGIN"`
+	AIEgressPolicyJSON     string `env:"AI_PROVIDER_EGRESS_POLICY"`
+	AIProviderEgressPolicy providers.EgressPolicy
 
 	defaultTimezoneLocation *time.Location
 }
@@ -66,6 +72,17 @@ func loadConfig() (*Config, error) {
 			return nil, fmt.Errorf("invalid DEFAULT_TIMEZONE %q: %w", cfg.DefaultTimezone, err)
 		}
 		cfg.defaultTimezoneLocation = loc
+	}
+	if cfg.AIEnabled {
+		origin, err := url.Parse(cfg.AIPublicOrigin)
+		if err != nil || origin.Hostname() == "" || (origin.Scheme != "https" && origin.Scheme != "http") || origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.ForceQuery || origin.Fragment != "" {
+			return nil, fmt.Errorf("AI_PUBLIC_ORIGIN must be an HTTP(S) origin without credentials, path, query or fragment when AI_ENABLED=true")
+		}
+		policy, err := providers.ParseEgressPolicy(cfg.AIEgressPolicyJSON)
+		if err != nil {
+			return nil, fmt.Errorf("AI_PROVIDER_EGRESS_POLICY is invalid; fix the installation allowlist and restart")
+		}
+		cfg.AIProviderEgressPolicy = policy
 	}
 
 	return &cfg, nil
