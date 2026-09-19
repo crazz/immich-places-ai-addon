@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -34,6 +35,9 @@ type Config struct {
 	AIPublicOrigin         string `env:"AI_PUBLIC_ORIGIN"`
 	AIEgressPolicyJSON     string `env:"AI_PROVIDER_EGRESS_POLICY"`
 	AIProviderEgressPolicy providers.EgressPolicy
+	AISelectionMaxAssets   int    `env:"AI_SELECTION_MAX_ASSETS" envDefault:"500"`
+	AISelectionTTLSeconds  int    `env:"AI_SELECTION_TTL_SECONDS" envDefault:"900"`
+	AIInstanceEpoch        string `env:"AI_INSTANCE_EPOCH" envDefault:"1"`
 
 	defaultTimezoneLocation *time.Location
 }
@@ -72,6 +76,15 @@ func loadConfig() (*Config, error) {
 			return nil, fmt.Errorf("invalid DEFAULT_TIMEZONE %q: %w", cfg.DefaultTimezone, err)
 		}
 		cfg.defaultTimezoneLocation = loc
+	}
+	if cfg.AISelectionMaxAssets < 1 || cfg.AISelectionMaxAssets > 5000 {
+		return nil, fmt.Errorf("AI_SELECTION_MAX_ASSETS must be between 1 and 5000")
+	}
+	if cfg.AISelectionTTLSeconds < 60 || cfg.AISelectionTTLSeconds > 3600 {
+		return nil, fmt.Errorf("AI_SELECTION_TTL_SECONDS must be between 60 and 3600")
+	}
+	if strings.TrimSpace(cfg.AIInstanceEpoch) == "" || len(cfg.AIInstanceEpoch) > 128 {
+		return nil, fmt.Errorf("AI_INSTANCE_EPOCH must contain 1–128 bytes")
 	}
 	if cfg.AIEnabled {
 		origin, err := url.Parse(cfg.AIPublicOrigin)

@@ -85,7 +85,7 @@ async function handle(request, response) {
 	}
 	if (request.method === 'GET' && url.pathname.startsWith('/__state/')) {
 		const state = users.get(url.pathname.slice('/__state/'.length));
-		return respond(response, 200, {writes: state?.writes ?? [], errors, blockedGeocoding});
+		return respond(response, 200, {writes: state?.writes ?? [], imageRequests: state?.imageRequests ?? 0, errors, blockedGeocoding});
 	}
 	if (url.pathname.startsWith('/v1/')) {
 		let raw = '';
@@ -102,7 +102,7 @@ async function handle(request, response) {
 		return respond(response, 401, {error: 'Synthetic key required'});
 	}
 	if (!users.has(key)) {
-		users.set(key, {assets: catalog(), writes: []});
+		users.set(key, {assets: catalog(), writes: [], imageRequests: 0});
 	}
 	const state = users.get(key);
 	if (request.method === 'GET') {
@@ -113,6 +113,7 @@ async function handle(request, response) {
 			return respond(response, 200, []);
 		}
 		if (state.assets.some(asset => url.pathname === `/api/assets/${asset.id}/thumbnail`)) {
+			state.imageRequests++;
 			response.writeHead(200, {'Content-Type': 'image/png'});
 			return response.end(image);
 		}

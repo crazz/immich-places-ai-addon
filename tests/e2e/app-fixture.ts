@@ -11,7 +11,7 @@ const TILE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQV
 
 type TAccount = {email: string; key: string};
 type TWrite = {ids: string[]; latitude: number; longitude: number};
-type TFixtureState = {writes: TWrite[]; errors: string[]};
+type TFixtureState = {writes: TWrite[]; errors: string[]; imageRequests: number};
 type TProviderRequest = {
 	path: string;
 	authorization: string;

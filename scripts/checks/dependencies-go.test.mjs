@@ -99,3 +99,19 @@ test('validates a present Go configuration without sources and reports unavailab
 		process.env.PATH = originalPath;
 	}
 });
+
+test('rejects direct and transitive selection access to writer packages', t => {
+	const root = createRepository(t);
+	write(root, 'backend/go.mod', 'module example.test/app\n\ngo 1.25\n');
+	write(root, 'backend/internal/ai/selection/selection.go', 'package selection\nimport _ "example.test/app/internal/ai/model"\n');
+	write(root, 'backend/internal/ai/model/model.go', 'package model\n');
+	assert.equal(check(root).status, 0);
+	write(root, 'backend/internal/ai/model/model.go', 'package model\nimport _ "example.test/app/internal/ai/writer"\n');
+	const transitive = check(root);
+	assert.equal(transitive.status, 1);
+	assert.match(transitive.stderr, /selection cannot reach writer/);
+	write(root, 'backend/internal/ai/selection/selection.go', 'package selection\nimport _ "example.test/app/internal/ai/writer"\n');
+	const direct = check(root);
+	assert.equal(direct.status, 1);
+	assert.match(direct.stderr, /selection cannot reach writer/);
+});

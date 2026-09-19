@@ -68,3 +68,31 @@ test('tests a saved provider through the real proxy and reloads persisted capabi
 	expect(JSON.stringify(await (await page.request.get('/api/backend/ai/providers')).json())).not.toContain('synthetic-provider-secret');
 	expect(await page.evaluate(() => JSON.stringify({...localStorage, ...sessionStorage}))).not.toContain('synthetic-provider-secret');
 });
+
+test('freezes an explicit selection through the protected proxy without external work', async ({page, account}) => {
+	await connectAccount(page, account);
+	const ids = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'];
+	const before = await fixtureState(page.request, account.key);
+	expect(before.imageRequests).toBeGreaterThan(0);
+	const providersBefore = await providerState(page.request);
+	const response = await page.request.post('/api/backend/ai/selection-preview', {
+		headers: {Origin: 'http://127.0.0.1:3080'},
+		data: {mode: 'explicit', assetIDs: [...ids, ids[0]], scope: {view: 'all'}}
+	});
+	expect(response.status()).toBe(200);
+	expect(response.headers()['cache-control']).toBe('no-store');
+	const selection = await response.json();
+	expect(selection).toMatchObject({assetIDs: ids, requestedCount: 3, uniqueCount: 2, duplicateCount: 1, eligibleCount: 2, excludedCount: 0});
+	expect(typeof selection.snapshotID).toBe('string');
+	const read = await page.request.get(`/api/backend/ai/selections/${selection.snapshotID}`);
+	expect(read.status()).toBe(200);
+	expect(await read.json()).toEqual(selection);
+	const rejected = await page.request.post('/api/backend/ai/selection-preview', {
+		headers: {Origin: 'https://wrong.example'},
+		data: {mode: 'explicit', assetIDs: ids, scope: {view: 'all'}}
+	});
+	expect(rejected.status()).toBe(403);
+	expect(await fixtureState(page.request, account.key)).toEqual(before);
+	expect(await providerState(page.request)).toEqual(providersBefore);
+	await expect(page.getByRole('button', {name: /Analyze selection/i})).toHaveCount(0);
+});

@@ -35,7 +35,8 @@ function writerViolations(imports, module) {
 	}
 	const violations = [];
 	for (const {file, imports: dependencies} of imports) {
-		if (!file.startsWith('backend/internal/ai/analysis/')) {
+		const readOnlyScope = /^backend\/internal\/ai\/(analysis|selection)\//.exec(file)?.[1];
+		if (!readOnlyScope) {
 			continue;
 		}
 		const queue = dependencies.map(dependency => [dependency]);
@@ -48,7 +49,7 @@ function writerViolations(imports, module) {
 			}
 			seen.add(dependency);
 			if (/(?:^|\/)(?:writeback|writers?|mutations?)(?:\/|$)/.test(dependency)) {
-				violations.push(`${file} -> ${route.join(' -> ')}: analysis cannot reach writer`);
+				violations.push(`${file} -> ${route.join(' -> ')}: ${readOnlyScope} cannot reach writer`);
 			}
 			for (const next of packages.get(dependency) ?? []) {
 				queue.push([...route, next]);

@@ -109,12 +109,18 @@ func main() {
 	mainMux.HandleFunc("GET /health", handlers.handleHealth)
 	mainMux.Handle("/auth/", authMux)
 	mainMux.Handle("/ai/", newAIProviderHandler(db, cfg, providerDispatcher))
+	selectionHandler := newAISelectionHandler(db, cfg)
+	mainMux.Handle("/ai/selection-preview", selectionHandler)
+	mainMux.Handle("/ai/selections/", selectionHandler)
 	mainMux.Handle("/", sessionMiddleware(db, protectedMux))
 
 	handler := requestHardeningMiddleware(mainMux)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
+	selectionCleanupTicker := time.NewTicker(time.Minute)
+	defer selectionCleanupTicker.Stop()
+	go selectionHandler.store.runCleanup(ctx, selectionCleanupTicker.C, func() { log.Printf("[AI selection] Expired snapshot cleanup failed; next pass will retry") })
 
 	syncService.shutdownCtx = ctx
 	dawarichSync.shutdownCtx = ctx
