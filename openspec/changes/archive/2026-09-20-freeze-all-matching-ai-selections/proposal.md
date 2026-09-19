@@ -24,4 +24,4 @@ None.
 
 Extends the selection domain and protected preview API introduced by CH05, together with its SQLite adapter. Reuses CH04 catalog date predicates and the current owner-qualified gallery scope; it introduces no new service, dependency, provider integration or public launch workflow.
 
-Prerequisite: [CH05](../archive/2026-09-20-freeze-explicit-ai-selections/proposal.md). Covers FR-01–02, NFR-01–05/NFR-07–08 as applicable to selection, and AC-01/AC-09 from the [PRD](../../../docs/ai-locate/PRD.md). Performance evidence here is a bounded resolver measurement; submission and end-to-end gallery latency acceptance remain with their roadmap owners. No departure from the adopted engineering standards is proposed.
+Prerequisite: [CH05](../2026-09-20-freeze-explicit-ai-selections/proposal.md). Covers FR-01–02, NFR-01–05/NFR-07–08 as applicable to selection, and AC-01/AC-09 from the [PRD](../../../../docs/ai-locate/PRD.md). Performance evidence here is a bounded resolver measurement; submission and end-to-end gallery latency acceptance remain with their roadmap owners. No departure from the adopted engineering standards is proposed.

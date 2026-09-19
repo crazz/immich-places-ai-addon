@@ -32,7 +32,8 @@ type Request struct {
 }
 
 func Normalize(input Input, maxAssets int) (Request, error) {
-	if input.Mode != "explicit" || len(input.AssetIDs) == 0 || input.Scope == nil {
+	if input.Scope == nil || (input.Mode != "explicit" && input.Mode != "all-matching") ||
+		(input.Mode == "explicit" && len(input.AssetIDs) == 0) || (input.Mode == "all-matching" && input.AssetIDs != nil) {
 		return Request{}, ErrInvalid
 	}
 	if len(input.AssetIDs) > 10000 {

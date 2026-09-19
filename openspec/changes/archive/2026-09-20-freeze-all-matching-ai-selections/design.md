@@ -1,6 +1,6 @@
 ## Context
 
-See [proposal.md](proposal.md) for motivation and prerequisites. CH05 is planned alongside this change; its [design](../archive/2026-09-20-freeze-explicit-ai-selections/design.md) owns the selection policy, protected routes, immutable storage, installation identity, expiry and quotas. Implement and sync CH05 before applying this delta. CH04 already provides the shared source-local date predicates.
+See [proposal.md](proposal.md) for motivation and prerequisites. CH05 is planned alongside this change; its [design](../2026-09-20-freeze-explicit-ai-selections/design.md) owns the selection policy, protected routes, immutable storage, installation identity, expiry and quotas. Implement and sync CH05 before applying this delta. CH04 already provides the shared source-local date predicates.
 
 Design grounding at `86b44ac`: GitNexus `context` traces `buildAssetFilter` to `getFilteredAssets`, `countFilteredAssets`, `countAssetsByDay` and `getFolderAssets`; folder queries additionally apply a recursive path range. Direct source verification confirms owner-qualified album/tag relations, hidden-library suppression, stack-primary filtering, GPS/visibility predicates and deterministic `fileCreatedAt DESC, immichID DESC` ordering. Existing paginated count/list operations do not provide the atomic freeze required here. The graph's unavailable process-resource detail and lower-bound interface edges were checked against these adapters and source; graph absence is not evidence of no consumers.
 

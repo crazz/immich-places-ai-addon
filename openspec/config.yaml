@@ -52,7 +52,7 @@ context: |
   CH01 installs backend AI coverage enforcement across core and integration/adapters in the race gate.
   CH01 provider settings, CH02 bounded provider transport, CH03 explicit synthetic capability
   tests and CH04 source-local capture-date consistency are implemented.
-  CH05 explicit selection snapshots, persistent installation binding and bounded retention are implemented;
+  CH05 explicit snapshots and CH06 all-matching snapshots, persistent installation binding and bounded retention are implemented;
   openspec/specs/ai-selection-snapshots/spec.md is the maintained selection contract.
   GATE-03 has recorded live synthetic evidence for gpt-5.6-sol through the existing NAS codex-proxy:
   docs/engineering/nas-provider-capability-2026-09-19.md. It covers only that runtime/configuration;

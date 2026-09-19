@@ -97,7 +97,7 @@ Run these commands from the repository root. npm can run the same scripts, for e
 | `bun run test:unit:coverage` | Full frontend suite with text, HTML and JSON summary coverage reports |
 | `bun run check --gate frontend-tests --base HEAD` | The same full frontend coverage run through the shared runner |
 | `node node_modules/@playwright/test/cli.js install --with-deps chromium` | Install the pinned browser and OS dependencies; run once after dependency installation or a Playwright upgrade |
-| `bun run test:smoke --base HEAD` | Build both applications, then run all six browser smoke journeys |
+| `bun run test:smoke --base HEAD` | Build both applications, then run all seven browser smoke journeys |
 | `bun run check --gate smoke --base HEAD` | Same build prerequisites and browser suite through shared verification |
 | `node node_modules/@playwright/test/cli.js test manual.spec.ts` | Focused browser development run against already-built current artifacts |
 | `bun run lint` / `bun run build` | Existing ESLint and Next.js production build |
@@ -108,7 +108,7 @@ Frontend tests are co-located as `src/**/*.test.ts` or `.test.tsx`, use explicit
 
 ### Browser smoke environment
 
-The shared smoke gate runs two isolated installations sequentially: three legacy journeys (authentication/browsing, manual placement and GPX) with AI disabled, then private provider management, an explicit synthetic capability test and the protected selection API with AI enabled. Playwright runs Chromium with one worker and no retries against production Next.js standalone output, a compiled Go backend, normal migrations and a fresh temporary SQLite directory per installation. Each test owns its synthetic account/key. Loopback ports 3080 (frontend), 8089 (backend) and 8090 (fake Immich) must be free; existing servers are never reused. Startup is bounded to 30 seconds per server, tests to 30 seconds each (60 seconds for the three-probe capability journey) and each installation's suite to three minutes. Graceful shutdown has an eight-second fallback; normal teardown removes temporary data.
+The shared smoke gate runs two isolated installations sequentially: three legacy journeys (authentication/browsing, manual placement and GPX) with AI disabled, then private provider management, an explicit synthetic capability test and protected explicit/all-matching selection APIs with AI enabled. Playwright runs Chromium with one worker and no retries against production Next.js standalone output, a compiled Go backend, normal migrations and a fresh temporary SQLite directory per installation. Each test owns its synthetic account/key. Loopback ports 3080 (frontend), 8089 (backend) and 8090 (fake Immich) must be free; existing servers are never reused. Startup is bounded to 30 seconds per server, tests to 30 seconds each (60 seconds for the three-probe capability journey) and each installation's suite to three minutes. Graceful shutdown has an eight-second fallback; normal teardown removes temporary data.
 
 Browser map tiles are synthetic. Unexpected browser destinations fail the test, and a local deny proxy prevents backend external calls. Known optional Nominatim requests after a save/reload are explicitly denied to exercise the existing offline label fallback and recorded in fixture evidence. Unknown external destinations and unknown Immich fixture routes fail verification. Application APIs, auth cookies, migrations, GPX matching and confirmed location writes remain real. No private photos, credentials or live library are used.
 
@@ -135,3 +135,5 @@ Build the smallest meaningful harness first; add feature scenarios with their ow
 After any implementation change, report commands actually executed, results, applicable scenarios covered and remaining limitations. A missing runtime/toolchain is an unavailable check, not a pass. Live suites require explicitly authorized disposable/synthetic or owner-approved resources; no ordinary test run sends private data or mutates the user's real library.
 
 CH05 adds a protected explicit-selection proxy journey with unchanged provider/image-fetch/write counters, real SQLite ownership/reopen/expiry/cleanup/concurrency fixtures and a local 100000-asset/500-ID scale check. See [selection verification](ai-selection-verification.md) for scenario traceability and limits.
+
+CH06 adds an all-matching proxy journey, whole-catalog scope/count/failure tests and a 100000-candidate workload. Its scale fixture explicitly distinguishes completed exact enumeration from a production-deadline failure with zero counts/publication; race instrumentation can trigger the latter. See [query-selection verification](ai-matching-selection-verification.md).

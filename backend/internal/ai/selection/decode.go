@@ -38,6 +38,9 @@ func Decode(data []byte) (Input, error) {
 			return Input{}, ErrInvalid
 		}
 	}
+	if _, present := object["assetIDs"]; input.Mode == "all-matching" && present {
+		return Input{}, ErrInvalid
+	}
 	var scope map[string]json.RawMessage
 	if err := json.Unmarshal(object["scope"], &scope); err != nil || scope == nil {
 		return Input{}, ErrInvalid

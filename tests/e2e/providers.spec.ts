@@ -96,3 +96,34 @@ test('freezes an explicit selection through the protected proxy without external
 	expect(await providerState(page.request)).toEqual(providersBefore);
 	await expect(page.getByRole('button', {name: /Analyze selection/i})).toHaveCount(0);
 });
+
+test('freezes all matching photos through the proxy without external work', async ({page, account}) => {
+	await connectAccount(page, account);
+	const before = await fixtureState(page.request, account.key);
+	const providersBefore = await providerState(page.request);
+	const response = await page.request.post('/api/backend/ai/selection-preview', {
+		headers: {Origin: 'http://127.0.0.1:3080'},
+		data: {mode: 'all-matching', scope: {view: 'all'}}
+	});
+	expect(response.status()).toBe(200);
+	expect(response.headers()['cache-control']).toBe('no-store');
+	const selection = await response.json();
+	expect(selection).toMatchObject({
+		mode: 'all-matching',
+matchedCount: 2,
+requestedCount: 2,
+uniqueCount: 2,
+		duplicateCount: 0,
+eligibleCount: 2,
+excludedCount: 0,
+exclusionCounts: {}
+	});
+	expect(selection.assetIDs).toEqual(['22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111111']);
+	expect(selection).not.toHaveProperty('exclusions');
+	expect(typeof selection.snapshotID).toBe('string');
+	const read = await page.request.get(`/api/backend/ai/selections/${selection.snapshotID}`);
+	expect(read.status()).toBe(200);
+	expect(await read.json()).toEqual(selection);
+	expect(await fixtureState(page.request, account.key)).toEqual(before);
+	expect(await providerState(page.request)).toEqual(providersBefore);
+});

@@ -101,6 +101,18 @@ func newAISelectionHandler(db *Database, cfg *Config) *aiSelectionHTTP {
 }
 
 func writeAISelectionFailure(w http.ResponseWriter, err error) {
+	var limit *selection.MatchingLimitError
+	if errors.As(err, &limit) {
+		writeJSON(w, 413, struct {
+			selection.MatchingCounts
+			SnapshotID *string `json:"snapshotID"`
+			Code       string  `json:"code"`
+			Message    string  `json:"message"`
+			Retryable  bool    `json:"retryable"`
+			RequestID  string  `json:"requestID"`
+		}{MatchingCounts: limit.MatchingCounts, Code: "SELECTION_LIMIT_EXCEEDED", Message: "matching selection exceeds eligible asset limit", RequestID: uuid.NewString()})
+		return
+	}
 	status, code, message := 500, "STORAGE_ERROR", "selection storage is unavailable"
 	var sqliteError interface{ Code() int }
 	busy := errors.As(err, &sqliteError) && (sqliteError.Code()&255 == 5 || sqliteError.Code()&255 == 6)

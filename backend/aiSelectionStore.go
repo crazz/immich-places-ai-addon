@@ -54,31 +54,28 @@ func (s *aiSelectionStore) preview(ctx context.Context, input selection.Input, o
 	manifest := selection.Manifest{SnapshotID: &id, Mode: request.Mode, Scope: *request.Scope, PolicyVersion: selection.PolicyVersion,
 		AssetIDs: []string{}, Exclusions: []selection.Exclusion{}, RequestedCount: request.RequestedCount,
 		UniqueCount: len(request.AssetIDs), DuplicateCount: request.DuplicateCount, CreatedAt: now, ExpiresAt: now.Add(s.ttl)}
-	facts := make([]string, 0, len(request.AssetIDs))
-	factsBytes := 0
-	for _, assetID := range request.AssetIDs {
-		candidate, err := resolveAISelectionCandidate(ctx, tx, owner, assetID, manifest.Scope)
+	var facts []string
+	var factsBytes int
+	if request.Mode == "all-matching" {
+		result, resolveErr := selection.CollectMatching(s.maxAssets, func(yield func(selection.Match) error) error {
+			return enumerateAISelectionMatching(ctx, tx, owner, manifest.Scope, yield)
+		})
+		if resolveErr != nil {
+			return selection.Manifest{}, resolveErr
+		}
+		manifest.QuerySummary = &selection.QuerySummary{MatchedCount: result.MatchedCount, ExclusionCounts: result.ExclusionCounts}
+		manifest.AssetIDs = result.AssetIDs
+		manifest.RequestedCount = result.MatchedCount
+		manifest.UniqueCount = result.MatchedCount
+		manifest.EligibleCount = result.EligibleCount
+		manifest.ExcludedCount = result.ExcludedCount
+		facts, factsBytes = result.Facts, result.FactsBytes
+	} else {
+		facts, factsBytes, err = resolveAIExplicitSelection(ctx, tx, owner, request, &manifest)
 		if err != nil {
 			return selection.Manifest{}, err
 		}
-		reason := selection.ExclusionReason(candidate.Candidate)
-		if reason != "" {
-			manifest.Exclusions = append(manifest.Exclusions, selection.Exclusion{AssetID: assetID, Reason: reason})
-			continue
-		}
-		fact, err := aiSelectionFacts(candidate)
-		if err != nil {
-			return selection.Manifest{}, err
-		}
-		factsBytes += len(fact)
-		if factsBytes > selection.MaxBytes {
-			return selection.Manifest{}, selection.ErrLimit
-		}
-		facts = append(facts, fact)
-		manifest.AssetIDs = append(manifest.AssetIDs, assetID)
 	}
-	manifest.EligibleCount = len(manifest.AssetIDs)
-	manifest.ExcludedCount = len(manifest.Exclusions)
 	if manifest.EligibleCount == 0 {
 		manifest.SnapshotID = nil
 	}
