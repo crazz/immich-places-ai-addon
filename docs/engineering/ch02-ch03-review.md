@@ -31,6 +31,8 @@ The usage follow-up full run passed every gate except Go tests: the migration bo
 
 Pinned tools: Node.js 22.23.2, Go 1.25.14 and Bun 1.4.2. Local attempt logs are retained under `out/checks/ch02-*` and `out/checks/ch03-*` (ignored execution output). The original HEAD also had green engineering CI and both Docker builds; those results do not substitute for verification of these follow-up edits.
 
+Before merge, repository metadata confirmed no Docker Hub secrets and no existing git tags. The release workflow now skips Docker Hub unless both credentials are configured, always retains GHCR, and starts a tagless repository at `v0.0.1`. Actionlint 1.7.12 passed for both workflows. Extracted shell steps passed five registry-selection cases (PR, absent/partial/full credentials) and version generation in temporary repositories with no tag and with `v1.2.3`. No production credential was used in those checks.
+
 ## Review limits and live gate
 
 GitNexus was bound to this checkout and refreshed with PDG data. The initial comparison identified 909 changed symbols and 81 affected flows, with aggregate critical risk. Upstream impact checks covered the changed production functions, methods and interfaces, and direct dependents were checked against source/tests. Shared canonicalization and HTTP transport reported HIGH risk before edits. Security explanation queries returned no findings for the 33 changed production files, but process enumeration, callbacks, property dispatch and cross-language links have documented gaps; this is not proof of absence of vulnerabilities.
