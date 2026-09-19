@@ -97,19 +97,34 @@ jobs:
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Log in to Docker Hub
+              if: github.event_name != 'pull_request'
               uses: docker/login-action@v3
               with:
                   registry: ${{ env.DOCKERHUB_REGISTRY }}
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+            - name: Choose image names
+              id: images
+              env:
+                  IMAGE: ${{ matrix.image }}
+                  OWNER: ${{ github.repository_owner }}
+                  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+              run: |
+                  {
+                    echo "list<<EOF"
+                    echo "${GHCR_REGISTRY}/${OWNER}/${IMAGE}"
+                    if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${DOCKERHUB_USER}" ]; then
+                      echo "${DOCKERHUB_USER}/${IMAGE}"
+                    fi
+                    echo "EOF"
+                  } >> "$GITHUB_OUTPUT"
+
             - name: Extract metadata (tags, labels) for Docker
               id: meta
               uses: docker/metadata-action@v5
               with:
-                  images: |
-                      ${{ env.GHCR_REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
-                      ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}
+                  images: ${{ steps.images.outputs.list }}
                   tags: |
                       type=raw,value=latest,enable={{is_default_branch}}
                       type=ref,event=branch
