@@ -1,0 +1,74 @@
+## Context
+
+See [proposal.md](proposal.md) for intent. Planning is grounded at `86b44ac2a33a9ece62afc7551581ca8dacc02287`; CH04 is implemented and migrations end at 020. Follow [architecture](../../../docs/engineering/architecture.md), [testing](../../../docs/engineering/testing.md), [coding standards](../../../docs/engineering/coding-standards.md), PRD FR-01–02 and reconciliation REC-03/REC-05.
+
+GitNexus is bound to this checkout and its index matches the planning base. `buildAssetFilter` feeds asset lists/counts, calendar counts and folder queries and calls `captureRangeSQL`. `getFolderAssets` adds a case-sensitive recursive path range. `getAssetByID` scopes by user and excludes hidden libraries, but does not enforce image type, per-asset hidden state, stack-primary status or active filters. `sessionMiddlewareWithErrors` provides the existing private AI authentication seam. The graph reports interface-dispatch lower bounds for asset lookup; a process-resource lookup was unresolved. Source verification in `database.go`, `databaseFolders.go`, `databaseCaptureDates.go`, `handlers.go`, `handlersFolders.go` and `main.go` establishes these boundaries; the graph is not a complete authorization proof.
+
+## Goals / Non-Goals
+
+**Goals:** Keep policy deterministic and storage transactional, reuse catalog date semantics, make the protected preview independently usable by later job integration, and persist only bounded selection metadata.
+
+**Non-Goals:** No frontend launch control before CH13, no new external client or dependency, no modification of legacy manual/GPX behavior, no photo fetch, and no assertion that a cached selection proves current upstream access. Durable job execution and the full installation reindex workflow remain CH11 onward.
+
+## Decisions
+
+### Server-owned snapshots and package boundaries
+
+Persist opaque snapshot resources in the existing SQLite database. This retains evidence across a backend restart, permits owner-scoped expiry/deletion and keeps large ID manifests out of client tokens. The existing Go/SQLite topology and authorization model determine this choice; no extra service or signing-key lifecycle is introduced.
+
+Use a focused `backend/internal/ai/selection/` core for scope validation, deterministic eligibility, exclusion priority, immutable manifests and expiry decisions. It owns small interfaces for catalog resolution and snapshot storage, and accepts clock, IDs and installation identity as inputs. Root `backend/aiSelection*.go` files own HTTP DTO conversion, SQL and composition. The core imports neither `package main`, SQLite, provider transport nor any Immich mutation capability. Extend the installed dependency checks to cover selection's read-only boundary.
+
+New SQL stays in focused AI adapters. Reuse `captureRangeSQL` and the existing catalog predicates where their semantics fit; obtain candidate metadata separately when an early catalog filter would hide an exclusion reason. Do not turn legacy `HandlerStore` into a general AI store or increase an inherited oversized file. Any extraction needed during apply first receives GitNexus impact analysis and characterization coverage.
+
+### Protected API and strict input
+
+Add `POST /ai/selection-preview` and `GET /ai/selections/{id}` under the existing authenticated backend/proxy convention. POST requires the exact configured `AI_PUBLIC_ORIGIN` and JSON content type, like provider saves. Both routes require current session, AI enablement and current owner/installation binding. Responses use `Cache-Control: no-store` and the existing structured AI error envelope convention.
+
+POST accepts `mode: explicit`, `assetIDs` and a required `scope` object. CH05 rejects every other mode, unknown fields, duplicate object keys, trailing JSON, empty input and malformed UUIDs. It rejects bodies above 1 MiB and raw lists above 10,000 entries before expensive resolution. Canonicalize UUID spelling, collapse duplicates and retain first-occurrence order. `requestedCount` includes duplicates; `uniqueCount`, `duplicateCount`, `eligibleCount` and `excludedCount` have explicit, non-overlapping meanings. The configured asset limit applies to unique explicit IDs before lookup, so arbitrary excluded IDs cannot bypass work bounds. Over-limit input fails as a whole; it is never truncated.
+
+`scope` records `view` (`all`, `album`, `folder`), the applicable `albumID` or `folderPath`, optional `tagID`, `gpsFilter` (`no-gps`, `with-gps`, `all`), `hiddenFilter` (`visible`, `hidden`, `all`) and optional source-local date bounds. Normalize missing GPS/hidden filters to their current catalog defaults; record those defaults. Reject incompatible view fields, unknown enums, unsupported search/sort/page fields, malformed or reversed dates, unowned album/tag references and empty/root-only folder paths. Normalize folder trailing slashes once; match descendants with the same case-sensitive component boundary as the current folder view, without reading the host filesystem. A valid empty scope produces zero matches, never an unscoped fallback.
+
+Success returns an opaque `snapshotID` and expiry when at least one ID is eligible, the normalized manifest, eligible IDs, counts and exclusions. A valid zero-eligible preview returns those counts with `snapshotID: null`; it creates no empty snapshot. Exclusions echo only submitted IDs and reason codes, never filenames, paths or metadata from inaccessible assets. No session, Immich credential or provider secret enters a snapshot.
+
+### Eligibility and source metadata
+
+One policy owns explicit and later query-based eligibility. An eligible asset is present in the current user's catalog, not in a hidden library, type `IMAGE`, not individually hidden, a stack primary or unstacked image, and matches the frozen scope. Explicit IDs do not bypass these checks. The AI hidden policy initially excludes individually hidden images even when the catalog scope says `hidden` or `all`; those owner-visible candidates receive `hidden_by_policy`. This preserves filter provenance while clearly reporting the narrower AI policy. No hidden-image override is introduced here.
+
+Use deterministic first-failure precedence: `unavailable` for absent/foreign/hidden-library IDs, then `unsupported_type`, `hidden_by_policy`, `stack_child`, and `outside_scope`. Missing and foreign IDs are indistinguishable. Unsupported image decoding is evaluated by CH08, not guessed from an extension here. Missing GPS means either coordinate is null; zero is valid. Date filtering reuses CH04's source-local calendar contract, including undated and one-sided ranges.
+
+Store source provenance needed to explain the preview: mode, normalized scope, selection-policy version, creation/expiry, ordered eligible IDs, exclusion codes, counts, and per-eligible-item relevant catalog fields/fingerprint. Relevant facts include type, visibility, stack-primary state and fields/memberships used by that snapshot's scope. Do not use `syncedAt` alone as a change detector: a harmless resync must not stale a snapshot. No image bytes, complete asset records or newly fetched paths are retained. A folder path explicitly supplied as scope is private metadata, retained only with the snapshot and never logged.
+
+### Atomic publication and immutable consumption
+
+Resolve the candidate set, classify it, check storage limits and persist header/items within one bounded SQLite transaction with a consistent read view. Keep all I/O local and propagate the request cancellation/deadline. A database busy conflict, timeout or commit failure returns a sanitized error and publishes no token; do not retry behind the caller's back or use counts from another read view.
+
+Persist `ai_selection_snapshots` and `ai_selection_items`, with owner-qualified uniqueness, ordered membership and cascading snapshot/account deletion. Snapshot items deliberately do not cascade from synchronized asset rows: sync must not silently shrink a frozen set. Store a versioned deterministic digest of the installation binding, owner, policy, normalized scope and canonical unique membership. The digest detects inconsistent stored manifests; it is neither a bearer credential nor write authority.
+
+GET and a narrow internal load/revalidation operation for later job admission return only an unexpired owner-bound snapshot whose retained eligible targets still satisfy the same relevant catalog checks. Removal, permission/visibility loss or a relevant scope-membership change makes the complete snapshot stale (`SELECTION_STALE`); it never silently removes an item or replaces it. Unrelated additions, browser filter changes and new stack members cannot expand it. Revalidation rechecks the retained set, not the original unbounded query. The persisted manifest is immutable. Fresh image/upstream permission checks remain mandatory in the later dispatch consumer; CH05 supplies no dispatch authorization.
+
+### Installation binding, limits and cleanup
+
+Introduce the minimal persisted installation identity needed by these resources: an opaque UUID and fingerprint of the canonical configured Immich origin/API base path plus an operator-controlled `AI_INSTANCE_EPOCH` (default `1`). Exclude user credentials and API keys from the fingerprint so credential rotation does not impersonate an installation change; do not store a secret-derived fingerprint. On startup, a changed connection fingerprint or epoch rotates the UUID and removes old snapshots before serving AI selection requests. A same-URL server replacement requires the operator to change the epoch and follow the existing catalog reindex procedure. A restored database retains identity with its existing configuration. This does not invent a public installation-management API; CH11 must reuse this identity and extend controlled reindex/recovery rather than create a competing key.
+
+Initial operator defaults are `AI_SELECTION_MAX_ASSETS=500` (valid 1–5,000) and `AI_SELECTION_TTL_SECONDS=900` (valid 60–3,600). They are conservative planning defaults, not measured NAS capacity. Enforce the independent 10,000 raw-ID and 1 MiB request ceilings. Use a five-second local preview deadline and bounded database work. Limit live snapshots to 20 per owner and retained snapshot headers to 1,000 per installation, including expired rows awaiting physical cleanup; this also bounds total live snapshots and prevents an expired backlog from growing indefinitely. Evaluate quotas after a bounded expired-record cleanup pass without evicting another still-valid snapshot. A membership/response hard ceiling of 1 MiB prevents large configured batches or scope metadata from creating an unbounded result.
+
+Expiry is absolute UTC and never slides on read. Clean expired snapshots at startup, before creation and in a cancellable once-per-minute local cleanup pass, including when AI is disabled. Each pass has a five-second context deadline and deletes at most 100 snapshot headers plus their cascading items; remaining expired records are inaccessible and wait for the next pass. If a creation reaches installation capacity while an expired backlog remains, fail with retryable capacity pressure rather than misclassifying those rows as live or evicting live resources. Expired records cannot be read even before physical cleanup; failed cleanup is retried at the next bounded pass with sanitized diagnostics. Account deletion cascades immediately. Ordinary database backups may retain old metadata and remain subject to existing backup protection; this is not forensic erasure. No worker service, general job scheduler or long-lived result-retention policy is added.
+
+### Errors and verification
+
+Map malformed scope/IDs to 400, missing session to 401, rejected Origin to 403, foreign/unknown snapshot to indistinguishable 404, stale/known expired snapshot to 409, size/batch violations to 413, owner quota to 429, disabled AI/global capacity to 503, and persistence failure to a sanitized 500 or retryable busy 503. After physical expiry cleanup an expired ID becomes ordinary 404. Never report partial snapshot success on a failing transaction. A lost successful POST response can be followed by an explicit new preview; both resources remain bounded by expiry/quota and no external work is repeated.
+
+Every scenario in the capability delta maps to automated tests in its owning task. Use pure tests for policy/counting/expiry and real file-backed SQLite for ownership, scope parity, race barriers, commit rollback, constraints, fresh/020 upgrade, restart/reopen and cleanup. Use authenticated local HTTP tests through the production handler, including matching Origin, malformed JSON, zero egress and absent foreign metadata. Exercise the complete protected route through the existing frontend proxy with synthetic fixture data, without adding an unfinished launch UI. Preserve existing manual/GPX/AI-disabled browser journeys. Apply Plus TDD; existing behavior characterization may pass immediately. Run all installed shared gates, AI coverage floors, Go race tests and production builds. A 100,000-asset/500-selected synthetic fixture should record time and memory without claiming the separate NAS performance gate passed.
+
+## Risks / Trade-offs
+
+- Cached membership can be older than Immich permissions → label preview as local-catalog evidence and require fresh authorized image access before later transmission.
+- Hidden or stack-child selections may surprise users → return explicit owner-safe exclusion reasons; preserve the original manifest and never expand stacks.
+- SQLite read-to-write promotion can conflict with sync → fail atomically within the deadline and allow explicit retry; validate with a real concurrency fixture.
+- New configuration and short-lived metadata require lifecycle ownership → keep startup binding, bounded cleanup, quotas and account deletion in this change.
+- The same URL can identify a replaced server → require epoch rotation/reindex; do not claim remote identity attestation.
+- Preview is an API capability until CH13 → validate proxy integration now and keep the incomplete launch UI unavailable.
+
+### Migration and rollout
+
+Allocate the next additive Goose migration at apply time (021 at this base) for identity and snapshots; never edit 018–020. Verify empty and upgraded databases, foreign keys, account deletion and independent reopen. Startup identity/cleanup failures must prevent selection availability without corrupting manual catalog data. Deploy with AI disabled initially, validate limits and normal startup, then enable existing AI settings as needed. Binary rollback keeps additive tables and runs with AI disabled; do not use destructive down migrations as routine rollback. Snapshot expiry bounds retained live metadata; the normal consistent database/encryption-key backup procedure still applies.
