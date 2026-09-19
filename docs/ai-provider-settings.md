@@ -1,6 +1,6 @@
 # Private AI provider settings
 
-Provider settings are the first AI foundation. They store each user's private configuration; saving never contacts a provider, sends a photo or changes Immich. Destination approval, connection/capability tests and analysis arrive in later changes. A saved profile is unverified.
+Provider settings store each user's private configuration. Saving a profile never contacts a provider, sends a photo or changes Immich. An installation destination allowlist gates internal provider dispatch; connection/capability tests and analysis arrive in later changes. A saved profile remains unverified until those callers exist. This change exposes no public provider-dispatch HTTP route.
 
 ## Enable the settings
 
@@ -9,13 +9,33 @@ AI is disabled by default. To enable private settings, configure the backend (or
 ```dotenv
 AI_ENABLED=true
 AI_PUBLIC_ORIGIN=https://places.example.com
+# Default deny: empty allowlist. Approve exact destinations before any dispatch can run.
+AI_PROVIDER_EGRESS_POLICY=[]
 ```
 
-Use the exact browser origin, including a nondefault port when applicable, without a path, query, fragment or trailing slash. For local HTTP development an example is `http://localhost:3032`; the existing session/TLS settings still apply. Restart the backend after changing installation configuration. The backend refuses to start with AI enabled and an invalid/missing public origin.
+Use the exact browser origin, including a nondefault port when applicable, without a path, query, fragment or trailing slash. For local HTTP development an example is `http://localhost:3032`; the existing session/TLS settings still apply. Restart the backend after changing installation configuration. The backend refuses to start with AI enabled and an invalid/missing public origin, or with a malformed `AI_PROVIDER_EGRESS_POLICY`.
+
+Provider profile saves remain offline: saving a base URL does not approve egress. Internal dispatch requires an exact matching installation rule. Empty or unset `AI_PROVIDER_EGRESS_POLICY` denies every provider request while still allowing offline profile management.
 
 Open **Settings → AI providers** after signing in. Create a profile with its name, HTTP(S) API base URL and manually entered model. The optional key is masked while entered and never loaded back into the form. Profiles are private to the signed-in account. Multiple profiles are supported; this change does not select a provider for an analysis job.
 
-Setting `AI_ENABLED=false` hides stored profiles from listing and rejects profile changes. Existing browsing, manual placement and GPX remain available. Profile-level **Enabled** is a separate setting; later dispatch code must respect both controls.
+Setting `AI_ENABLED=false` hides stored profiles from listing and rejects profile changes. Existing browsing, manual placement and GPX remain available. Profile-level **Enabled** is a separate setting; dispatch respects both installation and profile controls.
+
+## Existing NAS `codex-proxy` container
+
+Reuse the already-running `codex-proxy` container. Do not create another proxy, publish an extra host port or change its default model for this addon. The Places backend must already share the proxy's Docker network (for example `npm_proxy`); generic Compose in this repository does not attach that operator-specific network.
+
+Before enabling dispatch:
+
+1. Confirm the live proxy endpoint from the backend network, typically `http://codex-proxy:3466/v1`. Host loopback `127.0.0.1:3466` is for host-network clients and is not the backend container's destination.
+2. Confirm the Docker network subnet (recheck at deployment; do not treat a past inspection as a portable default).
+3. Set an exact local rule for that base URL and CIDR only, for example:
+
+```dotenv
+AI_PROVIDER_EGRESS_POLICY=[{"baseURL":"http://codex-proxy:3466/v1","addressClass":"local","allowedCIDRs":["192.168.144.0/20"]}]
+```
+
+Do not commit a broad private-network allowance or auto-populate approval from a user profile. After changing the policy, restart the backend so new connections load the updated allowlist. Live NAS model compatibility remains an operator verification step outside ordinary regression gates.
 
 ## Editing and credentials
 
@@ -29,10 +49,22 @@ Every save creates a revision. A stale edit fails with a conflict; reload the pr
 
 Credentials use the existing backend `ENCRYPTION_KEY`. Preserve that key together with a consistent database backup; replacing it without migrating encrypted data prevents reuse of stored keys. Responses disclose only `hasSecret`, never the plaintext or ciphertext. Cancel/close discards an entered key without saving it. The application does not persist provider settings or keys in browser storage.
 
-## Migration, cleanup and rollback
+## Stopping dispatch and rollback
+
+To stop subsequent provider dispatch without removing saved profiles:
+
+1. Set `AI_ENABLED=false`, or set `AI_PROVIDER_EGRESS_POLICY=[]`, then restart the backend.
+2. In-flight admitted requests cannot be recalled; the restart closes old connections and prevents new dispatches.
+
+Take a consistent database backup before upgrading. Binary rollback retains existing profile/version rows from migration 018 and requires no down migration:
+
+1. Stop the current backend.
+2. Keep the upgraded SQLite database and `ENCRYPTION_KEY`.
+3. Run the previous backend executable with AI disabled (or with an empty egress policy).
+4. Do not run migration 018's destructive down migration as routine rollback.
+
+Key removal and account deletion affect the active database. They do not rewrite backups or promise forensic erasure of old SQLite pages/WAL files. Protect backups, database files and the encryption key with the installation's existing access controls and retention policy. No Immich AI write needs reconciliation for configuration or egress-policy rollback.
+
+## Migration and cleanup
 
 Migration 018 adds user-scoped profile/version tables to the existing SQLite database. Fresh installation, upgrade from version 17, reopen, concurrent revision conflicts and transaction rollback are tested with real SQLite. Account deletion cascades through its provider profiles and versions; this change does not add an account-deletion UI or endpoint.
-
-Key removal and account deletion affect the active database. They do not rewrite backups or promise forensic erasure of old SQLite pages/WAL files. Protect backups, database files and the encryption key with the installation's existing access controls and retention policy.
-
-Take a consistent database backup before upgrading. To roll back the application, stop it, retain the upgraded database and run the previous executable with AI disabled. Migration 018 is additive; do not run its destructive down migration as routine rollback. No external provider request, photo analysis or Immich AI write needs reconciliation for this configuration-only change.

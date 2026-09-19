@@ -1,6 +1,6 @@
 # Proposed OpenSpec conversion roadmap
 
-**Status:** F01–F03 tooling and the first product batch, CH04 capture-date consistency and CH01 private provider settings, are implemented and verified. The remaining product candidates are proposed.
+**Status:** F01–F03 tooling and the first product batch, CH04 capture-date consistency and CH01 private provider settings, are implemented and verified. CH02–CH03 have complete planning artifacts; implementation is pending. The remaining product candidates are proposed.
 **Baseline:** [PRD](PRD.md), [technical design](TECHNICAL_DESIGN.md), and [reconciliation](RECONCILIATION.md) against `5e70c6165777949c9d8b50ede3b2768bcaa5df87`.  
 **Tooling inspected:** OpenSpec 1.8.0 with the `spec-driven` schema and repository-local OpenSpec Plus rules.
 
@@ -63,8 +63,8 @@ Dependencies below are product planning constraints, not claimed CLI-enforced sc
 | ID / proposed change name | Bounded outcome and acceptance boundary | Depends on |
 |---|---|---|
 | CH01 `add-private-ai-provider-profiles` | Implemented: private encrypted revisioned profiles, settings UI, default-off installation control, session/ownership/origin protection, credential cleanup and backend AI coverage. See the [maintained contract](../../openspec/specs/ai-provider-configuration/spec.md) and [operator guide](../ai-provider-settings.md). Saving sends no image or provider request; destination approval and capability tests remain CH02/CH03. | — |
-| CH02 `enforce-ai-provider-egress-policy` | Approved destinations, redirect/credential rules, DNS/address validation and administrator network configuration for provider requests. Prove disallowed destinations never receive a request. | CH01 |
-| CH03 `add-ai-provider-capability-tests` | Explicit synthetic-image test records image/JSON/strict-schema support and actionable failures against a profile revision; no private photo or automatic capability fallback that expands data sharing. | CH02 |
+| CH02 `enforce-ai-provider-egress-policy` | [Planning artifacts ready](../../openspec/changes/enforce-ai-provider-egress-policy/proposal.md), implementation pending: approved destinations, redirect/credential rules, DNS/address validation and bounded internal dispatch. Reuse the existing NAS codex-proxy through explicit endpoint/network approval. | CH01 |
+| CH03 `add-ai-provider-capability-tests` | [Planning artifacts ready](../../openspec/changes/add-ai-provider-capability-tests/proposal.md), implementation pending: explicit synthetic-image tests, separate image/JSON/strict observations, revision-bound private evidence and Settings UI. Select the model in the addon profile; no private photo, implicit fallback or proxy redeployment. | CH02 |
 | CH04 `align-source-local-capture-dates` | Implemented: shared source-local catalog date filtering/counts, invalid/reversed range handling and unchanged gallery ordering. See the [maintained contract](../../openspec/specs/catalog-capture-dates/spec.md). Undated-group presentation and AI selection/eligibility remain later FR-01 work. | — |
 | CH05 `freeze-explicit-ai-selections` | Resolve explicitly selected image IDs into an expiring user-bound snapshot with deduplication, eligibility/exclusions and source/filter metadata. Later catalog changes cannot expand it. | CH04 |
 | CH06 `freeze-all-matching-ai-selections` | Add all-matching selection using the same resolver, preserving album/folder/tag/GPS/visibility/date scope, exact counts and the configured batch limit. | CH05 |
