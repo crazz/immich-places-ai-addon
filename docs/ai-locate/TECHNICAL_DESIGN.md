@@ -375,7 +375,7 @@ For model evaluation, hide ground-truth GPS and disallowed filename/album clues 
 | [ADR-07](../engineering/decisions/ADR-07-ai-internal-packages.md) | Accepted: new AI core uses focused internal Go packages; keep legacy services behind adapters and defer unused Research interfaces. Update the Docker build with the first subpackage implementation. |
 | GATE-01 | Complete for `5e70c6165777949c9d8b50ede3b2768bcaa5df87`: source paths, interfaces, migrations, selection/save behavior, and test inventory reconciled in `RECONCILIATION.md`. Reopen if the implementation checkout changes; this is not a runtime-test pass. |
 | GATE-02 | Record deployed Immich version and validate API methods, rights, and sidecar/library behavior. |
-| GATE-03 | Choose/test the first vision endpoint and its strict-schema/JSON compatibility. |
+| GATE-03 | Complete for the [19 September 2026 NAS configuration](../engineering/nas-provider-capability-2026-09-19.md): existing codex-proxy with `gpt-5.6-sol` passed synthetic image/JSON/strict samples. Other configurations and full analysis-contract compatibility require separate validation. |
 | GATE-04 | Approve retention defaults, network allowlists, and quality benchmark fixture. |
 
 OpenSpec should derive capability specifications, scenarios, and implementation tasks from this baseline, not treat proposed filenames, numeric limits, or unresolved gates as already implemented facts. See `OPENSPEC_HANDOFF.md` for the planning boundary.
