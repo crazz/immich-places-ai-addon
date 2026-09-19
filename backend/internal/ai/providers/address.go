@@ -10,6 +10,32 @@ var deniedExact = []netip.Addr{
 	netip.MustParseAddr("100.100.100.200"),
 }
 
+// Public provider rules exclude special-purpose networks, including transition
+// mechanisms that can embed a non-public IPv4 destination. Registry references:
+// https://www.iana.org/assignments/iana-ipv4-special-registry
+// https://www.iana.org/assignments/iana-ipv6-special-registry
+var publicExcludedPrefixes = []netip.Prefix{
+	netip.MustParsePrefix("0.0.0.0/8"),
+	netip.MustParsePrefix("100.64.0.0/10"),
+	netip.MustParsePrefix("192.0.0.0/24"),
+	netip.MustParsePrefix("192.0.2.0/24"),
+	netip.MustParsePrefix("192.31.196.0/24"),
+	netip.MustParsePrefix("192.52.193.0/24"),
+	netip.MustParsePrefix("192.88.99.0/24"),
+	netip.MustParsePrefix("192.175.48.0/24"),
+	netip.MustParsePrefix("198.18.0.0/15"),
+	netip.MustParsePrefix("198.51.100.0/24"),
+	netip.MustParsePrefix("203.0.113.0/24"),
+	netip.MustParsePrefix("240.0.0.0/4"),
+	netip.MustParsePrefix("2001::/23"),
+	netip.MustParsePrefix("2001:db8::/32"),
+	netip.MustParsePrefix("2002::/16"),
+	netip.MustParsePrefix("2620:4f:8000::/48"),
+	netip.MustParsePrefix("3fff::/20"),
+}
+
+var publicIPv6Prefix = netip.MustParsePrefix("2000::/3")
+
 func ValidateResolvedAddresses(rule EgressRule, addresses []netip.Addr) ([]netip.Addr, error) {
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("destination resolution failed")
@@ -75,8 +101,13 @@ func isPermittedPublicAddress(addr netip.Addr) bool {
 	if addressDenied(addr) || addr.IsLoopback() || addr.IsPrivate() || !addr.IsGlobalUnicast() {
 		return false
 	}
-	if addr.Is6() && netip.MustParsePrefix("fc00::/7").Contains(addr) {
+	if addr.Is6() && !publicIPv6Prefix.Contains(addr) {
 		return false
+	}
+	for _, prefix := range publicExcludedPrefixes {
+		if prefix.Contains(addr) {
+			return false
+		}
 	}
 	return true
 }

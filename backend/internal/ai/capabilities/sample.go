@@ -3,6 +3,7 @@ package capabilities
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 )
 
@@ -59,7 +60,7 @@ func ParseSyntheticSample(text string) (color, shape string, err error) {
 	if _, err := decoder.Token(); err != nil {
 		return "", "", err
 	}
-	if decoder.More() {
+	if err := decoder.Decode(new(any)); !errors.Is(err, io.EOF) {
 		return "", "", errors.New("extra JSON after sample")
 	}
 	colorVal, hasColor := fields["color"]
@@ -67,5 +68,5 @@ func ParseSyntheticSample(text string) (color, shape string, err error) {
 	if !hasColor || !hasShape {
 		return "", "", errors.New("color and shape strings are required")
 	}
-	return strings.ToLower(colorVal), strings.ToLower(shapeVal), nil
+	return colorVal, shapeVal, nil
 }

@@ -2,7 +2,7 @@ package capabilities
 
 import "time"
 
-const ProtocolVersion = "capability-v1"
+const ProtocolVersion = "capability-v2"
 
 type ObservationStatus string
 

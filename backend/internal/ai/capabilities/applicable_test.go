@@ -84,7 +84,7 @@ func TestInvalidateAfterEditsOrPolicyChanges(t *testing.T) {
 	}
 
 	protocolChanged := base
-	protocolChanged.CurrentProtocolVersion = "capability-v2"
+	protocolChanged.CurrentProtocolVersion = "a-different-protocol"
 	if capabilities.IsApplicable(supported, protocolChanged) {
 		t.Fatal("protocol change must not treat prior report as current usable proof")
 	}

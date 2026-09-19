@@ -21,6 +21,7 @@ func newTestLibraryHandlers(t *testing.T, immichHandler http.HandlerFunc) (*Libr
 	}
 	syncService := newSyncService(db, factory, newNominatimClient(10*time.Second))
 	syncService.shutdownCtx = context.Background()
+	t.Cleanup(syncService.wg.Wait)
 	handlers := newLibraryHandlers(db, factory, syncService)
 
 	mux := http.NewServeMux()

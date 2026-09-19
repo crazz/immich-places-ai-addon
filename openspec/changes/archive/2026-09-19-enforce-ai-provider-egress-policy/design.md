@@ -10,7 +10,7 @@ GitNexus repository/context and provider queries used the matching current index
 
 ## Goals / Non-Goals
 
-**Goals:** A small backend dispatch boundary that combines pure destination rules, fresh owner/revision authority and a controlled HTTP adapter. Reuse Go, SQLite, the installed encryption mechanism and the existing NAS proxy within [architecture](../../../docs/engineering/architecture.md), [testing](../../../docs/engineering/testing.md), [coding standards](../../../docs/engineering/coding-standards.md) and [ADR-07](../../../docs/engineering/decisions/ADR-07-ai-internal-packages.md).
+**Goals:** A small backend dispatch boundary that combines pure destination rules, fresh owner/revision authority and a controlled HTTP adapter. Reuse Go, SQLite, the installed encryption mechanism and the existing NAS proxy within [architecture](../../../../docs/engineering/architecture.md), [testing](../../../../docs/engineering/testing.md), [coding standards](../../../../docs/engineering/coding-standards.md) and [ADR-07](../../../../docs/engineering/decisions/ADR-07-ai-internal-packages.md).
 
 **Non-Goals:** No public generic forwarding route, capability-test UI, provider-specific model selection, new container, remote reconfiguration, private-photo processing, queue, writer, model discovery, custom headers or Responses adapter. No change to the generic application's network topology is required for development tests.
 

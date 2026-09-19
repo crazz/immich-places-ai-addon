@@ -1,6 +1,9 @@
 package main
 
-import "immich-places-backend/internal/aiadapters/providerhttp"
+import (
+	"immich-places-backend/internal/ai/capabilities"
+	"immich-places-backend/internal/aiadapters/providerhttp"
+)
 
 type capabilityChatProtocol struct{}
 
@@ -18,4 +21,8 @@ func (capabilityChatProtocol) EncodeStrictProbe(model, instruction, imageDataURL
 
 func (capabilityChatProtocol) ParseAssistantText(body []byte) (string, string, error) {
 	return providerhttp.ParseAssistantText(body)
+}
+
+func (capabilityChatProtocol) ParseUsage(body []byte) *capabilities.Usage {
+	return providerhttp.ParseUsage(body)
 }

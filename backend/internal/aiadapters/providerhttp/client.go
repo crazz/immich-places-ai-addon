@@ -21,7 +21,7 @@ const (
 	userAgent        = "immich-places-ai-provider/1.0"
 	maxResponseBytes = 1 << 20
 	maxHeaderBytes   = 32 << 10
-	defaultTimeout   = 120 * time.Second
+	defaultTimeout   = providers.MaxDispatchDuration
 )
 
 type LookupIPFunc func(ctx context.Context, host string) ([]net.IP, error)
@@ -56,6 +56,8 @@ func defaultLookupIP(ctx context.Context, host string) ([]net.IP, error) {
 }
 
 func (c *Client) Send(ctx context.Context, rule providers.EgressRule, body []byte) (providers.DispatchResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
 	if len(body) > providers.MaxRequestBytes {
 		return providers.DispatchResult{}, limitFailure(providers.NewRequestID())
 	}
@@ -67,6 +69,8 @@ func (c *Client) Send(ctx context.Context, rule providers.EgressRule, body []byt
 }
 
 func (c *Client) Pin(ctx context.Context, rule providers.EgressRule) (providers.PinnedDestination, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
 	requestID := providers.NewRequestID()
 	canonical, err := providers.CanonicalBaseURL(rule.BaseURL)
 	if err != nil {
@@ -115,10 +119,7 @@ func (c *Client) doPinnedRequest(ctx context.Context, canonical providers.Canoni
 	if err != nil {
 		return providers.DispatchResult{}, mapRequestError(requestID, err)
 	}
-	req.Host = canonical.Host
-	if canonical.Port != "80" && canonical.Port != "443" {
-		req.Host = net.JoinHostPort(canonical.Host, canonical.Port)
-	}
+	req.Host = providerAuthority(canonical)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", userAgent)
@@ -189,4 +190,8 @@ func responseHeaderSize(header http.Header) int {
 		}
 	}
 	return size
+}
+
+func providerAuthority(canonical providers.CanonicalURL) string {
+	return net.JoinHostPort(canonical.Host, canonical.Port)
 }

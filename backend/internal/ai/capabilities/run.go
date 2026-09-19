@@ -70,6 +70,7 @@ const (
 
 type probeOutcome struct {
 	Observation   Observation
+	Usage         *Usage
 	ReportedModel string
 	StopSequence  bool
 	Dispatched    bool
@@ -122,6 +123,11 @@ func (r *Runner) recordProbe(report *Report, slot *Observation, out probeOutcome
 		*slot = out.Observation
 	}
 	if out.Dispatched {
+		if report.InputMayBeConsumed {
+			report.Usage = CombineUsage(report.Usage, out.Usage)
+		} else {
+			report.Usage = out.Usage
+		}
 		report.InputMayBeConsumed = true
 	}
 	if out.ReportedModel != "" {
@@ -230,10 +236,15 @@ func (r *Runner) runProbe(ctx context.Context, req ProbeRequest, fixture Fixture
 		out.Dispatched = true
 		return out
 	}
+	var usage *Usage
+	if parser, ok := r.Protocol.(UsageParser); ok {
+		usage = parser.ParseUsage(response)
+	}
 	text, reportedModel, err := r.Protocol.ParseAssistantText(response)
 	if err != nil {
 		return probeOutcome{
 			Observation:   Observation{Status: StatusUnverified, Reason: ClassifyParseFailure(err)},
+			Usage:         usage,
 			ReportedModel: reportedModel,
 			StopSequence:  true,
 			Dispatched:    true,
@@ -242,6 +253,7 @@ func (r *Runner) runProbe(ctx context.Context, req ProbeRequest, fixture Fixture
 	obs := r.evaluateProbe(fixture, text, mode)
 	return probeOutcome{
 		Observation:   obs,
+		Usage:         usage,
 		ReportedModel: reportedModel,
 		StopSequence:  shouldStopAfterObservation(obs, mode),
 		Dispatched:    true,

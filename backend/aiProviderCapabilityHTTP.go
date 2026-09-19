@@ -85,27 +85,31 @@ func (h *aiProviderHandlers) testProvider(w http.ResponseWriter, r *http.Request
 		sessionTokenHash = hex.EncodeToString(hash[:])
 	}
 	ownerID := user.ID
+	authorize := func(ctx context.Context, admitOwnerID, profileID string, revision int) error {
+		if !h.enabled {
+			return capabilities.ErrDisabled
+		}
+		sessionUser, err := h.db.getSessionUser(ctx, sessionTokenHash)
+		if err != nil {
+			return err
+		}
+		if sessionUser == nil || sessionUser.ID != ownerID {
+			return capabilities.ErrUnavailable
+		}
+		return h.db.admitAIProviderCapabilityProbe(ctx, admitOwnerID, profileID, revision)
+	}
 	runner := &capabilities.Runner{
 		Protocol: capabilityChatProtocol{},
-		Admit: func(ctx context.Context, admitOwnerID, profileID string, revision int) error {
-			if !h.enabled {
-				return capabilities.ErrDisabled
-			}
-			sessionUser, err := h.db.getSessionUser(ctx, sessionTokenHash)
-			if err != nil {
-				return err
-			}
-			if sessionUser == nil || sessionUser.ID != ownerID {
-				return capabilities.ErrUnavailable
-			}
-			return h.db.admitAIProviderCapabilityProbe(ctx, admitOwnerID, profileID, revision)
-		},
+		Admit:    authorize,
 		Dispatch: func(ctx context.Context, ownerID, profileID string, revision int, body []byte) ([]byte, error) {
 			result, err := h.dispatcher.Dispatch(ctx, providers.DispatchRequest{
 				OwnerID:   ownerID,
 				ProfileID: profileID,
 				Revision:  revision,
 				Body:      body,
+				Authorize: func(ctx context.Context) error {
+					return authorize(ctx, ownerID, profileID, revision)
+				},
 			})
 			if err != nil {
 				return nil, classifyCapabilityProviderFailure(err)
@@ -133,6 +137,11 @@ func (h *aiProviderHandlers) testProvider(w http.ResponseWriter, r *http.Request
 	})
 	completeCtx, completeCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer completeCancel()
+	if err := authorize(completeCtx, user.ID, admission.ProfileID, admission.Revision); err != nil {
+		report.Applicable = false
+		report.Lifecycle = "canceled"
+		report.Compatibility = "failed"
+	}
 	if err := h.db.completeAIProviderCapability(completeCtx, user.ID, report); err != nil {
 		writeAIProviderError(w, http.StatusInternalServerError, "STORAGE_ERROR", "capability test result could not be saved")
 		return

@@ -385,7 +385,7 @@ func TestPolicyOrProtocolChangeMakesStoredReportInapplicableWithoutRetest(t *tes
 	}
 	staleProtocol, err := db.loadAIProviderCapability(context.Background(), testUserID, profile.ID, profile.Revision, capabilities.ApplicabilityContext{
 		AIEnabled: true, ProfileEnabled: true, ActiveRevision: profile.Revision,
-		CurrentProtocolVersion: "capability-v2", CurrentPolicyFingerprint: "policy-a",
+		CurrentProtocolVersion: "a-different-protocol", CurrentPolicyFingerprint: "policy-a",
 	})
 	if err != nil || staleProtocol == nil || staleProtocol.Applicable {
 		t.Fatalf("protocol change must invalidate current proof: %+v err=%v", staleProtocol, err)

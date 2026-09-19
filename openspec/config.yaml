@@ -50,8 +50,9 @@ context: |
   Read docs/engineering/testing.md for usable commands and comparison-base selection.
   F02 enforces the frontend AI coverage policy when AI code exists; absent AI is unmeasured.
   CH01 installs backend AI coverage enforcement across core and integration/adapters in the race gate.
-  CH01 provider settings and CH04 source-local capture-date consistency are implemented.
-  Provider transport, capability tests, analysis, jobs and writeback remain planned.
+  CH01 provider settings, CH02 bounded provider transport, CH03 explicit synthetic capability
+  tests and CH04 source-local capture-date consistency are implemented.
+  Live NAS endpoint/model compatibility remains unverified; analysis, jobs and writeback remain planned.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 

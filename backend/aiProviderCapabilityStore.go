@@ -85,6 +85,8 @@ func (d *Database) admitAIProviderCapability(ctx context.Context, userID, profil
 			completedAt = NULL,
 			requestedModel = excluded.requestedModel,
 			reportedModel = NULL,
+			usageJSON = NULL,
+			inputMayBeConsumed = 0,
 			observationsJSON = excluded.observationsJSON,
 			compatibility = excluded.compatibility`,
 		userID, profileID, revision, attemptID, capabilities.ProtocolVersion, policyFingerprint,
@@ -127,15 +129,23 @@ func (d *Database) completeAIProviderCapability(ctx context.Context, userID stri
 	if err != nil {
 		return err
 	}
+	var usage any
+	if report.Usage != nil {
+		raw, err := json.Marshal(report.Usage)
+		if err != nil {
+			return err
+		}
+		usage = string(raw)
+	}
 	var completedAt any
 	if report.CompletedAt != nil {
 		completedAt = report.CompletedAt.UTC().Format(time.RFC3339Nano)
 	}
 	result, err := d.db.ExecContext(ctx, `
 		UPDATE ai_provider_capability_checks
-		SET lifecycle = ?, completedAt = ?, reportedModel = ?, observationsJSON = ?, compatibility = ?
+		SET lifecycle = ?, completedAt = ?, reportedModel = ?, observationsJSON = ?, compatibility = ?, usageJSON = ?, inputMayBeConsumed = ?
 		WHERE userID = ? AND profileID = ? AND revision = ? AND attemptID = ?`,
-		report.Lifecycle, completedAt, report.ReportedModel, string(obs), report.Compatibility,
+		report.Lifecycle, completedAt, report.ReportedModel, string(obs), report.Compatibility, usage, report.InputMayBeConsumed,
 		userID, report.ProfileID, report.Revision, report.AttemptID)
 	if err != nil {
 		return err
@@ -155,14 +165,15 @@ func (d *Database) loadAIProviderCapability(ctx context.Context, userID, profile
 	var startedAt, deadlineAt string
 	var completedAt sql.NullString
 	var reportedModel sql.NullString
+	var usage sql.NullString
 	var observations string
 	err := d.db.QueryRowContext(ctx, `
 		SELECT attemptID, profileID, revision, protocolVersion, policyFingerprint, lifecycle,
-			startedAt, deadlineAt, completedAt, requestedModel, reportedModel, observationsJSON, compatibility
+			startedAt, deadlineAt, completedAt, requestedModel, reportedModel, observationsJSON, compatibility, usageJSON, inputMayBeConsumed
 		FROM ai_provider_capability_checks
 		WHERE userID = ? AND profileID = ? AND revision = ?`, userID, profileID, revision).
 		Scan(&report.AttemptID, &report.ProfileID, &report.Revision, &report.ProtocolVersion, &report.PolicyFingerprint, &report.Lifecycle,
-			&startedAt, &deadlineAt, &completedAt, &report.RequestedModel, &reportedModel, &observations, &report.Compatibility)
+			&startedAt, &deadlineAt, &completedAt, &report.RequestedModel, &reportedModel, &observations, &report.Compatibility, &usage, &report.InputMayBeConsumed)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -189,6 +200,11 @@ func (d *Database) loadAIProviderCapability(ctx context.Context, userID, profile
 	}
 	if err := json.Unmarshal([]byte(observations), &report.Observations); err != nil {
 		return nil, err
+	}
+	if usage.Valid {
+		if err := json.Unmarshal([]byte(usage.String), &report.Usage); err != nil {
+			return nil, err
+		}
 	}
 	if report.Lifecycle == "running" && !report.DeadlineAt.After(time.Now().UTC()) {
 		completedAt := time.Now().UTC()

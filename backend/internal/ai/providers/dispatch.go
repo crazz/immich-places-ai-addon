@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/netip"
+	"time"
 )
 
 const MaxRequestBytes = 15 << 20
+const MaxDispatchDuration = 120 * time.Second
 
 var (
 	ErrUnavailable  = errors.New("provider profile is unavailable")
@@ -25,6 +27,7 @@ type DispatchRequest struct {
 	ProfileID string
 	Revision  int
 	Body      []byte
+	Authorize func(context.Context) error
 }
 
 type DispatchResult struct {
@@ -72,6 +75,8 @@ type Dispatcher struct {
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, req DispatchRequest) (DispatchResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, MaxDispatchDuration)
+	defer cancel()
 	if !d.Enabled {
 		return DispatchResult{}, ErrDisabled
 	}
@@ -101,6 +106,11 @@ func (d *Dispatcher) Dispatch(ctx context.Context, req DispatchRequest) (Dispatc
 	}
 	if !d.Enabled {
 		return DispatchResult{}, ErrDisabled
+	}
+	if req.Authorize != nil {
+		if err := req.Authorize(ctx); err != nil {
+			return DispatchResult{}, err
+		}
 	}
 	admission, err := d.Store.AdmitDispatch(ctx, req.OwnerID, req.ProfileID, req.Revision)
 	if err != nil {

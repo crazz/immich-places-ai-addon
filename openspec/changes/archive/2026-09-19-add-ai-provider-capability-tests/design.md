@@ -1,6 +1,6 @@
 ## Context
 
-See the [proposal](proposal.md) and [delta spec](specs/ai-provider-configuration/spec.md). CH01 is implemented at `dbc2a52dfae82b111b107dff702eb94c6d67cb31`; CH02's [guarded dispatch design](../enforce-ai-provider-egress-policy/design.md) is a prerequisite plan, not implemented functionality at this checkout. Apply and verify CH02 before this change; OpenSpec does not enforce that cross-change dependency automatically.
+See the [proposal](proposal.md) and [delta spec](specs/ai-provider-configuration/spec.md). CH01 is implemented at `dbc2a52dfae82b111b107dff702eb94c6d67cb31`; CH02's [guarded dispatch design](../2026-09-19-enforce-ai-provider-egress-policy/design.md) is a prerequisite plan, not implemented functionality at this checkout. Apply and verify CH02 before this change; OpenSpec does not enforce that cross-change dependency automatically.
 
 GitNexus's matching index identified `newAIProviderHandler`, its `main`/test callers and `backendFetch` with its existing AI consumers. Source confirms a protected `/ai/` mux, private immutable versions, feature-owned `providerApi.ts`/`ProviderSettings.tsx`, real SQLite and an AI-enabled browser journey. There is no current capability storage or inference path. The shared browser request timeout is 15 seconds; the Go server's write timeout is 150 seconds. A test must fit that actual end-to-end path.
 
@@ -14,7 +14,7 @@ The first intended stronger-model candidate is manually entered `gpt-5.6-sol`, w
 
 **Non-Goals:** No analysis queue, background resumption, image library reader, geolocation validator/benchmark, comparison runner, private-photo consent, writer, model discovery, Responses adapter, custom provider options, new dependency or NAS deployment. The two-field synthetic contract is separate from CH07's full analysis-result schema.
 
-Follow the adopted [architecture](../../../docs/engineering/architecture.md), [testing](../../../docs/engineering/testing.md), [coding standards](../../../docs/engineering/coding-standards.md) and [ADR-07](../../../docs/engineering/decisions/ADR-07-ai-internal-packages.md).
+Follow the adopted [architecture](../../../../docs/engineering/architecture.md), [testing](../../../../docs/engineering/testing.md), [coding standards](../../../../docs/engineering/coding-standards.md) and [ADR-07](../../../../docs/engineering/decisions/ADR-07-ai-internal-packages.md).
 
 ## Decisions
 

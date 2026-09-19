@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/netip"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -106,7 +108,7 @@ type CanonicalURL struct {
 }
 
 func (c CanonicalURL) String() string {
-	return c.Scheme + "://" + c.Host + ":" + c.Port + c.Path
+	return c.Scheme + "://" + net.JoinHostPort(c.Host, c.Port) + c.Path
 }
 
 func CanonicalBaseURL(raw string) (CanonicalURL, error) {
@@ -114,7 +116,7 @@ func CanonicalBaseURL(raw string) (CanonicalURL, error) {
 	if raw == "" || len(raw) > 2048 {
 		return CanonicalURL{}, fmt.Errorf("invalid base URL")
 	}
-	if strings.ContainsAny(raw, `*\`) || strings.Contains(raw, "%") || strings.Contains(raw, "..") {
+	if strings.ContainsAny(raw, `*\`) || strings.Contains(raw, "%") {
 		return CanonicalURL{}, fmt.Errorf("invalid base URL")
 	}
 	u, err := url.Parse(raw)
@@ -126,12 +128,17 @@ func CanonicalBaseURL(raw string) (CanonicalURL, error) {
 		return CanonicalURL{}, fmt.Errorf("invalid base URL")
 	}
 	if ip, err := netip.ParseAddr(host); err == nil {
-		if ip.Zone() != "" || ip.Is4In6() {
+		if ip.Zone() != "" || ip.Is4In6() || (ip.Is6() && !strings.HasPrefix(u.Host, "[")) {
 			return CanonicalURL{}, fmt.Errorf("invalid base URL")
 		}
 		host = ip.String()
+	} else if !validASCIIHostname(host) {
+		return CanonicalURL{}, fmt.Errorf("invalid base URL")
 	}
 	port := u.Port()
+	if strings.HasSuffix(u.Host, ":") {
+		return CanonicalURL{}, fmt.Errorf("invalid base URL")
+	}
 	if port == "" {
 		if u.Scheme == "https" {
 			port = "443"
@@ -139,18 +146,49 @@ func CanonicalBaseURL(raw string) (CanonicalURL, error) {
 			port = "80"
 		}
 	}
+	portNumber, err := strconv.Atoi(port)
+	if err != nil || portNumber < 1 || portNumber > 65535 {
+		return CanonicalURL{}, fmt.Errorf("invalid base URL")
+	}
+	port = strconv.Itoa(portNumber)
 	path := u.EscapedPath()
 	if path == "" {
 		path = "/"
 	}
-	if !strings.HasPrefix(path, "/") || strings.Contains(path, "//") || strings.Contains(path, ".") {
+	if !strings.HasPrefix(path, "/") || strings.Contains(path, "//") {
 		return CanonicalURL{}, fmt.Errorf("invalid base URL")
+	}
+	for _, segment := range strings.Split(path, "/") {
+		if segment == "." || segment == ".." {
+			return CanonicalURL{}, fmt.Errorf("invalid base URL")
+		}
 	}
 	path = strings.TrimRight(path, "/")
 	if path == "" {
 		path = "/"
 	}
 	return CanonicalURL{Scheme: u.Scheme, Host: host, Port: port, Path: path}, nil
+}
+
+func validASCIIHostname(host string) bool {
+	if len(host) > 253 {
+		return false
+	}
+	labels := strings.Split(host, ".")
+	for _, label := range labels {
+		if label == "" || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return false
+		}
+		for _, ch := range label {
+			if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '-') {
+				return false
+			}
+		}
+	}
+	// Numeric hosts must have passed netip.ParseAddr above; reject legacy IPv4 forms.
+	last := labels[len(labels)-1]
+	_, numeric := strconv.ParseUint(last, 10, 64)
+	return numeric != nil && !strings.HasPrefix(last, "0x")
 }
 
 func parseLocalCIDRs(values []string) ([]string, error) {
