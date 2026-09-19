@@ -1,6 +1,6 @@
 # Coding standards
 
-**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 repository checks, F02 frontend unit/component tests and F03 browser smoke tests are installed; the [roadmap](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) retains pending backend AI coverage enforcement.
+**Status:** Adopted 17 September 2026. Binding for new and changed code. F01 repository checks, F02 frontend unit/component tests and F03 browser smoke tests are installed; CH01 adds backend AI coverage enforcement.
 
 This document owns code construction and size rules. See [architecture](architecture.md) for boundaries and [testing](testing.md) for verification. Existing violations do not authorize new violations or an unrelated legacy rewrite.
 
@@ -23,7 +23,7 @@ The following exceptions were verified against `5e70c6165777949c9d8b50ede3b2768b
 | `backend/syncService_test.go` | 1467 |
 | `backend/handlers_test.go` | 1373 |
 | `backend/database_test.go` | 1301 |
-| `backend/database.go` | 982 |
+| `backend/database.go` | 980 |
 | `backend/handlers.go` | 926 |
 | `backend/syncService.go` | 700 |
 | `src/shared/services/backendApi.ts` | 589 |

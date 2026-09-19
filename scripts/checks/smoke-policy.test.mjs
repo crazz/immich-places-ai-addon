@@ -17,7 +17,7 @@ test('a browser failure makes focused verification fail after both builds pass',
 		root: fileURLToPath(new URL('../../', import.meta.url)),
 		base: 'HEAD',
 		gate: 'smoke',
-		execute: (command, args) => ({status: args[0].includes('@playwright') ? 3 : 0}),
+		execute: (command, args) => ({status: args[0] === 'scripts/checks/smoke.mjs' ? 3 : 0}),
 		report: line => lines.push(line)
 	});
 	assert.equal(status, 1);

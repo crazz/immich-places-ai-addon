@@ -4,6 +4,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
 COPY migrations/ migrations/
+COPY internal/ internal/
 RUN CGO_ENABLED=0 go build -o /backend .
 
 FROM alpine:3.21

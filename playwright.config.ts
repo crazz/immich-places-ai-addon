@@ -1,5 +1,8 @@
 import {defineConfig} from '@playwright/test';
 
+const isAIEnabled = process.env.SMOKE_AI_ENABLED === 'true';
+const mode = isAIEnabled ? 'ai-enabled' : 'ai-disabled';
+
 const serverDefaults = {
 	reuseExistingServer: false,
 	timeout: 30_000,
@@ -8,7 +11,8 @@ const serverDefaults = {
 
 export default defineConfig({
 	testDir: './tests/e2e',
-	testMatch: '*.spec.ts',
+	testMatch: isAIEnabled ? 'providers.spec.ts' : ['auth.spec.ts', 'manual.spec.ts', 'gpx.spec.ts'],
+	outputDir: `test-results/${mode}`,
 	forbidOnly: true,
 	fullyParallel: false,
 	workers: 1,
@@ -16,7 +20,7 @@ export default defineConfig({
 	timeout: 30_000,
 	globalTimeout: 180_000,
 	expect: {timeout: 10_000},
-	reporter: [['list'], ['html', {open: 'never'}]],
+	reporter: [['list'], ['html', {open: 'never', outputFolder: `playwright-report/${mode}`}]],
 	use: {
 		baseURL: 'http://127.0.0.1:3080',
 		browserName: 'chromium',

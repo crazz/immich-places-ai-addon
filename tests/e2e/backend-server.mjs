@@ -19,6 +19,8 @@ const child = spawn(binary, [], {
 		ENCRYPTION_KEY: 'synthetic-smoke-encryption-key',
 		ALLOW_INSECURE: 'true',
 		REGISTRATION_ENABLED: 'true',
+		AI_ENABLED: process.env.SMOKE_AI_ENABLED === 'true' ? 'true' : 'false',
+		AI_PUBLIC_ORIGIN: 'http://127.0.0.1:3080',
 		SYNC_INTERVAL_MS: '3600000',
 		HTTP_PROXY: 'http://127.0.0.1:8090',
 		HTTPS_PROXY: 'http://127.0.0.1:8090',

@@ -1,6 +1,6 @@
 # Proposed OpenSpec conversion roadmap
 
-**Status:** The 26 product candidates remain proposed. F01 `enforce-engineering-checks`, F02 `add-frontend-unit-tests` and F03 `add-application-smoke-tests` are implemented, verified and archived.
+**Status:** F01–F03 tooling and the first product batch, CH04 capture-date consistency and CH01 private provider settings, are implemented and verified. The remaining product candidates are proposed.
 **Baseline:** [PRD](PRD.md), [technical design](TECHNICAL_DESIGN.md), and [reconciliation](RECONCILIATION.md) against `5e70c6165777949c9d8b50ede3b2768bcaa5df87`.  
 **Tooling inspected:** OpenSpec 1.8.0 with the `spec-driven` schema and repository-local OpenSpec Plus rules.
 
@@ -39,7 +39,7 @@ Use the [testing guide](../engineering/testing.md#available-commands-and-remaini
 
 The setup does not need to invent empty AI packages to enforce architecture. The first change introducing an internal package must include the matching import rules and backend Docker build update/verification. Split the tooling setup if its implementation reveals independently verifiable work; do not fold a broad cleanup into it.
 
-The initial UI harness is complete here and is not additional CH01 setup. Expand its behavior coverage as product capabilities arrive. Backend AI coverage enforcement remains due with the first AI Go code; unexecuted live and quality checks must still be reported explicitly.
+The initial UI harness is complete here and is not additional CH01 setup. CH01 expands provider behavior coverage, enforces backend AI statement coverage and verifies the backend container with internal packages. Expand the harnesses as product capabilities arrive; unexecuted live and quality checks must still be reported explicitly.
 
 ## Capability areas
 
@@ -62,7 +62,7 @@ Dependencies below are product planning constraints, not claimed CLI-enforced sc
 
 | ID / proposed change name | Bounded outcome and acceptance boundary | Depends on |
 |---|---|---|
-| CH01 `add-private-ai-provider-profiles` | Create/edit/disable private, encrypted, revisioned profiles with settings UI. Include global AI disablement, session/ownership/origin protection, credential cleanup policy and profile UI tests using the prerequisite harness. No profile save sends an image or tests a connection. | — |
+| CH01 `add-private-ai-provider-profiles` | Implemented: private encrypted revisioned profiles, settings UI, default-off installation control, session/ownership/origin protection, credential cleanup and backend AI coverage. See the [maintained contract](../../openspec/specs/ai-provider-configuration/spec.md) and [operator guide](../ai-provider-settings.md). Saving sends no image or provider request; destination approval and capability tests remain CH02/CH03. | — |
 | CH02 `enforce-ai-provider-egress-policy` | Approved destinations, redirect/credential rules, DNS/address validation and administrator network configuration for provider requests. Prove disallowed destinations never receive a request. | CH01 |
 | CH03 `add-ai-provider-capability-tests` | Explicit synthetic-image test records image/JSON/strict-schema support and actionable failures against a profile revision; no private photo or automatic capability fallback that expands data sharing. | CH02 |
 | CH04 `align-source-local-capture-dates` | Implemented: shared source-local catalog date filtering/counts, invalid/reversed range handling and unchanged gallery ordering. See the [maintained contract](../../openspec/specs/catalog-capture-dates/spec.md). Undated-group presentation and AI selection/eligibility remain later FR-01 work. | — |

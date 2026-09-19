@@ -41,6 +41,11 @@ The app has two parts:
 - Local SQLite database — no changes to Immich until you explicitly save
 - Confirmation bar to review and save/cancel pending coordinate changes
 
+**AI foundation**
+
+- Optional [private provider settings](docs/ai-provider-settings.md), disabled by default: encrypted credentials, revisioned edits and profile enable/disable.
+- Saving settings makes no provider request. Destination approval, capability testing and photo analysis remain planned.
+
 ## Prerequisites
 
 - An existing Immich instance already running (local or remote).

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -44,8 +45,12 @@ func newDatabase(dataDir string, encryptionKey string) (*Database, error) {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 
-	dbPath := filepath.Join(dataDir, "immich-places.db")
-	db, err := sql.Open("sqlite", dbPath)
+	dbPath, err := filepath.Abs(filepath.Join(dataDir, "immich-places.db"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve database path: %w", err)
+	}
+	dsn := url.URL{Scheme: "file", Path: dbPath, RawQuery: "_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"}
+	db, err := sql.Open("sqlite", dsn.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -53,13 +58,6 @@ func newDatabase(dataDir string, encryptionKey string) (*Database, error) {
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		return nil, fmt.Errorf("failed to set WAL mode: %w", err)
 	}
-	if _, err := db.Exec("PRAGMA foreign_keys=ON"); err != nil {
-		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
-	}
-	if _, err := db.Exec("PRAGMA busy_timeout=5000"); err != nil {
-		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
-	}
-
 	if err := runMigrations(db); err != nil {
 		return nil, fmt.Errorf("migrations: %w", err)
 	}

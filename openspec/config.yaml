@@ -49,7 +49,9 @@ context: |
   The standards are adopted; F01 shared checks, F02 frontend tests and F03 browser smoke tests are installed.
   Read docs/engineering/testing.md for usable commands and comparison-base selection.
   F02 enforces the frontend AI coverage policy when AI code exists; absent AI is unmeasured.
-  Backend AI coverage enforcement remains pending and must arrive with the first AI Go code.
+  CH01 installs backend AI coverage enforcement across core and integration/adapters in the race gate.
+  CH01 provider settings and CH04 source-local capture-date consistency are implemented.
+  Provider transport, capability tests, analysis, jobs and writeback remain planned.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 

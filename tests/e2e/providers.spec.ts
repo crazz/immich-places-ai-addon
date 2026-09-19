@@ -1,0 +1,32 @@
+import {connectAccount, expect, fixtureState, test} from './app-fixture';
+
+test('manages a private profile through the real session, proxy and database without external writes', async ({page, account}) => {
+	await connectAccount(page, account);
+	await page.getByRole('button', {name: 'Settings', exact: true}).click();
+	await page.getByRole('button', {name: 'AI providers', exact: true}).click();
+	await page.getByRole('button', {name: 'Create provider'}).click();
+	await page.getByLabel('Name', {exact: true}).fill('Local private profile');
+	await page.getByLabel('API base URL', {exact: true}).fill('http://127.0.0.1:8090/never-call');
+	await page.getByLabel('Model', {exact: true}).fill('manual-model');
+	await page.getByLabel('API key', {exact: true}).fill('synthetic-provider-secret');
+	await page.getByRole('button', {name: 'Save provider'}).click();
+	await expect(page.getByText('Saved revision 1', {exact: true})).toBeVisible();
+	await page.getByRole('button', {name: 'Edit Local private profile'}).click();
+	await expect(page.getByLabel('API key', {exact: true})).toHaveValue('');
+	await page.getByLabel('Enabled', {exact: true}).uncheck();
+	await page.getByRole('button', {name: 'Save provider'}).click();
+	await expect(page.getByText('Saved revision 2', {exact: true})).toBeVisible();
+	await page.getByRole('button', {name: 'Close dialog'}).click();
+	await page.reload();
+	await page.getByRole('button', {name: 'Settings', exact: true}).click();
+	await page.getByRole('button', {name: 'AI providers', exact: true}).click();
+	await expect(page.getByText('manual-model · Disabled · Revision 2')).toBeVisible();
+	const response = await page.request.get('/api/backend/ai/providers');
+	expect(response.ok()).toBe(true);
+	const profiles = await response.json();
+	expect(profiles.items).toHaveLength(1);
+	expect(profiles.items[0]).toMatchObject({revision: 2, enabled: false, hasSecret: true});
+	expect(JSON.stringify(profiles)).not.toContain('synthetic-provider-secret');
+	expect(await page.evaluate(() => JSON.stringify({...localStorage, ...sessionStorage}))).not.toContain('synthetic-provider-secret');
+	expect((await fixtureState(page.request, account.key)).writes).toEqual([]);
+});

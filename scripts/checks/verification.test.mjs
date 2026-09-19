@@ -43,14 +43,14 @@ report: line => lines.push(line)
 	assert.deepEqual(calls[2].args, ['scripts/checks/dependencies.mjs', '--base', 'base;literal']);
 	assert.deepEqual(calls[5].args, ['node_modules/next/dist/bin/next', 'typegen']);
 	assert.deepEqual(calls[6].args, ['node_modules/typescript/bin/tsc', '--noEmit']);
-	assert.deepEqual(calls[8].args, ['test', '-mod=readonly', '-race', './...']);
-	assert.equal(calls[8].options.cwd, `${root}backend`);
-	assert.equal(calls[9].args.at(-1), './...');
+	assert.deepEqual(calls[8].args, ['scripts/checks/go-tests.mjs']);
+	assert.equal(calls[8].options.cwd, root);
+	assert.equal(calls[9].args.at(-1), '.');
 	assert.match(calls[9].args.at(-2), /out\/checks\/immich-places-backend$/);
 	assert.equal(calls[10].command, process.execPath);
 	assert.deepEqual(calls[10].args, ['node_modules/vitest/vitest.mjs', 'run', '--coverage']);
 	assert.equal(calls[10].options.cwd, root);
-	assert.deepEqual(calls[12].args, ['node_modules/@playwright/test/cli.js', 'test']);
+	assert.deepEqual(calls[12].args, ['scripts/checks/smoke.mjs']);
 	assert.ok(calls.every(call => call.options.shell === false && call.options.stdio === 'inherit'));
 	assert.ok(calls[0].args.includes('scripts/checks/verification.test.mjs'));
 });
@@ -72,8 +72,8 @@ test('reports missing commands and execution exceptions as named failures', asyn
 		const result = verify({
 root: fileURLToPath(new URL('../../', import.meta.url)),
 base: 'HEAD',
-execute: command => {
-			if (command === 'go') {
+execute: (command, args) => {
+			if (command === 'go' || args[0] === 'scripts/checks/go-tests.mjs') {
 				const error = new Error('spawn go ENOENT');
 				if (throws) {
 					throw error;
@@ -204,7 +204,7 @@ test('blocks smoke after either build fails while retaining independent results'
 			});
 			assert.equal(result, 1);
 			assert.ok(lines.includes(`BLOCKED smoke: ${broken} failed`), lines.join('\n'));
-			assert.ok(!calls.some(args => args[0].includes('@playwright')));
+				assert.ok(!calls.some(args => args[0] === 'scripts/checks/smoke.mjs'));
 			assert.ok(lines.includes(`PASS ${broken === 'go-build' ? 'frontend-build' : 'go-build'}`));
 		}
 	}

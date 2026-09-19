@@ -17,10 +17,10 @@ export function verificationGates(root, base) {
 		{name: 'typegen', command: node, args: ['node_modules/next/dist/bin/next', 'typegen']},
 		{name: 'types', command: node, args: ['node_modules/typescript/bin/tsc', '--noEmit']},
 		{name: 'go-vet', command: 'go', args: ['vet', '-mod=readonly', './...'], cwd: backend},
-		{name: 'go-tests', command: 'go', args: ['test', '-mod=readonly', '-race', './...'], cwd: backend},
-		{name: 'go-build', command: 'go', args: ['build', '-mod=readonly', '-o', path.join(root, 'out/checks/immich-places-backend'), './...'], cwd: backend},
+		{name: 'go-tests', command: node, args: ['scripts/checks/go-tests.mjs']},
+		{name: 'go-build', command: 'go', args: ['build', '-mod=readonly', '-o', path.join(root, 'out/checks/immich-places-backend'), '.'], cwd: backend},
 		{name: 'frontend-tests', command: node, args: ['node_modules/vitest/vitest.mjs', 'run', '--coverage']},
 		{name: 'frontend-build', command: node, args: ['node_modules/next/dist/bin/next', 'build']},
-		{name: 'smoke', command: node, args: ['node_modules/@playwright/test/cli.js', 'test']}
+		{name: 'smoke', command: node, args: ['scripts/checks/smoke.mjs']}
 	];
 }

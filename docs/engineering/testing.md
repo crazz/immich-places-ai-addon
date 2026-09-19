@@ -1,6 +1,6 @@
 # Testing rules
 
-**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks, F02 frontend unit/component testing and F03 application smoke tests are installed. Go AI coverage enforcement remains pending. AI code is absent and its coverage is unmeasured. A documented requirement is not evidence of a passing check.
+**Status:** Adopted 17 September 2026. Binding for new AI functionality and affected existing behavior. F01 repository checks, F02 frontend unit/component testing and F03 application smoke tests are installed. CH01 adds provider scenarios and measured AI coverage enforcement for Go and TypeScript. A documented requirement is not evidence of a passing check.
 
 This document owns test strategy, coverage and verification gates. Read it with [architecture](architecture.md), [coding standards](coding-standards.md), and the relevant [PRD scenarios](../ai-locate/PRD.md). Product acceptance and live compatibility remain distinct from ordinary regression tests.
 
@@ -37,6 +37,8 @@ These percentages are minimum checks, not proof of quality. Every specified scen
 
 The frontend coverage command uses Vitest's V8 provider and includes untested TypeScript application files. Native thresholds enforce 80% lines and branches for `src/features/ai/` when that code exists. Tests and declaration-only files are excluded; legacy application files remain measured without an invented percentage floor. No AI files means no AI measurement, even when the harness succeeds. Filtered development runs do not establish complete coverage; the shared gate always runs the full suite.
 
+The backend `go-tests` gate runs the race suite once with `-coverpkg=./...` and a fresh coverage profile. It enforces 80% statements across `backend/internal/ai/`, `backend/internal/aiadapters/` and root `backend/ai*.go` integration files. Untested compiled source contributes zero-covered statements; legacy files remain measured without a percentage floor. The checker rejects missing AI measurement, malformed profiles, failed tests and termination. Keep future AI adapters in this explicit scope, or extend the scope before adding another location. The report is retained in ignored `out/checks/backend-coverage.out`.
+
 ## Mandatory acceptance/failure scenarios
 
 - One user cannot access another user's provider, job, image/context, result, draft or write operation.
@@ -69,7 +71,7 @@ Use the [Go race detector](https://go.dev/doc/articles/race_detector) on the bac
 
 `bun run check` is the shared local/CI entry point. Its thirteen gates run checker regression tests, the size ratchet, source-based dependency checks, gofmt, existing ESLint, Next.js route type generation, TypeScript, Go vet, race-enabled Go tests, frontend unit/component tests with coverage, both application builds and browser smoke tests. Every invoked gate reports `RUN` and `PASS` or `FAIL` with its error; a missing tool, nonzero exit or termination fails the command. Failed route generation blocks TypeScript checking; either failed application build blocks smoke execution. Independent gates still run so their results remain visible.
 
-The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. CI installs the pinned Playwright Chromium runtime and retains browser failure reports for seven days. Go AI coverage enforcement remains pending.
+The workflow in [checks.yml](../../.github/workflows/checks.yml) runs these commands on pull requests and pushes with read-only repository permissions and immutable action references. It does not publish images or configure remote branch protection. Existing release publishing is unchanged. CI installs the pinned Playwright Chromium runtime and retains browser failure reports for seven days. Backend AI coverage enforcement is part of the shared race-test gate.
 
 Keep live-provider/Immich integration, quality evaluation and heavy reference-NAS benchmarks separate from ordinary PR checks. Require the applicable evidence before release, and rerun when relevant behavior/version/configuration changes. No ordinary test run sends private data or mutates the user's real library.
 
@@ -106,13 +108,13 @@ Frontend tests are co-located as `src/**/*.test.ts` or `.test.tsx`, use explicit
 
 ### Browser smoke environment
 
-The three `tests/e2e/*.spec.ts` journeys exercise authentication/browsing, manual placement and GPX import. Playwright runs Chromium with one worker and no retries against the production Next.js standalone output, a compiled Go backend, normal migrations and a fresh temporary SQLite directory. Each test owns its synthetic account/key. Loopback ports 3080 (frontend), 8089 (backend) and 8090 (fake Immich) must be free; existing servers are never reused. Startup is bounded to 30 seconds per server, tests to 30 seconds each and the suite to three minutes. Graceful shutdown has an eight-second fallback; normal teardown removes temporary data.
+The shared smoke gate runs two isolated installations sequentially: three legacy journeys (authentication/browsing, manual placement and GPX) with AI disabled, then private provider management with AI enabled. Playwright runs Chromium with one worker and no retries against production Next.js standalone output, a compiled Go backend, normal migrations and a fresh temporary SQLite directory per installation. Each test owns its synthetic account/key. Loopback ports 3080 (frontend), 8089 (backend) and 8090 (fake Immich) must be free; existing servers are never reused. Startup is bounded to 30 seconds per server, tests to 30 seconds each and each installation's suite to three minutes. Graceful shutdown has an eight-second fallback; normal teardown removes temporary data.
 
 Browser map tiles are synthetic. Unexpected browser destinations fail the test, and a local deny proxy prevents backend external calls. Known optional Nominatim requests after a save/reload are explicitly denied to exercise the existing offline label fallback and recorded in fixture evidence. Unknown external destinations and unknown Immich fixture routes fail verification. Application APIs, auth cookies, migrations, GPX matching and confirmed location writes remain real. No private photos, credentials or live library are used.
 
-Failed runs retain screenshots and traces under `test-results/` and an HTML report under `playwright-report/`; synthetic upstream writes and blocked-geocoding attempts are attached as JSON. Both directories are generated by Playwright and excluded from handwritten-source checks and Git. Inspect the report with `node node_modules/@playwright/test/cli.js show-report`. A direct Playwright invocation does not rebuild artifacts; use the shared smoke command for complete verification. Browser installation needs network access; test execution uses local services only. An uninstalled browser fails visibly.
+Failed runs retain screenshots and traces under `test-results/` and an HTML report under `playwright-report/`, in separate `ai-disabled` and `ai-enabled` subdirectories; synthetic upstream writes and blocked-geocoding attempts are attached as JSON. Both directories are generated by Playwright and excluded from handwritten-source checks and Git. Inspect a report with `node node_modules/@playwright/test/cli.js show-report playwright-report/ai-enabled`. A direct Playwright invocation does not rebuild artifacts and selects only one mode (`SMOKE_AI_ENABLED=true` selects providers; otherwise legacy). Use the shared smoke command for complete verification. Browser installation needs network access; test execution uses local services only. An uninstalled browser fails visibly.
 
-These checks characterize existing non-AI behavior, exact unstacked asset writes and persisted readback after browser reload. They do not establish database recovery after process restart, all stack semantics, live compatibility, AI flag enforcement or AI acceptance scenarios; add those as their capabilities arrive.
+These checks characterize existing non-AI behavior with the flag off, exact unstacked asset writes, and private profile create/edit/disable with the flag on, including redaction and persisted readback after browser reload. Backend tests separately prove flag rejection, database reopen and upgrade, isolation, conflicts and credential cleanup. Browser smoke does not establish all stack semantics, live compatibility, provider transport or model quality; add scenarios with their owning capabilities.
 
 ### Comparison bases
 
@@ -126,7 +128,7 @@ CI fetches complete history. Pull requests use the event's base SHA; pushes use 
 
 Go build output is under ignored `out/checks/`; Next.js output, `next-env.d.ts`, TypeScript build metadata, coverage output, `.gitnexus/` and the local OpenSpec Plus update timestamp are ignored. Temporary regression fixtures are cleaned up. Generated output must not be committed; an existing tracked `backend/coverage.out` remains explicitly classified by its producer in the coding standard.
 
-The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) records the installed F01–F03 harnesses. Backend AI coverage enforcement must arrive with the first AI Go code. Use the documented commands and recorded results; no generic `npm test` or unexecuted verification pass is implied.
+The [engineering tooling prerequisite](../ai-locate/OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) records the installed F01–F03 harnesses; CH01 supplies backend AI coverage enforcement. Use the documented commands and recorded results; no generic `npm test` or unexecuted verification pass is implied.
 
 Build the smallest meaningful harness first; add feature scenarios with their owning changes. Import and coverage rules must grow with real packages. An absent AI package has no measured coverage and cannot count as a successful coverage gate. Existing lint/tests/build failures discovered during setup must be reported and resolved or explicitly recorded as inherited limitations, not silently suppressed.
 

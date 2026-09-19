@@ -100,6 +100,7 @@ func main() {
 	mainMux := http.NewServeMux()
 	mainMux.HandleFunc("GET /health", handlers.handleHealth)
 	mainMux.Handle("/auth/", authMux)
+	mainMux.Handle("/ai/", newAIProviderHandler(db, cfg))
 	mainMux.Handle("/", sessionMiddleware(db, protectedMux))
 
 	handler := requestHardeningMiddleware(mainMux)
@@ -174,10 +175,14 @@ func requestHardeningMiddleware(next http.Handler) http.Handler {
 }
 
 func sessionMiddleware(db *Database, next http.Handler) http.Handler {
+	return sessionMiddlewareWithErrors(db, next, writeError)
+}
+
+func sessionMiddlewareWithErrors(db *Database, next http.Handler, respond func(http.ResponseWriter, int, string)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookieName)
 		if err != nil || cookie.Value == "" {
-			writeError(w, http.StatusUnauthorized, "not authenticated")
+			respond(w, http.StatusUnauthorized, "not authenticated")
 			return
 		}
 
@@ -187,11 +192,11 @@ func sessionMiddleware(db *Database, next http.Handler) http.Handler {
 		user, err := db.getSessionUser(r.Context(), tokenHash)
 		if err != nil {
 			log.Printf("[Auth] Session DB error: %v", err)
-			writeError(w, http.StatusInternalServerError, "internal error")
+			respond(w, http.StatusInternalServerError, "internal error")
 			return
 		}
 		if user == nil {
-			writeError(w, http.StatusUnauthorized, "session expired")
+			respond(w, http.StatusUnauthorized, "session expired")
 			return
 		}
 

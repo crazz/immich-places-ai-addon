@@ -196,6 +196,7 @@ export function FilterBar({
 					<FilterIcon />
 				</button>
 				<button
+					aria-label={'Settings'}
 					onClick={() => {
 						setIsSettingsOpen(value => !value);
 						setIsFilterOpen(false);
