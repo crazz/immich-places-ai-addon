@@ -37,7 +37,7 @@ AI_PROVIDER_EGRESS_POLICY=[{"baseURL":"http://codex-proxy:3466/v1","addressClass
 
 Do not commit a broad private-network allowance or auto-populate approval from a user profile. After changing the policy, restart the backend so new connections load the updated allowlist.
 
-The proxy's own default model remains an independent operator setting (historically `gpt-5.6-luna` on the inspected image). Enter the addon profile model manually. The first intended stronger-model candidate is `gpt-5.6-sol`; public documentation is not proof that this NAS account/runtime can reach it. Sol availability through this proxy is **unverified** until an authorized live test records actual observations. Do not change the proxy global default, upgrade its container or silently fall back to another model when Sol is unavailable — create a new profile revision with a chosen model instead.
+The proxy's own default model remains an independent operator setting (historically `gpt-5.6-luna` on the inspected image). Enter the addon profile model manually. An authorized [NAS test on 19 September 2026](engineering/nas-provider-capability-2026-09-19.md) observed image, JSON and strict-schema sample support for requested/reported model `gpt-5.6-sol` through the existing proxy. This evidence applies to the recorded runtime and configuration; public documentation is not proof of availability on another installation. Do not change the proxy global default, upgrade its container or silently fall back to another model when Sol is unavailable — create a new profile revision with a chosen model instead.
 
 ## Explicit synthetic capability test
 
@@ -49,7 +49,7 @@ The current protocol is `capability-v2`. It rejects repaired or trailing JSON an
 
 An unapproved destination, missing session, foreign or disabled profile, stale revision or busy slot fails as a structured error before a test is accepted. Once a test is accepted and its outcome is persisted, the request succeeds and returns that report, including failed lifecycles and unsuccessful observations: HTTP success describes the test operation, not provider compatibility.
 
-A successful fixture or live result is observed synthetic compatibility only. It is not permission to send private photographs and not a geolocation quality score. GATE-03 remains open until an authorized live procedure supplies recorded evidence for the chosen endpoint/model.
+A successful fixture or live result is observed synthetic compatibility only. It is not permission to send private photographs and not a geolocation quality score. GATE-03 is complete for the [recorded NAS configuration](engineering/nas-provider-capability-2026-09-19.md); other endpoint/model/runtime combinations require their own authorized live evidence.
 
 ### Opt-in live evidence (not ordinary CI)
 
