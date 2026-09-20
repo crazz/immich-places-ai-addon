@@ -13,7 +13,8 @@ installation; review the addresses and network policy before using it elsewhere.
 | Persistent SQLite directory | `/volume2/docker/immich-places-ai-preview/data` |
 | Private frontend/backend network | `immich-places-ai-preview_default` |
 | Shared upstream network | Existing `npm_proxy`, inspected CIDR `192.168.144.0/20` |
-| Image revision | `11fca61eddafff998d37c203a77a67df9deef28b`, `linux/amd64` |
+| Frontend revision | `3c20372c2e5c4b5968ddec2baea1c0642c29f687`, `linux/amd64` |
+| Backend revision | `62a5bd7b7d0fc326625c517fabba82f3bf6dd743`, `linux/amd64` |
 
 The existing stack, its port `3032`, images and
 `/volume2/docker/immich-places/data` remain independent. The preview uses a fresh
@@ -29,12 +30,13 @@ Tailscale-bound deployment; the backend has no published host port.
 
 ## Deployment
 
-1. Export the committed application source with `git archive` into a temporary
-   build directory. This excludes local secrets, test output and dependency caches.
-2. Build the root Dockerfile as `immich-places-ai-preview-frontend:11fca61` and
-   `backend/Dockerfile` with the `backend` build context as
-   `immich-places-ai-preview-backend:11fca61`. Use `--platform linux/amd64 --load`
-   and label both images with `org.opencontainers.image.revision`.
+1. Export each service's committed source revision from the table above with
+   `git archive` into a temporary build directory. This excludes local secrets,
+   test output and dependency caches.
+2. Build the root Dockerfile as `immich-places-ai-preview-frontend:3c20372` and
+   `backend/Dockerfile` with its revision's `backend` build context as
+   `immich-places-ai-preview-backend:62a5bd7`. Use `--platform linux/amd64 --load`
+   and label each image with its full `org.opencontainers.image.revision`.
 3. Transfer these two images to the NAS with `docker save` / `docker load`.
    No registry publication is required. `pull_policy: never` prevents replacement
    with unrelated registry images.
@@ -53,9 +55,11 @@ Tailscale-bound deployment; the backend has no published host port.
    secret storage and unchanged IDs/start times for the existing Places and proxy
    containers. Do not create a test account in the user's fresh installation.
 
-For later image updates, build and load new immutable revision tags, set
-`PREVIEW_REVISION` for this stack and redeploy only the preview. Preserve its key
-and take a consistent SQLite backup first. Stopping this preview stack in
+For later image updates, build and load new immutable revision tags, update the
+changed services' image references through the Compose API, and redeploy only
+the preview. The template supports independent `PREVIEW_FRONTEND_REVISION` and
+`PREVIEW_BACKEND_REVISION` overrides. Preserve its key and take a consistent
+SQLite backup before backend/data changes. Stopping this preview stack in
 Dockhand leaves its data in place. Do not use a general Docker prune or touch the
 existing stack as part of preview maintenance.
 
@@ -77,9 +81,13 @@ defaults after a current capability test. Optional operator restrictions are
 explained in the [production guide](../../docs/ai-production-jobs.md). The
 [batch workflow](../../docs/ai-batch-workflow.md) launches with one explicit Start
 action; token estimates are not a billing guarantee. CH15 review remains read-only
-and does not implement AI writeback. The template defaults to tested revision
-`62a5bd7`. When updating the Dockhand local stack through its API, update both
-image references in the saved Compose content and then deploy. Changing only
+and does not implement AI writeback. The template defaults to frontend `3c20372`
+and backend `62a5bd7`. When updating the Dockhand local stack through its API,
+update the intended image references in the saved Compose content and then
+deploy. Frontend-only fixes preserve the backend image and container. Changing only
 `PREVIEW_REVISION` through the environment endpoint did not change the local
 stack's running images in the verified rollout. Preserve the existing secret and
 data mount, and verify actual container image tags after deployment.
+
+The [HTTP launch verification](../../docs/engineering/ai-http-launch-verification.md)
+records the request-key correction and its rollout.

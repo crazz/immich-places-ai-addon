@@ -31,3 +31,11 @@ The existing complete browser workflow now disables `randomUUID` before page scr
 - GitNexus query/context and upstream impact located the launch path through `LaunchEditor`, `LaunchForm` and `BatchLaunchSession`; pre-edit risk was LOW. After indexing the changed source, change analysis identified the launch functions and the test random-source stub, with no unexpected production symbols. Process enumeration has the existing bounded/cross-language gaps; the empty affected-process list is not evidence that no launch flow is affected. Source inspection and the browser journey cover that integration.
 
 Go source is unchanged; this correction does not claim a new Go race/coverage run. No private photo analysis or live Immich mutation is part of verification or rollout. No subagents were used.
+
+## NAS rollout
+
+At 20:37 UTC the isolated preview frontend was verified healthy on `3c20372c2e5c4b5968ddec2baea1c0642c29f687`. Its AMD64 image was built from a clean committed archive and deployed through Dockhand's Compose API. The runtime image ID is `sha256:ae8b636b2f04f8ca9ccb9fec6630b453ddebf6fe0bbf972584245118711c964d`; both `/` and `/api/backend/health` returned HTTP 200.
+
+The preview backend remained on `62a5bd7`, with its original container ID and 20:14 UTC start time. The production frontend, production backend and codex-proxy also retained their IDs and earlier start times. The preview data mount, frontend environment values and Tailscale port binding were preserved. The initial verifier compared environment arrays in order and stopped after deployment; read-only verification confirmed identical key/value mappings and completed the remaining checks without another deployment.
+
+The [Compose template and runbook](../../deploy/nas-preview/README.md) now record independent frontend/backend revisions. `docker compose config --quiet` with a dummy encryption key, the size check against `3c20372`, and `git diff --check` passed for these deployment records.
