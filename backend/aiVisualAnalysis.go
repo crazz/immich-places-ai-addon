@@ -37,6 +37,10 @@ func newAIVisualAnalyzer(db *Database, images *aiImagePreparer, dispatcher *prov
 	return a, nil
 }
 func (a *aiVisualAnalyzer) analyze(ctx context.Context, req analysis.Request) (result *analysis.Result, err error) {
+	return a.analyzeWith(ctx, req, a.runner.RunVisual)
+}
+
+func (a *aiVisualAnalyzer) analyzeWith(ctx context.Context, req analysis.Request, run func(context.Context, analysis.Request) (*analysis.Result, error)) (result *analysis.Result, err error) {
 	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 	defer func() {
@@ -99,5 +103,5 @@ func (a *aiVisualAnalyzer) analyze(ctx context.Context, req analysis.Request) (r
 		}
 		return nil
 	}
-	return a.runner.RunVisual(ctx, req)
+	return run(ctx, req)
 }

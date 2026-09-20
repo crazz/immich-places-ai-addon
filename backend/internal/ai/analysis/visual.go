@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"immich-places-backend/internal/ai/contextual"
 	"immich-places-backend/internal/ai/images"
 	"immich-places-backend/internal/ai/results"
 )
@@ -32,6 +33,7 @@ type Request struct {
 	Languages                                            []string
 	PrimaryLanguage                                      string
 	Image                                                *images.Prepared
+	Context                                              *contextual.Bundle
 	Guard                                                Guard
 }
 type Runner struct {
@@ -52,6 +54,13 @@ func New(protocol Protocol, dispatch DispatchFunc) (*Runner, error) {
 }
 
 func (r *Runner) RunVisual(ctx context.Context, req Request) (result *Result, err error) {
+	if req.Context != nil {
+		return nil, ErrInvalidRequest
+	}
+	return r.run(ctx, req, results.Visual)
+}
+
+func (r *Runner) run(ctx context.Context, req Request, mode results.Mode) (result *Result, err error) {
 	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 	defer func() {
@@ -98,7 +107,12 @@ func (r *Runner) RunVisual(ctx context.Context, req Request) (result *Result, er
 		Languages []string `json:"languages"`
 		Primary   string   `json:"primary_language"`
 	}{tags, primary})
-	instruction := visualPrompt + "\nLanguage settings: " + string(languageSettings) + "\nCanonical JSON schema: " + string(results.CanonicalSchema())
+	prompt, validation, err := attemptContext(req, mode)
+	if err != nil {
+		return nil, err
+	}
+	validation.Languages, validation.PrimaryLanguage = tags, primary
+	instruction := prompt + "\nLanguage settings: " + string(languageSettings) + "\nCanonical JSON schema: " + string(results.CanonicalSchema())
 	body, err := r.protocol.Encode(req.Model, instruction, "data:image/jpeg;base64,"+base64.StdEncoding.EncodeToString(data), req.Format)
 	if err != nil {
 		return nil, ErrInvalidRequest
@@ -140,12 +154,18 @@ func (r *Runner) RunVisual(ctx context.Context, req Request) (result *Result, er
 		return nil, ErrInvalidResponse
 	}
 	defer clear(parsed.Content)
-	proposal, err := r.validator.Validate(parsed.Content, results.Context{Mode: results.Visual, Completion: results.Complete, Languages: tags, PrimaryLanguage: primary})
+	proposal, err := r.validator.Validate(parsed.Content, validation)
 	if err != nil {
 		return nil, err
 	}
 	if err := authorize(ctx); err != nil {
 		return nil, err
 	}
-	return newResult(proposal, Metadata{Image: info, ProfileID: req.ProfileID, Revision: req.Revision, Model: req.Model, Format: req.Format, PromptVersion: PromptVersion, SchemaVersion: "1.0", Languages: tags, PrimaryLanguage: primary, Usage: parsed.Usage}), nil
+	metadata := Metadata{Mode: mode, Image: info, ProfileID: req.ProfileID, Revision: req.Revision, Model: req.Model, Format: req.Format, PromptVersion: PromptVersion, SchemaVersion: "1.0", Languages: tags, PrimaryLanguage: primary, Usage: parsed.Usage}
+	if mode == results.ContextAssisted {
+		contextInfo := req.Context.Info()
+		metadata.Context = &contextInfo
+		metadata.PromptVersion = ContextPromptVersion
+	}
+	return newResult(proposal, metadata), nil
 }

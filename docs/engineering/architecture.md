@@ -87,6 +87,8 @@ CH09 adds a pure single-attempt workflow under `backend/internal/ai/analysis/`, 
 
 CH11 adds pure lifecycle policy and a one-item worker under `backend/internal/ai/jobs/`, with real SQLite persistence in root `aiJob*.go` adapters and migration 022. The existing installation binder invalidates unfinished jobs in its own rotation transaction. Synthetic execution verifies recovery and cancellation; no startup worker or real Visual dispatch is connected. See the [jobs caller contract](../ai-analysis-jobs.md).
 
+CH10 adds pure consented evidence preparation under `backend/internal/ai/contextual/` and root `aiContext*.go` metadata adapters. Context-assisted analysis reuses the existing bounded attempt and authority checks; metadata reads cannot reach the confirmed writer. No public/startup or durable Context-assisted consumer is enabled. See the [context caller contract](../ai-consented-context.md).
+
 ## Decisions and changes
 
 Record a consequential architectural departure in an ADR with its requirement, alternatives, consequences and affected documents. Amend the applicable standard and technical design together; an individual change's design cannot silently override them. Routine choices within the accepted boundaries need no extra approval. Keep future Research/search interfaces deferred until an accepted consumer requires them.

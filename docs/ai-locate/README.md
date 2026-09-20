@@ -14,6 +14,8 @@ Before planning, implementation or review, read the adopted [architecture](../en
 - [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md): architecture, integration constraints, persistence, jobs, APIs, writeback, testing, and operations.
 - [OPENSPEC_HANDOFF.md](OPENSPEC_HANDOFF.md): capability mapping and a reference planning prompt; not an implementation backlog or an instruction executed during reconciliation.
 - [OPENSPEC_ROADMAP.md](OPENSPEC_ROADMAP.md): eight capability areas decomposed into 26 smaller candidate changes, dependencies, requirement ownership, and artifact-generation approach.
+- [CH10 and CH12–CH15 planning batch](CH10_CH12_CH15_PLAN.md): change order, dependencies, requirement/task mapping and current implementation status.
+- [Consented context](../ai-consented-context.md): CH10's internal Context-assisted contract and verification; public/durable context execution belongs to CH13.
 - [ENGINEERING_STANDARDS_PROPOSAL.md](ENGINEERING_STANDARDS_PROPOSAL.md): adoption record linking the authoritative engineering standards; the earlier proposal is superseded.
 - [SOURCES.md](SOURCES.md): pinned repository references, package provenance, and verification limits.
 - [Analysis-result schema](../../backend/internal/ai/results/ai-analysis-result.v1.schema.json): canonical v1.0 model-output contract embedded by CH07.

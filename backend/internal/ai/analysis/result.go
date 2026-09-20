@@ -3,11 +3,14 @@ package analysis
 import (
 	"slices"
 
+	"immich-places-backend/internal/ai/contextual"
 	"immich-places-backend/internal/ai/images"
 	"immich-places-backend/internal/ai/results"
 )
 
 type Metadata struct {
+	Mode                                                                    results.Mode
+	Context                                                                 *contextual.Metadata
 	Image                                                                   images.Metadata
 	ProfileID, Model, Format, PromptVersion, SchemaVersion, PrimaryLanguage string
 	Revision                                                                int
@@ -31,6 +34,13 @@ func (r *Result) Info() Metadata {
 	}
 	m := r.metadata
 	m.Languages = slices.Clone(m.Languages)
+	if m.Context != nil {
+		c := *m.Context
+		c.Consent.Classes = slices.Clone(c.Consent.Classes)
+		c.Sources = slices.Clone(c.Sources)
+		c.Omissions = slices.Clone(c.Omissions)
+		m.Context = &c
+	}
 	if m.Usage != nil {
 		u := *m.Usage
 		u.PromptTokens = copyCount(u.PromptTokens)
@@ -54,5 +64,5 @@ func newResult(proposal results.Proposal, metadata Metadata) *Result {
 	return result
 }
 
-func (Result) String() string   { return "validated Visual result" }
-func (Result) GoString() string { return "validated Visual result" }
+func (Result) String() string   { return "validated AI result" }
+func (Result) GoString() string { return "validated AI result" }

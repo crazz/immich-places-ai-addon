@@ -1,0 +1,27 @@
+# Internal consented context
+
+CH10 adds an internal Context-assisted attempt to the existing [Visual workflow](ai-visual-analysis.md). It introduces no public endpoint, startup worker, migration or persistent result consumer. CH13 owns durable Context-assisted admission after CH12 connects Visual jobs.
+
+## Consent and preparation
+
+`internal/ai/contextual` owns deterministic consent, time, source-selection and immutable bundle rules. Root `aiContext*.go` adapters own authenticated metadata reads and owner-qualified SQLite discovery. A bundle binds owner, installation, target/source digest, selection identity, provider profile/revision and `context-v1` consent. The caller must supply a current authorization callback; possession of a bundle or prepared image is not consent authority.
+
+The independent disclosure classes are `capture_time`, `selected_album`, `user_hint` and `nearby_locations`. Unselected classes do not appear in the provider projection. The target metadata read verifies current image authority; EXIF is interpreted for context only when capture time or neighbors are selected. No neighbor images are read. Hint text is limited to 2,000 UTF-8 bytes, one album label to 256 bytes and the serialized projection to 16 KiB. Bounds fail without truncating input. The caller supplies a positive neighbor window through 24 hours; the initial caller setting is six hours.
+
+Capture time preserves the recorded day and offset, with explicit `offset`, `local_unknown`, `missing` and `invalid` states. Upload timestamps and server timezone never fill missing capture time. Only two offset-bearing timestamps can be compared for elapsed temporal distance.
+
+Neighbor discovery uses at most 64 owner-qualified catalog candidates with capture time and coordinates, excluding hidden libraries, hidden assets and stack children. Current upstream metadata/access is rechecked. Retained neighbors are ordered by temporal distance and asset ID and capped at six; `bounded_discovery` never claims exhaustive catalog coverage. The target, duplicates, unavailable/hidden assets, invalid coordinates, incomparable/out-of-window times and known AI-origin locations are excluded. The optional owned lineage reader can identify known AI origin; absent provenance is explicitly `unknown`. An existing AI result does not establish GPS lineage, and no writer provenance store is invented here.
+
+Album context requires the exact consented album in the owner's current local scope and current target membership. A bounded authenticated `POST /api/search/metadata` with exact target ID, a single album ID, `size: 1` and `withExif: false` checks membership before `GET /api/albums/{id}` reads its current label. These are read operations; no album enumeration or label substitution occurs. The flat search fields remain supported in the pinned [Immich v3.2.2 search contract](https://github.com/immich-app/immich/blob/v3.2.2/server/src/dtos/search.dto.ts); its [album contract](https://github.com/immich-app/immich/blob/v3.2.2/server/src/dtos/album.dto.ts) does not itself contain membership. This source inspection and synthetic testing are not a live server compatibility claim.
+
+Optional 403/404 responses or lost membership before freezing produce safe omissions. Invalid caller binding, missing target authority, malformed metadata, unresolved storage/transport errors and excessive bodies fail preparation. Metadata responses are limited to 1 MiB, use the caller deadline and do not follow redirects. An empty authorized bundle remains explicitly Context-assisted.
+
+## Dispatch and handoff
+
+`aiVisualAnalyzer.analyzeContext` composes the existing profile/image guards with context revalidation. It recomputes the bounded bundle before encoding, after destination resolution and before publication, comparing its digest with the frozen value. Observed evidence, consent or authority changes invalidate the attempt; the retained bundle is never replaced. Earlier caller deadlines bound preparation and dispatch. Separate reads cannot provide an atomic upstream snapshot.
+
+`Runner.RunContext` verifies the context/image/provider binding and reuses the one-call 120-second workflow, 15 MiB request ceiling, 1 MiB reply ceiling, format policy and single-use reservation. The controlled `context-assisted-v1` prompt treats context as untrusted data. Opaque source IDs enter the provider payload; source asset IDs and retrieval digests remain private. Ordinary metadata grants no context-extent, source-reported-radius or viewpoint-alignment authority. Canonical validation rejects invented references and unsupported claims without a repair, downgrade or follow-up call. `RunVisual` rejects a supplied context bundle.
+
+The opaque result returns copied mode, prompt/schema versions, image/provider binding, usage observations and contextual metadata: consent/version, content digest, private source records and omission categories. Canonical model JSON remains unchanged. Explicit metadata access is private and must not be logged. Default result/bundle formatting redacts retained data. CH11's Visual-only completion path cannot persist this context envelope; CH13 must extend it and validate against the stored source set.
+
+The [verification record](engineering/ai-consented-context-verification.md) distinguishes synthetic contract evidence from model accuracy, real provider compatibility and reference-NAS performance.
