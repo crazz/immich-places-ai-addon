@@ -6,9 +6,13 @@ test.afterEach(async ({request}) => {
  expect(response.ok()).toBe(true);
 });
 
-test('launches a durable Visual job, restores progress and starts Context reanalysis with application defaults', async ({page, account}) => {
+test('launches and reconciles without randomUUID, restores progress and starts Context reanalysis with application defaults', async ({page, account}) => {
  test.setTimeout(90000);
+ // Loopback origins expose randomUUID; mirror the HTTP NAS API surface instead.
+ await page.addInitScript(() => Object.defineProperty(Crypto.prototype, 'randomUUID', {value: undefined}));
  await connectAccount(page, account);
+ expect(await page.evaluate(() => typeof crypto.randomUUID)).toBe('undefined');
+ expect(await page.evaluate(() => typeof crypto.getRandomValues)).toBe('function');
  await page.getByRole('button', {name: 'Settings', exact: true}).click();
  await page.getByRole('button', {name: 'AI providers', exact: true}).click();
  await page.getByRole('button', {name: 'Create provider'}).click();
@@ -42,6 +46,7 @@ test('launches a durable Visual job, restores progress and starts Context reanal
   await route.continue();
  });
  await page.getByRole('button', {name: 'Start analysis', exact: true}).click();
+ await expect(page.getByRole('alert')).toContainText('The run may already exist.');
  await page.getByRole('button', {name: 'Reconcile submission'}).click();
  expect(submissionKeys).toHaveLength(2);
  expect(submissionKeys[1]).toBe(submissionKeys[0]);
@@ -62,6 +67,8 @@ test('launches a durable Visual job, restores progress and starts Context reanal
  await page.getByRole('button', {name: 'Start analysis', exact: true}).click();
  await expect(page.getByText('Job complete', {exact: true})).toBeVisible({timeout: 15000});
  await expect(page.getByText('Succeeded · Location unknown', {exact: true})).toHaveCount(1);
+ expect(submissionKeys).toHaveLength(3);
+ expect(submissionKeys[2]).not.toBe(submissionKeys[0]);
  const child = new URL(page.url()).searchParams.get('aiJob');
  expect(child).not.toBe(parent);
  const childData = await (await page.request.get(`/api/backend/ai/jobs/${child}`)).json();

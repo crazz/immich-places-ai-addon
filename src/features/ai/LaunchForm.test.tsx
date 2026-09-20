@@ -11,7 +11,44 @@ import type {TProviderProfile} from './providerApi';
 
 vi.mock('./providerApi', () => ({fetchProviders: vi.fn()}));
 vi.mock('./jobApi', () => ({submitJob: vi.fn()}));
-afterEach(() => vi.resetAllMocks());
+afterEach(() => { vi.resetAllMocks(); vi.unstubAllGlobals(); });
+
+it('starts and reconciles a run when the browser has no randomUUID API', async () => {
+ const user = userEvent.setup();
+ vi.stubGlobal('crypto', {getRandomValues: crypto.getRandomValues.bind(crypto)});
+ vi.mocked(fetchProviders).mockResolvedValue({enabled: true, items: [aiProfile]});
+ vi.mocked(submitJob).mockRejectedValueOnce(new Error('Acknowledgement lost')).mockResolvedValue(aiProgress());
+ render(<LaunchForm preview={aiPreview()} onSubmittedAction={() => undefined} />);
+ await user.click(await screen.findByRole('button', {name: 'Start analysis'}));
+ await waitFor(() => expect(submitJob).toHaveBeenCalledTimes(1));
+ const first = vi.mocked(submitJob).mock.calls[0][0];
+ expect(first.idempotencyKey).toMatch(/^[a-f0-9]{32}$/);
+ await user.click(screen.getByRole('button', {name: 'Reconcile submission'}));
+ await screen.findByText(/Analysis accepted/);
+ expect(vi.mocked(submitJob).mock.calls[1][0]).toEqual(first);
+ await user.click(screen.getByRole('button', {name: 'Start a different run'}));
+ await user.click(screen.getByRole('button', {name: 'Start analysis'}));
+ await waitFor(() => expect(submitJob).toHaveBeenCalledTimes(3));
+ expect(vi.mocked(submitJob).mock.calls[2][0].idempotencyKey).not.toBe(first.idempotencyKey);
+});
+
+it('reports a local preparation failure without claiming a run exists and allows retry', async () => {
+ const user = userEvent.setup();
+ const getRandomValues = crypto.getRandomValues.bind(crypto);
+ vi.stubGlobal('crypto', {getRandomValues: () => { throw new Error('Random source unavailable'); }});
+ vi.mocked(fetchProviders).mockResolvedValue({enabled: true, items: [aiProfile]});
+ vi.mocked(submitJob).mockResolvedValue(aiProgress());
+ render(<LaunchForm preview={aiPreview()} onSubmittedAction={() => undefined} />);
+ await user.click(await screen.findByRole('button', {name: 'Start analysis'}));
+ expect(screen.getByRole('alert')).toHaveTextContent(/^Random source unavailable$/);
+ expect(screen.queryByRole('button', {name: 'Reconcile submission'})).not.toBeInTheDocument();
+ expect(submitJob).not.toHaveBeenCalled();
+ vi.stubGlobal('crypto', {getRandomValues});
+ await user.click(screen.getByRole('button', {name: 'Start analysis'}));
+ await screen.findByText(/Analysis accepted/);
+ expect(submitJob).toHaveBeenCalledTimes(1);
+ expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
 
 it('starts the displayed Visual run with one click and binds the latest choices', async () => {
  const user = userEvent.setup();

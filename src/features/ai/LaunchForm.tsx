@@ -56,7 +56,11 @@ function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TL
 	};
 	const start = async (): Promise<void> => {
 		if (!profile || pending || locked.current) { return; }
-		try { await send(buildAdmission(fields, preview, profile, true, crypto.randomUUID(), rerun)); }
+		try {
+			// getRandomValues also works on HTTP origins used by local NAS deployments.
+			const key = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
+			await send(buildAdmission(fields, preview, profile, true, key, rerun));
+		}
 		catch (error) { setFailure(error instanceof Error ? error.message : 'Check the launch configuration.'); }
 	};
 	const ready = profile?.executionReadiness;
@@ -66,7 +70,7 @@ function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TL
 		{isPartial && <p>{'This allowance may complete only part of the batch.'}</p>}
 		<p>{`Start analysis sends ${preview.eligibleCount} selected image${preview.eligibleCount === 1 ? '' : 's'}${fields.mode === 'context-assisted' ? ' and the chosen context' : ''} to ${profile?.name ?? 'the selected provider'}. Results are proposals for review.`}</p>
 		{(validationError || isExpired) && <p role={'alert'}>{isExpired ? 'Selection preview expired. Preview again.' : validationError}</p>}
-		{failure && <p role={'alert'}>{`${failure} The run may already exist. Reconcile this submission before starting another run.`}</p>}
+		{failure && <p role={'alert'}>{failure}{pending && ' The run may already exist. Reconcile this submission before starting another run.'}</p>}
 		{isBusy && <p role={'status'}>{'Submitting analysis…'}</p>}
 		{isSubmitted && <p role={'status'}>{'Analysis accepted. Work continues after this window closes.'}</p>}
 		{!pending && <button type={'submit'} disabled={!!validationError || isExpired || isBusy}>{'Start analysis'}</button>}
