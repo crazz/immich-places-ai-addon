@@ -62,9 +62,14 @@ context: |
   CH09 internal Visual analysis is implemented in backend/internal/ai/analysis with read-only root
   authority adapters and providerhttp codecs. docs/ai-visual-analysis.md defines its one-attempt
   handoff; no public admission, durable worker or production analysis is connected.
+  CH11 durable jobs are implemented in backend/internal/ai/jobs with root SQLite adapters and
+  migration 022, covering idempotency, leases, bounded reservations/recovery, cancellation,
+  immutable results and installation/private-history lifecycle. docs/ai-analysis-jobs.md defines
+  the internal contract. No public route or startup worker is connected; CH12 owns production
+  selection/consent/access admission, real Visual integration and token/cost accounting.
   GATE-03 has recorded live synthetic evidence for gpt-5.6-sol through the existing NAS codex-proxy:
   docs/engineering/nas-provider-capability-2026-09-19.md. It covers only that runtime/configuration;
-  production rollout, durable analysis admission, jobs and writeback remain planned.
+  production rollout, durable analysis admission and writeback remain planned.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 

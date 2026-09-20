@@ -1,6 +1,6 @@
 # Internal Visual analysis
 
-CH09 connects [prepared images](ai-image-preparation.md) with the [canonical validator](ai-result-validation.md) through one internal provider attempt. It has no public route or startup worker. CH11 owns durable execution/storage; CH12 must supply revision-bound consent, lease fencing and dispatch accounting before production use. CH10 context inputs remain separate future work.
+CH09 connects [prepared images](ai-image-preparation.md) with the [canonical validator](ai-result-validation.md) through one internal provider attempt. It has no public route or startup worker. CH11 implements [durable jobs and storage](ai-analysis-jobs.md) with synthetic execution; CH12 must connect its lease/reservation guards and add revision-bound consent, current access and token/cost admission before production use. CH10 context inputs remain separate future work.
 
 ## Caller handoff
 

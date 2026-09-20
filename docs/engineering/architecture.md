@@ -85,6 +85,8 @@ CH08 adds pure raster preparation under `backend/internal/ai/images/` and read-o
 
 CH09 adds a pure single-attempt workflow under `backend/internal/ai/analysis/`, owning narrow protocol and dispatch contracts. Root `aiVisual*.go` adapters read current authority and translate the existing provider dispatcher; `internal/aiadapters/providerhttp/` owns analysis wire codecs. No analysis-to-provider dependency, public route or startup worker is introduced. See the [Visual caller contract](../ai-visual-analysis.md).
 
+CH11 adds pure lifecycle policy and a one-item worker under `backend/internal/ai/jobs/`, with real SQLite persistence in root `aiJob*.go` adapters and migration 022. The existing installation binder invalidates unfinished jobs in its own rotation transaction. Synthetic execution verifies recovery and cancellation; no startup worker or real Visual dispatch is connected. See the [jobs caller contract](../ai-analysis-jobs.md).
+
 ## Decisions and changes
 
 Record a consequential architectural departure in an ADR with its requirement, alternatives, consequences and affected documents. Amend the applicable standard and technical design together; an individual change's design cannot silently override them. Routine choices within the accepted boundaries need no extra approval. Keep future Research/search interfaces deferred until an accepted consumer requires them.

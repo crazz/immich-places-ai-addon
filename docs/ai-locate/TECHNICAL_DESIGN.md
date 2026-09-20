@@ -165,7 +165,7 @@ Model self-assessment is not calibrated confidence. The UI's verification status
 
 ## 6. Structured analysis contract
 
-The [canonical backend schema](../../backend/internal/ai/results/ai-analysis-result.v1.schema.json) defines the provider-facing result, with examples in `examples/`. CH07 embeds its unchanged v1.0 bytes and implements bounded structural/semantic validation; see the [caller contract](../ai-result-validation.md) and [verification](../engineering/ai-result-validation-verification.md). This full analysis contract has not been acceptance-tested with a model endpoint. CH09 implements the [internal Visual attempt](../ai-visual-analysis.md) with exact revision binding, current authority checks, one explicit reservation and canonical validation. Durable admission, the server-owned persistence envelope below and production dispatch remain later work.
+The [canonical backend schema](../../backend/internal/ai/results/ai-analysis-result.v1.schema.json) defines the provider-facing result, with examples in `examples/`. CH07 embeds its unchanged v1.0 bytes and implements bounded structural/semantic validation; see the [caller contract](../ai-result-validation.md) and [verification](../engineering/ai-result-validation-verification.md). This full analysis contract has not been acceptance-tested with a model endpoint. CH09 implements the [internal Visual attempt](../ai-visual-analysis.md) with exact revision binding, current authority checks, one explicit reservation and canonical validation. CH11 implements the internal durable lifecycle and a Visual provenance subset of the server-owned envelope below. Production admission/dispatch and the full usage/context/review envelope remain later work.
 
 The object contains `schema_version`, `outcome`, `selected_candidate_id`, `observations`, `candidates`, `descriptions`, and `warnings`. An outcome is `located`, `ambiguous`, or `unknown`. Candidates contain separate camera and subject information, nullable direction, evidence references, and a support summary.
 
@@ -186,6 +186,8 @@ The radius basis must agree with the presence of a radius. Candidate-dependent d
 Keep the immutable provider result separate from the edited draft. Retranslation creates a new description revision linked to the approved place facts; it does not silently move the GPS point.
 
 ## 7. Persistence and migrations
+
+CH11 migration 022 implements owner-qualified `ai_jobs`, `ai_job_items` and `ai_analyses`, after the provider/capability/selection migrations 018–021. See the [maintained jobs contract](../ai-analysis-jobs.md) for exact stored fields and cleanup behavior. The table below remains the broader target model: drafts, write operations, usage/context envelopes and public history queries are not yet implemented.
 
 Add tables through the existing Goose migration mechanism. The pinned checkout has migrations `001`–`017`, ending at `017_add_original_path.sql`; `018` is the next available number at this revision only. The existing database is `immich-places.db`; initialization executes WAL, foreign-key, and busy-timeout PRAGMAs. Confirm connection-pool PRAGMA behavior when implementing new relations. Existing migration tests cover fresh databases, legacy bootstrap, and repeated migration runs; extend these fixtures for AI rather than replacing the runner. [R06, R07, R22]
 
@@ -210,6 +212,8 @@ Backup the database and encryption key together, but protect them separately. Us
 
 ## 8. Durable execution, states, and budgets
 
+CH11 implements bounded claims/reservations, leases, idempotency, cancellation/recovery and immutable results through an internal synthetic executor; [verification](../engineering/ai-analysis-jobs-verification.md) records real SQLite evidence. It does not register a startup worker or production job route. CH12 owns actual Visual integration, fresh consent/access admission, provider error translation and token/cost policy.
+
 ### 8.1 Independent state dimensions
 
 | Dimension | States / meaning |
@@ -230,6 +234,8 @@ On restart, reconcile expired leases and move eligible interrupted items to retr
 Use at-least-once dispatch semantics with bounded attempts. An external provider may charge twice if a request was processed but its response was lost; neither SQLite nor an application idempotency key guarantees exactly-once provider billing. Capture provider request IDs where available and avoid opaque SDK retry loops layered over worker retries.
 
 ### 8.3 Proposed initial defaults
+
+CH11 enforces 500 distinct assets, three claims and three reserved calls per item. Its caller-owned policy defaults to two global leases, one per owner and 180-second expiry; `RunOne` has a 120-second context. The intended 30-second heartbeat requires caller-supplied ticks. There is no operator configuration, scheduler, UI polling or token/monetary admission yet; the broader defaults below remain rollout targets.
 
 Defaults are operator-configurable and must be tested: global concurrency 2; per-user concurrency 1; maximum 500 assets per submission; 120-second provider timeout; 180-second renewable lease; 30-second heartbeat; at most 3 provider dispatches per item in total. A schema-repair call counts toward that total. Poll visible progress every 3 seconds and back off when idle.
 

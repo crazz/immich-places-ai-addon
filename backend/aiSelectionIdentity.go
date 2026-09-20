@@ -47,6 +47,9 @@ func (s *aiSelectionStore) bind(ctx context.Context, endpoint, epoch string) err
 		return err
 	}
 	if previous != fingerprint {
+		if err = invalidateAIJobInstallation(ctx, tx, id, s.now()); err != nil {
+			return err
+		}
 		id = uuid.NewString()
 		if _, err = tx.ExecContext(ctx, "DELETE FROM ai_selection_snapshots"); err != nil {
 			return err
