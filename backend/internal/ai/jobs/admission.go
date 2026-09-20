@@ -16,16 +16,18 @@ type Limits struct {
 	MaxEstimatedMicros *int64 `json:"maxEstimatedMicros,omitempty"`
 }
 type Configuration struct {
-	SelectionToken  string   `json:"selectionToken"`
-	ProfileID       string   `json:"profileId"`
-	Revision        int      `json:"revision"`
-	Mode            string   `json:"mode"`
-	Format          string   `json:"format"`
-	AllowJSON       bool     `json:"allowJson"`
-	Languages       []string `json:"languages"`
-	PrimaryLanguage string   `json:"primaryLanguage"`
-	PolicyID        string   `json:"policyId"`
-	Limits          Limits   `json:"limits"`
+	SelectionToken  string          `json:"selectionToken"`
+	ProfileID       string          `json:"profileId"`
+	Revision        int             `json:"revision"`
+	Mode            string          `json:"mode"`
+	Format          string          `json:"format"`
+	AllowJSON       bool            `json:"allowJson"`
+	Languages       []string        `json:"languages"`
+	PrimaryLanguage string          `json:"primaryLanguage"`
+	PolicyID        string          `json:"policyId"`
+	Limits          Limits          `json:"limits"`
+	Context         *ContextChoices `json:"context,omitempty"`
+	Rerun           *RerunChoice    `json:"rerun,omitempty"`
 }
 type ImageConsent struct {
 	Version       string        `json:"version"`
@@ -59,8 +61,21 @@ func NormalizeAdmission(req Admission) (Admission, string, error) {
 }
 func normalizeConfiguration(cfg Configuration) (Configuration, error) {
 	id, err := uuid.Parse(cfg.SelectionToken)
-	if err != nil || !boundedIdentity(cfg.ProfileID) || cfg.Revision < 1 || cfg.Mode != "visual" || (cfg.Format != "strict" && cfg.Format != "json") || (cfg.Format == "json" && !cfg.AllowJSON) {
+	if err != nil || !boundedIdentity(cfg.ProfileID) || cfg.Revision < 1 || (cfg.Mode != "visual" && cfg.Mode != "context-assisted") || (cfg.Format != "strict" && cfg.Format != "json") || (cfg.Format == "json" && !cfg.AllowJSON) {
 		return Configuration{}, ErrInvalid
+	}
+	cfg.Context, err = normalizeContext(cfg.Mode, cfg.Context)
+	if err != nil {
+		return Configuration{}, err
+	}
+	if cfg.Rerun != nil {
+		rerun := *cfg.Rerun
+		parent, err := uuid.Parse(rerun.ParentJobID)
+		if err != nil || (rerun.Kind != "retry-failed" && rerun.Kind != "reanalysis") {
+			return Configuration{}, ErrInvalid
+		}
+		rerun.ParentJobID = parent.String()
+		cfg.Rerun = &rerun
 	}
 	cfg.SelectionToken = id.String()
 	if digest, err := hex.DecodeString(cfg.PolicyID); err != nil || len(digest) != 32 {

@@ -18,6 +18,9 @@ type TProviderRequest = {
 	model: string;
 	hasImage: boolean;
 	stream: boolean;
+	analysis?: boolean;
+	outputTokens?: number;
+	contextHintIncluded?: boolean;
 };
 type TProviderState = {requests: TProviderRequest[]; errors: string[]};
 

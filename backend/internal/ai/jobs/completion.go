@@ -1,6 +1,9 @@
 package jobs
 
-import "immich-places-backend/internal/ai/results"
+import (
+	"immich-places-backend/internal/ai/contextual"
+	"immich-places-backend/internal/ai/results"
+)
 
 type Completion struct {
 	Proposal                                                results.Proposal
@@ -8,6 +11,8 @@ type Completion struct {
 }
 
 type ResultMetadata struct {
+	Mode                                                                       results.Mode
+	Context                                                                    *contextual.Metadata `json:",omitempty"`
 	Installation, Profile, Model                                               string
 	Revision                                                                   int
 	Languages                                                                  []string

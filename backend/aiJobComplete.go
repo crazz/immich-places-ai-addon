@@ -28,7 +28,11 @@ func (s *aiJobStore) complete(ctx context.Context, lease jobs.Lease, completion 
 	if err != nil {
 		return "", jobs.ErrStorage
 	}
-	proposal, err := validator.Validate(payload, results.Context{Mode: results.Visual, Completion: results.Complete, Languages: job.Input.Languages, PrimaryLanguage: job.Input.PrimaryLanguage})
+	validation, contextMetadata, err := aiJobResultContext(ctx, s.db.db, job, lease, completion)
+	if err != nil {
+		return "", err
+	}
+	proposal, err := validator.Validate(payload, validation)
 	if err != nil {
 		return "", jobs.ErrInvalid
 	}
@@ -38,7 +42,7 @@ func (s *aiJobStore) complete(ctx context.Context, lease jobs.Lease, completion 
 			return "", jobs.ErrInvalid
 		}
 	}
-	if completion.PromptVersion != "visual-v1" || completion.SchemaVersion != "1.0" {
+	if completion.SchemaVersion != "1.0" {
 		return "", jobs.ErrInvalid
 	}
 	document, err := proposal.Data()
@@ -49,7 +53,7 @@ func (s *aiJobStore) complete(ctx context.Context, lease jobs.Lease, completion 
 	if err != nil {
 		return "", jobs.ErrInvalid
 	}
-	metadata, err := json.Marshal(jobs.ResultMetadata{Installation: job.Input.Installation, Profile: job.Input.Profile, Model: job.Model, Revision: job.Input.Revision, Languages: job.Input.Languages, PrimaryLanguage: job.Input.PrimaryLanguage, SelectionDigest: job.Input.SelectionDigest, SourceDigest: completion.SourceDigest, ImageDigest: completion.ImageDigest, PromptVersion: completion.PromptVersion, SchemaVersion: completion.SchemaVersion, ValidationVersion: version})
+	metadata, err := json.Marshal(jobs.ResultMetadata{Mode: validation.Mode, Context: contextMetadata, Installation: job.Input.Installation, Profile: job.Input.Profile, Model: job.Model, Revision: job.Input.Revision, Languages: job.Input.Languages, PrimaryLanguage: job.Input.PrimaryLanguage, SelectionDigest: job.Input.SelectionDigest, SourceDigest: completion.SourceDigest, ImageDigest: completion.ImageDigest, PromptVersion: completion.PromptVersion, SchemaVersion: completion.SchemaVersion, ValidationVersion: version})
 	if err != nil {
 		return "", jobs.ErrInvalid
 	}
@@ -68,6 +72,15 @@ func (s *aiJobStore) complete(ctx context.Context, lease jobs.Lease, completion 
 		if authorize != nil {
 			if err := authorize(ctx, tx); err != nil {
 				return err
+			}
+		}
+		if contextMetadata != nil {
+			_, current, err := aiJobResultContext(ctx, tx, job, lease, completion)
+			if err != nil {
+				return err
+			}
+			if current == nil || current.Digest != contextMetadata.Digest {
+				return jobs.ErrDenied
 			}
 		}
 		now := s.now().UnixNano()

@@ -19,6 +19,7 @@ type aiExecutionReadiness struct {
 	MaxImageBytes   int    `json:"maxImageBytes,omitempty"`
 	CostStatus      string `json:"costStatus"`
 	Currency        string `json:"currency,omitempty"`
+	ContextAllowed  bool   `json:"contextAllowed"`
 }
 
 func (h *aiProviderHandlers) executionReadiness(ctx context.Context, owner string, profile aiProviderProfile) (*aiExecutionReadiness, error) {
@@ -40,6 +41,7 @@ func (h *aiProviderHandlers) executionReadiness(ctx context.Context, owner strin
 		return ready, nil
 	}
 	ready.Source, ready.PolicyID = "operator-attested", digest
+	ready.ContextAllowed = p.Context
 	ready.MaxInputTokens, ready.MaxOutputTokens = p.MaxInputTokens, p.MaxOutputTokens
 	ready.MaxRequestBytes, ready.MaxImageBytes = p.MaxRequestBytes, p.MaxImageBytes
 	if p.Currency != "" {

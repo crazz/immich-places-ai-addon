@@ -45,13 +45,16 @@ func (p *aiProductionJobs) submit(ctx context.Context, owner string, req jobs.Ad
 		if err != nil {
 			return jobs.ErrDenied
 		}
+		if err := p.validateRerun(ctx, tx, owner, req.Configuration.Rerun, manifest.AssetIDs); err != nil {
+			return err
+		}
 		var model string
 		cfg := req.Configuration
 		if err := tx.QueryRowContext(ctx, `SELECT v.model FROM ai_provider_profiles p JOIN ai_provider_versions v ON v.userID=p.userID AND v.profileID=p.id AND v.revision=p.activeRevision WHERE p.userID=? AND p.id=? AND p.activeRevision=? AND p.enabled=1`, owner, cfg.ProfileID, cfg.Revision).Scan(&model); err != nil {
 			return jobs.ErrDenied
 		}
 		policy, policyID, ok := p.policies.Find(jobs.ExecutionBinding{Owner: owner, Installation: p.store.binding, Profile: cfg.ProfileID, Revision: cfg.Revision, Model: model, EgressFingerprint: p.fingerprint})
-		if !ok || policyID != cfg.PolicyID || !policy.Allows(cfg.Limits) {
+		if !ok || policyID != cfg.PolicyID || !policy.Allows(cfg.Limits) || (cfg.Mode == "context-assisted" && !policy.Context) {
 			return jobs.ErrDenied
 		}
 		if err := p.policyAvailable(ctx, tx, owner, policyID); err != nil {
@@ -65,10 +68,17 @@ func (p *aiProductionJobs) submit(ctx context.Context, owner string, req jobs.Ad
 			return err
 		}
 		calls := cfg.Limits.MaxCalls
+		consentVersion := "visual-v1"
+		if cfg.Mode == "context-assisted" {
+			consentVersion = "context-v1"
+			if cfg.Context.AlbumID != "" && cfg.Context.AlbumID != manifest.Scope.AlbumID {
+				return jobs.ErrDenied
+			}
+		}
 		if calls == 0 {
 			calls = len(manifest.AssetIDs)
 		}
-		input, digest, err := jobs.Normalize(jobs.Submission{Owner: owner, Installation: p.store.binding, Key: req.IdempotencyKey, Profile: cfg.ProfileID, Revision: cfg.Revision, AssetIDs: manifest.AssetIDs, Languages: cfg.Languages, PrimaryLanguage: cfg.PrimaryLanguage, SelectionDigest: selectionDigest, ConsentVersion: "visual-v1", MaxCalls: calls, Mode: cfg.Mode})
+		input, digest, err := jobs.Normalize(jobs.Submission{Owner: owner, Installation: p.store.binding, Key: req.IdempotencyKey, Profile: cfg.ProfileID, Revision: cfg.Revision, AssetIDs: manifest.AssetIDs, Languages: cfg.Languages, PrimaryLanguage: cfg.PrimaryLanguage, SelectionDigest: selectionDigest, ConsentVersion: consentVersion, MaxCalls: calls, Mode: cfg.Mode})
 		if err != nil {
 			return err
 		}

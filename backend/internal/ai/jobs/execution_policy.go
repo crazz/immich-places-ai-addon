@@ -31,6 +31,7 @@ type ExecutionPolicy struct {
 	Currency               string           `json:"currency,omitempty"`
 	InputMicrosPerMillion  *int64           `json:"inputMicrosPerMillion,omitempty"`
 	OutputMicrosPerMillion *int64           `json:"outputMicrosPerMillion,omitempty"`
+	Context                bool             `json:"context,omitempty"`
 }
 
 type ExecutionPolicies struct{ entries []ExecutionPolicy }

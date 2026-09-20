@@ -45,7 +45,11 @@ type Item struct {
 }
 
 func Normalize(input Submission) (Submission, string, error) {
-	if len(input.AssetIDs) == 0 || len(input.AssetIDs) > 10000 || input.Revision < 1 || input.ConsentVersion != "visual-v1" || input.MaxCalls < 1 || (input.Mode != "" && input.Mode != "visual") {
+	if input.Mode == "" {
+		input.Mode = "visual"
+	}
+	validMode := (input.Mode == "visual" && input.ConsentVersion == "visual-v1") || (input.Mode == "context-assisted" && input.ConsentVersion == "context-v1")
+	if len(input.AssetIDs) == 0 || len(input.AssetIDs) > 10000 || input.Revision < 1 || !validMode || input.MaxCalls < 1 {
 		return Submission{}, "", ErrInvalid
 	}
 	for _, id := range []string{input.Owner, input.Installation, input.Key, input.Profile} {
@@ -56,7 +60,6 @@ func Normalize(input Submission) (Submission, string, error) {
 	if digest, err := hex.DecodeString(input.SelectionDigest); err != nil || len(digest) != 32 {
 		return Submission{}, "", ErrInvalid
 	}
-	input.Mode = "visual"
 	tags, primary, err := results.NormalizeLanguages(input.Languages, input.PrimaryLanguage)
 	if err != nil {
 		return Submission{}, "", ErrInvalid

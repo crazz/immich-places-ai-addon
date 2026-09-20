@@ -65,14 +65,16 @@ context: |
   CH10 internal consented Context-assisted analysis is implemented in internal/ai/contextual
   and the shared analysis workflow, with read-only root metadata adapters. Its exact consent,
   bounded evidence and transient provenance contract is documented in docs/ai-consented-context.md.
-  No public context route or durable Context-assisted consumer is enabled; CH13 owns that integration.
+  CH13 connects that workflow to production jobs with explicit context-aware token policy,
+  bounded durable evidence, freshness checks and stored-source completion validation.
   CH11 durable jobs are implemented in backend/internal/ai/jobs with root SQLite adapters and
   migration 022, covering idempotency, leases, bounded reservations/recovery, cancellation,
   immutable results and installation/private-history lifecycle. docs/ai-analysis-jobs.md defines
   the internal contract. CH12 connects protected production selection/consent admission, real
   Visual execution, conservative call/token/cost accounting and bounded startup/shutdown workers.
-  Migration 023 and docs/ai-production-jobs.md define that production contract; launch UI and
-  durable Context integration remain CH13 work.
+  Migration 023 and docs/ai-production-jobs.md define that production contract. CH13 adds
+  gallery preview/consent, progress/cancel/rerun UI under src/features/ai, migration 024 for frozen
+  context and docs/ai-batch-workflow.md. CH14 detailed result browsing and CH15 read-only maps remain planned.
   GATE-03 has recorded live synthetic evidence for gpt-5.6-sol through the existing NAS codex-proxy:
   docs/engineering/nas-provider-capability-2026-09-19.md. It covers only that runtime/configuration;
   production deployment and writeback remain planned.

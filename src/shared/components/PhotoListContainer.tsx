@@ -2,6 +2,7 @@
 
 import {useCallback, useMemo} from 'react';
 
+import {AIWorkspace} from '@/features/ai';
 import {useAuth} from '@/features/auth/AuthContext';
 import {UserMenu} from '@/features/auth/UserMenu';
 import {useMissingLocationCount} from '@/features/filterBar/useMissingLocationCount';
@@ -51,7 +52,7 @@ export function PhotoListContainer(): ReactElement {
 		assetsError,
 		loadPageAction
 	} = useCatalog();
-	const {mapMarkerCount} = useAuth();
+	const {user, mapMarkerCount} = useAuth();
 	const {clearSelectionAction, selectedAssets, pendingLocationsByAssetID, gpxStatusFilter, setGPXStatusFilterAction} =
 		useSelection();
 	const {closeLightboxAction} = useUIMap();
@@ -169,6 +170,14 @@ export function PhotoListContainer(): ReactElement {
 	if (isGPXPanelActive) {
 		activeGPXPreviews = gpxPreviews;
 	}
+	let aiBlockedReason = '';
+	if (isGPXPanelActive || gpxStatusFilter !== 'all') {
+		aiBlockedReason = 'Close the GPX preview or status filter before creating an AI selection.';
+	} else if ((viewMode === 'album' && !selectedAlbumID) || (viewMode === 'folders' && !selectedFolderPath)) {
+		aiBlockedReason = 'Open a concrete album or folder, or use Timeline before creating an AI selection.';
+	} else if (isLoadingAssets || assetsError || isSyncing) {
+		aiBlockedReason = 'Wait for the current catalog page to load successfully before creating an AI selection.';
+	}
 
 	let gpxImportProp:
 		| {
@@ -223,7 +232,26 @@ export function PhotoListContainer(): ReactElement {
 				onTagAction: selectTagAction,
 				onGPXResetAction: handleGPXAutoReset,
 				onGPXCancelAction: handleGPXCancel,
-				trailingAction: <UserMenu gpxImport={gpxImportProp} />,
+				trailingAction: <>
+					{user && <AIWorkspace
+owner={user.ID} input={{
+						scope: {
+							view: selectedAlbumID ? 'album' : selectedFolderPath ? 'folder' : 'all',
+							gpsFilter,
+hiddenFilter,
+							...(selectedAlbumID ? {albumID: selectedAlbumID} : {}),
+							...(selectedFolderPath ? {folderPath: selectedFolderPath} : {}),
+							...(selectedTagID ? {tagID: selectedTagID} : {}),
+							...(startDate ? {startDate} : {}),
+...(endDate ? {endDate} : {})
+						},
+						selected: selectedAssets.map(asset => asset.immichID),
+page: assets.map(asset => asset.immichID),
+						revisionKey: `${currentPage}:${pageSize}`,
+						blockedReason: aiBlockedReason
+					}} />}
+					<UserMenu gpxImport={gpxImportProp} />
+                    </>,
 				gpxStatusFilter,
 				onGPXStatusFilterAction: setGPXStatusFilterAction
 			}}

@@ -27,6 +27,7 @@ type aiJobItemProgress struct {
 	Attempts int     `json:"attempts"`
 	Calls    int     `json:"calls"`
 	ResultID *string `json:"resultId"`
+	Outcome  string  `json:"outcome,omitempty"`
 }
 type aiJobUsage struct {
 	Calls           int    `json:"calls"`
@@ -102,14 +103,14 @@ func (p *aiProductionJobs) readProgress(ctx context.Context, tx *sql.Tx, owner, 
 		}
 		result.Usage.EstimatedMicros = &estimate
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT i.id,i.assetID,i.state,i.failure,i.attempts,i.calls,a.id FROM ai_job_items i LEFT JOIN ai_analyses a ON a.userID=i.userID AND a.jobID=i.jobID AND a.itemID=i.id WHERE i.userID=? AND i.jobID=? ORDER BY i.position LIMIT 501`, owner, id)
+	rows, err := tx.QueryContext(ctx, `SELECT i.id,i.assetID,i.state,i.failure,i.attempts,i.calls,a.id,COALESCE(a.outcome,'') FROM ai_job_items i LEFT JOIN ai_analyses a ON a.userID=i.userID AND a.jobID=i.jobID AND a.itemID=i.id WHERE i.userID=? AND i.jobID=? ORDER BY i.position LIMIT 501`, owner, id)
 	if err != nil {
 		return aiJobProgress{}, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item aiJobItemProgress
-		if err := rows.Scan(&item.ID, &item.AssetID, &item.State, &item.Failure, &item.Attempts, &item.Calls, &item.ResultID); err != nil {
+		if err := rows.Scan(&item.ID, &item.AssetID, &item.State, &item.Failure, &item.Attempts, &item.Calls, &item.ResultID, &item.Outcome); err != nil {
 			return aiJobProgress{}, err
 		}
 		result.Items = append(result.Items, item)

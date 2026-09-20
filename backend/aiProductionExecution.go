@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"immich-places-backend/internal/ai/analysis"
 	"immich-places-backend/internal/ai/jobs"
@@ -56,7 +57,7 @@ func (p *aiProductionJobs) executor(a *aiVisualAnalyzer) jobs.Execute {
 		if err != nil {
 			return jobs.Completion{}, jobs.ErrStorage
 		}
-		result, err := a.analyzeWith(ctx, analysis.Request{Owner: lease.Owner, Installation: lease.Installation, Asset: lease.Asset, ProfileID: cfg.ProfileID, Revision: cfg.Revision, Format: cfg.Format, AllowJSON: cfg.AllowJSON, Languages: cfg.Languages, PrimaryLanguage: cfg.PrimaryLanguage, Image: image, Guard: analysis.Guard{
+		request := analysis.Request{Owner: lease.Owner, Installation: lease.Installation, Asset: lease.Asset, ProfileID: cfg.ProfileID, Revision: cfg.Revision, Format: cfg.Format, AllowJSON: cfg.AllowJSON, Languages: cfg.Languages, PrimaryLanguage: cfg.PrimaryLanguage, Image: image, Guard: analysis.Guard{
 			Authorize: func(ctx context.Context) error {
 				err := guard.Authorize(ctx)
 				if err != nil {
@@ -71,12 +72,26 @@ func (p *aiProductionJobs) executor(a *aiVisualAnalyzer) jobs.Execute {
 				}
 				return err
 			},
-		}}, runner.RunVisual)
+		}}
+		var result *analysis.Result
+		if cfg.Mode == "context-assisted" {
+			preparer := &aiContextPreparer{images: a.images}
+			var contextReq aiContextRequest
+			request.Context, contextReq, err = p.frozenContext(ctx, lease, cfg, image, preparer, request.Guard.Authorize)
+			if err == nil {
+				result, err = a.analyzeContextWith(ctx, request, preparer, contextReq, runner.RunContext)
+			}
+		} else {
+			result, err = a.analyzeWith(ctx, request, runner.RunVisual)
+		}
 		if accountingError != nil {
 			return jobs.Completion{}, productionExecutionFailure(accountingError)
 		}
 		if guardError != nil {
 			return jobs.Completion{}, productionExecutionFailure(guardError)
+		}
+		if errors.Is(err, errAIContextChanged) {
+			return jobs.Completion{}, jobs.Failure{Code: jobs.Permanent}
 		}
 		if scoped := p.sourceFailure(ctx, lease, err); scoped != nil {
 			return jobs.Completion{}, scoped

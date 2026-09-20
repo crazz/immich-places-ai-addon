@@ -4,8 +4,10 @@ import {isRecord} from '@/utils/typeGuards';
 
 import {isCapabilityReport} from './capabilityTypes';
 import {raceAbort, withCompleteOperationDeadline} from './completeOperation';
+import {isExecutionReadiness} from './executionReadiness';
 
 import type {TCapabilityReport} from './capabilityTypes';
+import type {TExecutionReadiness} from './executionReadiness';
 
 export type {
 	TCapabilityReport, TCapabilityObservation, TObservationStatus
@@ -24,6 +26,7 @@ export type TProviderProfile = Omit<TProviderInput, 'secret'> & {
 	revision: number;
 	hasSecret: boolean;
 	capabilityReport?: TCapabilityReport;
+	executionReadiness?: TExecutionReadiness;
 };
 
 export type TProviderList = {enabled: boolean; items: TProviderProfile[]};
@@ -41,6 +44,9 @@ function isProvider(value: unknown): value is TProviderProfile {
 		typeof value.baseURL !== 'string' || typeof value.model !== 'string' ||
 		typeof value.enabled !== 'boolean' || typeof value.hasSecret !== 'boolean' ||
 		typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision <= 0) {
+		return false;
+	}
+	if (value.executionReadiness !== undefined && value.executionReadiness !== null && !isExecutionReadiness(value.executionReadiness)) {
 		return false;
 	}
 	if (value.capabilityReport === undefined || value.capabilityReport === null) {

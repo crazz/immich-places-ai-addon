@@ -1,10 +1,13 @@
+import {readFileSync} from 'node:fs';
 import {createServer} from 'node:http';
+import {setTimeout as delay} from 'node:timers/promises';
 
-const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=', 'base64');
+const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGIySpkGCAAA//8CAAEvG2k5CAAAAABJRU5ErkJggg==', 'base64');
 const users = new Map();
 const errors = [];
 const blockedGeocoding = [];
 const providerRequests = [];
+const unknownResult = JSON.parse(readFileSync(new URL('../../backend/internal/ai/results/testdata/ai-analysis-result.unknown.json', import.meta.url), 'utf8'));
 
 function catalog() {
 	return [
@@ -65,6 +68,15 @@ async function handleProvider(request, response, url, raw) {
 	if (bodyText.includes('"json_object"') || bodyText.includes('"json_schema"')) {
 		assistant = '{"color":"blue","shape":"circle"}';
 	}
+	if (bodyText.includes('schema_version')) {
+		assistant = JSON.stringify(unknownResult);
+		providerRequests.at(-1).analysis = true;
+		providerRequests.at(-1).outputTokens = payload.max_tokens;
+		providerRequests.at(-1).contextHintIncluded = bodyText.includes('Synthetic context hint');
+		if (payload.model === 'delayed-second-analysis' && providerRequests.filter(item => item.model === payload.model && item.analysis).length > 1) {
+			await delay(5000);
+		}
+	}
 	return respond(response, 200, {
 		id: 'cmpl-smoke',
 		model: payload.model,
@@ -106,6 +118,10 @@ async function handle(request, response) {
 	}
 	const state = users.get(key);
 	if (request.method === 'GET') {
+		const asset = state.assets.find(item => url.pathname === `/api/assets/${item.id}`);
+		if (asset) {
+			return respond(response, 200, {...asset, ownerId: '99999999-9999-4999-8999-999999999999', visibility: 'timeline', isTrashed: false, checksum: Buffer.alloc(20, 1).toString('base64'), updatedAt: '2026-08-04T00:00:00Z'});
+		}
 		if (url.pathname === '/api/users/me') {
 			return respond(response, 200, {id: key});
 		}

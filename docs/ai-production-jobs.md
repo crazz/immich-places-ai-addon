@@ -1,6 +1,6 @@
 # Production Visual jobs
 
-CH12 connects the [durable lifecycle](ai-analysis-jobs.md), [frozen selections](ai-selection-snapshots.md), [image preparation](ai-image-preparation.md) and [Visual analysis](ai-visual-analysis.md). The application registers private job APIs and starts a bounded in-process consumer when `AI_ENABLED=true`. AI remains disabled by default. No launch UI, Context-assisted job, automatic retention or Immich writer is enabled by this change.
+CH12 connects the [durable lifecycle](ai-analysis-jobs.md), [frozen selections](ai-selection-snapshots.md), [image preparation](ai-image-preparation.md) and [Visual analysis](ai-visual-analysis.md). The application registers private job APIs and starts a bounded in-process consumer when `AI_ENABLED=true`. AI remains disabled by default. CH13 subsequently adds the [launch and Context-assisted workflow](ai-batch-workflow.md). Automatic retention and an Immich writer remain outside these changes.
 
 ## Admission and progress API
 

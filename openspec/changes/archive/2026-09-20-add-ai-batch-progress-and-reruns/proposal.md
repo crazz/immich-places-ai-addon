@@ -22,6 +22,6 @@ None.
 
 ## Impact
 
-Depends on CH06 and the planned [CH10](../archive/2026-09-20-add-consented-ai-context/proposal.md) and [CH12](../archive/2026-09-20-connect-visual-analysis-to-durable-jobs/proposal.md). Apply and sync those changes first. Affects `src/features/ai/`, narrow gallery integration, jobs admission/execution and additive provenance storage. Uses existing frontend, map, HTTP and Go dependencies.
+Depends on CH06 and the planned [CH10](../2026-09-20-add-consented-ai-context/proposal.md) and [CH12](../2026-09-20-connect-visual-analysis-to-durable-jobs/proposal.md). Apply and sync those changes first. Affects `src/features/ai/`, narrow gallery integration, jobs admission/execution and additive provenance storage. Uses existing frontend, map, HTTP and Go dependencies.
 
-CH14 owns persistent result browsing and CH15 owns detailed proposal presentation. Draft editing/acceptance, translation-only reruns, writes, Research and automatic context sharing are outside this change. Covers FR-02/04/05/09 and NFR-01–07 in the [PRD](../../../docs/ai-locate/PRD.md) and the [roadmap](../../../docs/ai-locate/OPENSPEC_ROADMAP.md).
+CH14 owns persistent result browsing and CH15 owns detailed proposal presentation. Draft editing/acceptance, translation-only reruns, writes, Research and automatic context sharing are outside this change. Covers FR-02/04/05/09 and NFR-01–07 in the [PRD](../../../../docs/ai-locate/PRD.md) and the [roadmap](../../../../docs/ai-locate/OPENSPEC_ROADMAP.md).
