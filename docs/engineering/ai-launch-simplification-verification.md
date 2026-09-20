@@ -36,3 +36,9 @@ The deployed proxy adapter was inspected read-only and does not forward maximum-
 - Both Dockerfiles built successfully for `linux/amd64`. Desktop and phone regression screenshots were inspected locally; controls stay in their columns, with vertical scrolling when needed.
 
 Live rollout uses the existing isolated preview stack and preserves its database and encryption key. The deployment helper backs up SQLite before changing only the preview image revision, then verifies health and unchanged production/proxy container identities. A successful synthetic run is not evidence of live model quality or provider token enforcement.
+
+## NAS rollout
+
+At 20:14 UTC the isolated frontend and backend were verified healthy on code revision `62a5bd7b7d0fc326625c517fabba82f3bf6dd743`, with HTTP health returning 200. The existing data mount, all backend environment values (including the encryption key) and the Tailscale port binding were preserved. SQLite was backed up before the update. The production frontend, production backend and codex-proxy retained their container identities, start times and configuration.
+
+The first Dockhand deploy returned success after an environment-variable update but retained the old image tags. The mismatch was detected before reporting completion. Updating both image references through the local stack's Compose API and deploying again produced the verified revision. The deployment template and guide now record that behavior. No private analysis was launched as part of rollout.

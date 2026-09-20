@@ -77,5 +77,9 @@ defaults after a current capability test. Optional operator restrictions are
 explained in the [production guide](../../docs/ai-production-jobs.md). The
 [batch workflow](../../docs/ai-batch-workflow.md) launches with one explicit Start
 action; token estimates are not a billing guarantee. CH15 review remains read-only
-and does not implement AI writeback. Set `PREVIEW_REVISION` to the tested image tag
-when updating both preview services; preserve the existing secret and data mount.
+and does not implement AI writeback. The template defaults to tested revision
+`62a5bd7`. When updating the Dockhand local stack through its API, update both
+image references in the saved Compose content and then deploy. Changing only
+`PREVIEW_REVISION` through the environment endpoint did not change the local
+stack's running images in the verified rollout. Preserve the existing secret and
+data mount, and verify actual container image tags after deployment.

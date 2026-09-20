@@ -66,3 +66,5 @@ geolocation quality, NAS concurrency benchmarks or retention/release gates.
 The upstream Immich instance is shared. Separate Places data does not isolate
 future user-authorized manual/GPX writes from that real library. Browser sessions
 also require distinct hostnames; different ports alone do not separate cookies.
+
+The initial launch restriction described above was superseded later on 20 September by [ADR-08](decisions/ADR-08-simple-ai-launch.md). The [launch correction verification](ai-launch-simplification-verification.md) records the updated preview, ordinary application defaults and successful deployment.
