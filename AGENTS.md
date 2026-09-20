@@ -12,6 +12,7 @@ For AI Locate work, also read the [planning index](docs/ai-locate/README.md), th
 
 ## Essential constraints
 
+- Write repository documentation, OpenSpec artifacts, code comments, commit messages and pull request text in English.
 - Handwritten source and tests are limited to 500 physical lines, including comments and blanks. Apply the exact inherited-file ratchet and exclusions in the coding standards; split by responsibility.
 - Keep new AI core behavior in focused `backend/internal/ai/` packages and AI UI/state under `src/features/ai/`. Preserve the existing Go/Next.js/SQLite deployment and manual/GPX behavior.
 - Analysis and draft acceptance cannot mutate Immich. Only the confirmed writer may execute a durable, revision-bound plan for exact approved assets and fields.

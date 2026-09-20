@@ -113,9 +113,9 @@ Provider settings and capabilities are versioned. Jobs bind to an immutable prof
 
 Workers fetch images through the authenticated Immich client on the server, not by sending the provider a private Immich URL. Normalize orientation, decode to a supported raster format, strip unnecessary metadata, and create a bounded analysis copy. Never expose the Immich key in an AI request.
 
-The current preview handler streams the upstream image response; it does not provide these normalization, metadata-stripping, or decode-size guarantees. Reuse authenticated fetching, then implement bounded image preparation in the AI worker. [R05, R20]
+The existing preview handler still streams the upstream image response. CH08 adds a separate internal [image preparer](../ai-image-preparation.md) with authorized exact-asset reads, normalization, metadata removal and decode/transmission limits. It has no public route or worker consumer yet. [R05, R20]
 
-Proposed initial limits: one image per item, 2,048-pixel maximum long edge, 10 MiB encoded request-image limit, and a 40-megapixel decode guard. These are configurable operational defaults to benchmark, not model requirements. Prefer an existing suitable preview; unsupported formats fail explicitly. Higher-resolution retry requires an explicit setting and the same limits. Original files are never changed by this module.
+CH08 implements one image per preparation, a 2,048-pixel maximum long edge, a 10 MiB request-image limit including Base64/data-URL expansion, and a 40-megapixel decode guard. Internal policy may lower these hard ceilings; operator configuration and reference-NAS benchmarking remain later work. Static JPEG, PNG and WebP previews are supported with the documented orientation policy; unsupported inputs fail explicitly. Higher-resolution retry remains deferred. Original files are never changed.
 
 Use a temporary file only when needed; clean it on completion and startup recovery. Do not store Base64 payloads in job JSON, logs, or the audit trail.
 

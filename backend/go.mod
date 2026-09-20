@@ -1,9 +1,10 @@
 module immich-places-backend
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/caarlos0/env/v11 v11.3.1
+	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
@@ -12,8 +13,9 @@ require (
 	github.com/ringsaturn/tzf v1.0.3
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	golang.org/x/crypto v0.46.0
-	golang.org/x/sync v0.19.0
-	golang.org/x/text v0.32.0
+	golang.org/x/image v0.45.0
+	golang.org/x/sync v0.22.0
+	golang.org/x/text v0.41.0
 	golang.org/x/time v0.14.0
 	modernc.org/sqlite v1.46.1
 )
@@ -40,7 +42,7 @@ require (
 	go.mongodb.org/mongo-driver v1.11.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
