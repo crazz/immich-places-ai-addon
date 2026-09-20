@@ -1,0 +1,70 @@
+name: immich-places-ai-preview
+
+services:
+  ai-preview-frontend:
+    image: immich-places-ai-preview-frontend:${PREVIEW_REVISION:-11fca61}
+    pull_policy: never
+    container_name: immich-places-ai-preview
+    ports:
+      - '100.110.198.109:3033:3032'
+    environment:
+      PORT: '3032'
+      HOSTNAME: '0.0.0.0'
+      BACKEND_URL: http://ai-preview-backend:8082
+    depends_on:
+      ai-preview-backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3032/api/backend/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+  ai-preview-backend:
+    image: immich-places-ai-preview-backend:${PREVIEW_REVISION:-11fca61}
+    pull_policy: never
+    container_name: immich-places-ai-preview-backend
+    environment:
+      IMMICH_URL: http://Immich-SERVER:2283
+      IMMICH_EXTERNAL_URL: https://immich.craz.space
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set a new Dockhand secret for this preview}
+      DATA_DIR: /data
+      PORT: '8082'
+      ALLOW_INSECURE: 'true'
+      TRUST_PROXY_TLS: 'false'
+      REGISTRATION_ENABLED: 'true'
+      AI_ENABLED: 'true'
+      AI_PUBLIC_ORIGIN: http://pt-nas.tail5d7615.ts.net:3033
+      AI_PROVIDER_EGRESS_POLICY: '[{"baseURL":"http://codex-proxy:3466/v1","addressClass":"local","allowedCIDRs":["192.168.144.0/20"]}]'
+      AI_EXECUTION_POLICIES: ${AI_EXECUTION_POLICIES:-[]}
+      AI_JOB_WORKERS: '1'
+      AI_JOB_PER_OWNER: '1'
+      AI_JOB_LEASE_SECONDS: '180'
+      AI_JOB_HEARTBEAT_SECONDS: '30'
+      AI_JOB_IDLE_MS: '1000'
+    volumes:
+      - type: bind
+        source: /volume2/docker/immich-places-ai-preview/data
+        target: /data
+        bind:
+          create_host_path: false
+    networks:
+      - default
+      - npm_proxy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8082/health']
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  npm_proxy:
+    external: true
