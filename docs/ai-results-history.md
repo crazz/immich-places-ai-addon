@@ -25,4 +25,4 @@ A versioned encrypted cursor binds owner, installation, query and terminal-histo
 
 Migration 025 adds an immutable terminal read projection with transactional completion/cancellation publication and provenance-only backfill. Existing job/item/analysis tables remain authoritative. No retention schedule or deletion policy is activated. Rollback should hide the new surface and restore a compatible backup when necessary; do not destructively downgrade retained history.
 
-See [verification](engineering/ai-results-history-verification.md). CH15 adds detailed geometry, evidence and language inspection. Draft acceptance and confirmed writing remain separate changes.
+See [verification](engineering/ai-results-history-verification.md). [CH15 proposal inspection](ai-proposal-review.md) adds detailed geometry, evidence and language inspection. Draft acceptance and confirmed writing remain separate changes.

@@ -1,6 +1,6 @@
 # CH10 and CH12–CH15 planning batch
 
-Status: CH10, CH12, CH13 and CH14 implemented and archived; CH15 planned. Prepared on 20 September 2026 against `23c6ca6` on `codex/plan-ai-selection-and-validation`. All five changes contain proposal, design, delta specs and vertical-slice tasks; CH10/CH12/CH13/CH14 tasks are complete and CH15 tasks remain unchecked. OpenSpec Plus artifact reviews were performed inline, honoring the explicit instruction to use no subagents.
+Status: All five changes implemented, synchronized and archived. Prepared on 20 September 2026 against `23c6ca6` on `codex/plan-ai-selection-and-validation`. All five changes contain proposal, design, delta specs and vertical-slice tasks; all 42 implementation tasks are complete. OpenSpec Plus artifact reviews were performed inline, honoring the explicit instruction to use no subagents.
 
 ## Changes and application order
 
@@ -10,7 +10,7 @@ Status: CH10, CH12, CH13 and CH14 implemented and archived; CH15 planned. Prepar
 | 2 | [CH12: durable Visual integration](../../openspec/changes/archive/2026-09-20-connect-visual-analysis-to-durable-jobs/proposal.md) | Authorized real execution with finite resource reservations | 10 / 34 / 9 |
 | 3 | [CH13: batch progress and reruns](../../openspec/changes/archive/2026-09-20-add-ai-batch-progress-and-reruns/proposal.md) | Launch both modes, follow/cancel work and create explicit new runs | 8 / 24 / 10 |
 | 4 | [CH14: persistent results](../../openspec/changes/archive/2026-09-20-browse-persistent-ai-results/proposal.md) | Private terminal history independent of Missing GPS | 5 / 15 / 7 |
-| 5 | [CH15: proposal inspection](../../openspec/changes/review-ai-camera-and-subject-proposals/proposal.md) | Read-only camera/subject, evidence and language presentation | 6 / 17 / 8 |
+| 5 | [CH15: proposal inspection](../../openspec/changes/archive/2026-09-20-review-ai-camera-and-subject-proposals/proposal.md) | Read-only camera/subject, evidence and language presentation | 6 / 17 / 8 |
 
 Totals count each delta occurrence, including deliberately repeated modified requirements: 35 requirements, 108 scenarios and 42 tasks. CH14 technically requires CH12 rather than CH13; the sequence above keeps this batch linear. Finish verification and sync/archive each predecessor before applying a conflicting successor. CH13's modified job requirements preserve CH12's full replacement requirements and inherited scenarios. CH14 creates `ai-results-and-review`; CH15 adds to it afterward. Do not apply CH15 against a main spec where CH14 has not been synchronized.
 
@@ -26,7 +26,7 @@ No new library is proposed. Existing approved JSON Schema and image libraries re
 
 ## Requirement-to-task and verification trace
 
-Every scenario under a mapped requirement must become an automated behavior/authorization/failure test during apply. The layers below identify where the claim is established; this is a test plan, not executed application-test evidence. Tests for inherited behavior may pass immediately. Real SQLite is required for persistence/concurrency claims. Shared engineering gates, Plus TDD, GitNexus pre-edit impact and pre-commit analysis remain required during implementation.
+Every scenario under a mapped requirement must become an automated behavior/authorization/failure test during apply. The layers below record the original test plan. Executed evidence is linked in each implemented change guide and verification record. Tests for inherited behavior may pass immediately. Real SQLite is required for persistence/concurrency claims. Shared engineering gates, Plus TDD, GitNexus pre-edit impact and pre-commit analysis remain required during implementation.
 
 | Change | Requirement | Tasks | Primary verification layers |
 |---|---|---|---|
@@ -80,3 +80,8 @@ Reviewed proposal scope/non-goals, design ownership/failure/persistence/rollout 
 Validation: every change passes `openspec validate <change> --strict --no-interactive`; `openspec validate --all --strict --no-interactive` passes all 10 current specs/changes. Ordered delta composition preserves all modified targets and inherited scenarios. All 108 scenarios have Given/When/Then, every requirement maps above to tasks and verification layers, local link targets resolve, and planning documents contain no non-English text or unresolved placeholders. Local CLI instruction/status snapshots and document-check evidence are in ignored `out/checks/ch10-ch15-planning/`.
 
 Application code, main capability specs and dependencies were not modified by this planning batch. No application suite, migration, provider/private-photo request, Immich write, deployment or performance/quality benchmark was run. Implementation proceeds against explicit contracts and synthetic fixtures; live activation still requires the applicable GATE-02/03 compatibility evidence and GATE-04 destination/retention/reference-data decisions. Proposed retention durations remain unapproved and are not activated here.
+
+
+## Completed application batch
+
+The five changes were applied in order, reviewed inline without subagents and committed individually. See [Context](../ai-consented-context.md), [durable production execution](../ai-production-jobs.md), [batch workflow](../ai-batch-workflow.md), [history](../ai-results-history.md) and [proposal review](../ai-proposal-review.md) for maintained behavior and executed verification. All main capability specs are synchronized. No production deployment or push was performed by this application batch.

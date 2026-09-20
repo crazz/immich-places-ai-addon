@@ -14,3 +14,10 @@ it('validates immutable detail and separates failed entries from successful prop
 	}
 	expect(isResultDetail({...detailFixture, entry: resultEntry({executionState: 'failed', analysisId: null, proposalOutcome: null}), proposal: null})).toBe(true);
 });
+
+it('requires an explicit null or string canonical candidate selection before inspection', () => {
+ const key = 'selected_candidate_id';
+ const detail = resultDetail();
+ expect(isResultDetail({...detail, proposal: {...detail.proposal, [key]: 8}})).toBe(false);
+ expect(isResultDetail({...detail, proposal: {...detail.proposal, [key]: null}})).toBe(true);
+});

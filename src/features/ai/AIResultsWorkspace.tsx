@@ -30,8 +30,8 @@ function ResultsSession({owner}: {owner: string}): ReactElement {
   window.history.pushState(null, '', resultURL(new URL(window.location.href), next)); setState(next);
  };
  return <>
-  <button ref={entry} type={'button'} className={'fixed right-4 bottom-4 z-[1000] cursor-pointer rounded-lg border border-(--color-border) bg-(--color-surface) px-4 py-2 text-sm shadow-md'} onClick={() => navigate({...state, open: true})}>{'AI Results'}</button>
-  <DialogShell isOpen={state.open} onClose={() => navigate({...state, open: false, reference: null})} title={'AI Results'} subtitle={'Saved private analyses. Reviewing results does not change your photos.'}>
+  <button ref={entry} type={'button'} className={'fixed right-4 bottom-20 z-[1000] cursor-pointer rounded-lg border border-(--color-border) bg-(--color-surface) px-4 py-2 text-sm shadow-md'} onClick={() => navigate({...state, open: true})}>{'AI Results'}</button>
+  <DialogShell isOpen={state.open} onClose={() => navigate({...state, open: false, reference: null})} maxWidth={state.reference ? 'review' : 'md'} title={'AI Results'} subtitle={'Saved private analyses. Reviewing results does not change your photos.'}>
    {state.open && <div className={'p-4 text-sm [&_button]:cursor-pointer [&_button]:rounded [&_button]:border [&_button]:border-(--color-border) [&_button]:px-3 [&_button]:py-2 [&_button:disabled]:opacity-50 [&_label]:block [&_input]:w-full [&_input]:rounded [&_input]:border [&_input]:border-(--color-border) [&_input]:p-2 [&_select]:w-full [&_select]:rounded [&_select]:border [&_select]:border-(--color-border) [&_select]:p-2'}>
     <Description className={'sr-only'}>{'Browse saved analysis history, filter previous runs and inspect original results independently of the photo catalog.'}</Description>
     <div role={'region'} aria-label={'Results list'} hidden={!!state.reference} className={'max-h-[65dvh] space-y-3 overflow-y-auto'}>

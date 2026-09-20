@@ -97,7 +97,7 @@ Run these commands from the repository root. npm can run the same scripts, for e
 | `bun run test:unit:coverage` | Full frontend suite with text, HTML and JSON summary coverage reports |
 | `bun run check --gate frontend-tests --base HEAD` | The same full frontend coverage run through the shared runner |
 | `node node_modules/@playwright/test/cli.js install --with-deps chromium` | Install the pinned browser and OS dependencies; run once after dependency installation or a Playwright upgrade |
-| `bun run test:smoke --base HEAD` | Build both applications, then run all ten browser smoke journeys |
+| `bun run test:smoke --base HEAD` | Build both applications, then run all thirteen browser smoke journeys |
 | `bun run check --gate smoke --base HEAD` | Same build prerequisites and browser suite through shared verification |
 | `node node_modules/@playwright/test/cli.js test manual.spec.ts` | Focused browser development run against already-built current artifacts |
 | `bun run lint` / `bun run build` | Existing ESLint and Next.js production build |
@@ -153,3 +153,6 @@ CH12 adds authenticated production job APIs, real composed Visual execution, att
 CH13 adds real Visual/Context launch, lost-acknowledgement reconciliation, reload, execution-disabled reads and keyboard mixed cancellation to the browser suite. Frozen evidence/restart, post-resolution authority, rerun membership and DTO/polling/consent scenarios run in Go and frontend suites. See the [batch verification record](ai-batch-workflow-verification.md) for all 24 scenarios and synthetic fixture limits.
 
 CH14 adds real SQLite terminal-history projection, watermark pagination, safe detail and current-image authority checks. Component and built-browser journeys verify independent history, exact navigation, inert text, account cleanup and execution-disabled reads. See the [history verification record](ai-results-history-verification.md).
+
+
+CH15 [proposal review verification](ai-proposal-review-verification.md) records the camera/subject, nullable precision/heading, antimeridian/poles, evidence and language scenarios. Its built-browser fixtures cover located/ambiguous proposals, unavailable tiles/images, narrow-screen keyboard inspection, retained manual pending coordinates and layer cleanup. The current smoke suite has 3 auth/manual/GPX journeys and 10 AI journeys.

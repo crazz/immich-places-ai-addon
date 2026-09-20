@@ -76,7 +76,7 @@ test('launches a durable Visual job, restores progress and creates a separately 
  expect(childData.configuration.rerun).toEqual({parentJobId: parent, kind: 'reanalysis'});
  await page.screenshot({path: 'out/checks/ch13-apply/context-progress.png'});
  expect(await (await page.request.get(`/api/backend/ai/jobs/${parent}`)).json()).toEqual(parentBefore);
- const attempts = (await providerState(page.request)).requests.filter(entry => entry.analysis);
+ const attempts = (await providerState(page.request)).requests.filter(entry => entry.analysis && entry.model === 'manual-model');
  expect(attempts).toHaveLength(3);
  expect(attempts.filter(entry => entry.contextHintIncluded)).toHaveLength(1);
  const disabled = await page.request.post('http://127.0.0.1:8091/configure', {data: {enabled: false}});

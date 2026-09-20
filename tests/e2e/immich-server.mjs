@@ -8,6 +8,21 @@ const errors = [];
 const blockedGeocoding = [];
 const providerRequests = [];
 const unknownResult = JSON.parse(readFileSync(new URL('../../backend/internal/ai/results/testdata/ai-analysis-result.unknown.json', import.meta.url), 'utf8'));
+const reviewResult = JSON.parse(readFileSync(new URL('../../docs/ai-locate/examples/ai-analysis-result.synthetic.json', import.meta.url), 'utf8'));
+reviewResult.descriptions[1].status = 'unavailable';
+reviewResult.descriptions[1].text = null;
+reviewResult.descriptions[1].unavailable_reason = 'Synthetic translation unavailable.';
+const ambiguousResult = structuredClone(reviewResult);
+ambiguousResult.outcome = 'ambiguous';
+ambiguousResult.selected_candidate_id = null;
+const alternative = structuredClone(ambiguousResult.candidates[0]);
+alternative.id = 'candidate-2';
+alternative.place_name = 'Synthetic alternative viewpoint';
+alternative.camera_location.latitude = 51;
+alternative.camera_location.longitude = 15;
+alternative.subject.location.latitude = 51.001;
+alternative.subject.location.longitude = 15.001;
+ambiguousResult.candidates.push(alternative);
 
 function catalog() {
 	return [
@@ -69,7 +84,7 @@ async function handleProvider(request, response, url, raw) {
 		assistant = '{"color":"blue","shape":"circle"}';
 	}
 	if (bodyText.includes('schema_version')) {
-		assistant = JSON.stringify(unknownResult);
+		assistant = JSON.stringify(payload.model === 'review-located' ? reviewResult : payload.model === 'review-ambiguous' ? ambiguousResult : unknownResult);
 		providerRequests.at(-1).analysis = true;
 		providerRequests.at(-1).outputTokens = payload.max_tokens;
 		providerRequests.at(-1).contextHintIncluded = bodyText.includes('Synthetic context hint');

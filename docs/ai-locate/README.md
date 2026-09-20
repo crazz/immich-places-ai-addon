@@ -17,6 +17,7 @@ Before planning, implementation or review, read the adopted [architecture](../en
 - [CH10 and CH12–CH15 planning batch](CH10_CH12_CH15_PLAN.md): change order, dependencies, requirement/task mapping and current implementation status.
 - [Consented context](../ai-consented-context.md): CH10's internal Context-assisted contract and verification.
 - [Persistent history](../ai-results-history.md): CH14 private terminal history, stable pagination and separately authorized current images.
+- [Proposal review](../ai-proposal-review.md): CH15 read-only camera/subject geometry, uncertainty, evidence and exact language descriptions.
 - [Batch workflow](../ai-batch-workflow.md): CH13 gallery preview/consent, durable Context execution, progress, cancellation and explicit reruns.
 - [ENGINEERING_STANDARDS_PROPOSAL.md](ENGINEERING_STANDARDS_PROPOSAL.md): adoption record linking the authoritative engineering standards; the earlier proposal is superseded.
 - [SOURCES.md](SOURCES.md): pinned repository references, package provenance, and verification limits.
@@ -58,3 +59,6 @@ CH08 implements [bounded image preparation](../ai-image-preparation.md): authori
 CH09 implements [single-image Visual analysis](../ai-visual-analysis.md) through the approved transport, exact private revisions and current image authority. It requires explicit caller authorization and one dispatch reservation, validates the complete canonical result and returns an immutable handoff. See [verification](../engineering/ai-visual-analysis-verification.md). No public route or durable worker is connected; full-schema model compatibility and geographic quality remain unverified.
 
 CH11 implements [recoverable durable jobs](../ai-analysis-jobs.md): private idempotent submissions, bounded leases/calls, cancellation/restart fencing, immutable validated history and controlled installation/retention lifecycle. See [verification](../engineering/ai-analysis-jobs-verification.md). A synthetic executor proves the lifecycle; CH12 still owns production admission and the real Visual connection.
+
+
+CH10 and CH12–CH15 are now implemented and archived. [The batch record](CH10_CH12_CH15_PLAN.md) records their dependency order and verification. CH12 supersedes the earlier internal-only Visual/job limits; CH13 also connects consented Context-assisted work. CH14 retains private history independently of source availability, and CH15 provides isolated read-only inspection. Draft editing, translation operations and confirmed writing remain planned.

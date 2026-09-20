@@ -3,15 +3,12 @@
 import L from 'leaflet';
 import {useEffect} from 'react';
 
-import {TILE_ATTRIBUTION} from '@/features/map/constant';
+import {createBaseMap} from '@/features/map/baseMap';
 import {useStreetTileURL} from '@/features/map/TileConfigContext';
 import {
 	MAP_BOUNDS_DEBOUNCE_MS,
 	MAP_BOUNDS_KEY_DECIMALS,
-	MAP_DEFAULT_CENTER,
-	MAP_DEFAULT_ZOOM,
-	MAP_INITIAL_BOUNDS_SYNC_DELAY_MS,
-	MAP_TILE_MAX_ZOOM
+	MAP_INITIAL_BOUNDS_SYNC_DELAY_MS
 } from '@/utils/map';
 
 import type {TViewportBounds} from '@/shared/types/api';
@@ -70,15 +67,7 @@ export function useMapBootstrap({
 			return;
 		}
 
-		const map = L.map(containerRef.current, {attributionControl: false, zoomControl: false}).setView(
-			MAP_DEFAULT_CENTER,
-			MAP_DEFAULT_ZOOM
-		);
-		L.control.attribution({prefix: false}).addTo(map);
-		const tiles = L.tileLayer(streetTileURL, {
-			attribution: TILE_ATTRIBUTION,
-			maxZoom: MAP_TILE_MAX_ZOOM
-		}).addTo(map);
+		const {map, tiles} = createBaseMap(L, containerRef.current, streetTileURL);
 		tileLayerRef.current = tiles;
 		mapInstanceRef.current = map;
 

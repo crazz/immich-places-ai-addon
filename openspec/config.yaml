@@ -77,7 +77,9 @@ context: |
   context and docs/ai-batch-workflow.md. CH14 implements private terminal history under
   internal/ai/review and aiResult adapters, with independent authenticated AI Results UI and
   separately authorized current images. Migration 025 provides indexed immutable terminal
-  projections. See docs/ai-results-history.md. CH15 read-only maps remain planned.
+  projections. See docs/ai-results-history.md. CH15 implements isolated read-only proposal maps,
+  numeric geometry, evidence and exact requested-language descriptions under src/features/ai.
+  See docs/ai-proposal-review.md. Draft editing and confirmed writing remain planned.
   GATE-03 has recorded live synthetic evidence for gpt-5.6-sol through the existing NAS codex-proxy:
   docs/engineering/nas-provider-capability-2026-09-19.md. It covers only that runtime/configuration;
   production deployment and writeback remain planned.

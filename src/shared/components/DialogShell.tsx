@@ -9,7 +9,7 @@ type TDialogShellProps = {
 	onClose: () => void;
 	title: string;
 	subtitle: string;
-	maxWidth?: 'sm' | 'md';
+	maxWidth?: 'sm' | 'md' | 'review';
 	headerTrailing?: ReactNode;
 	children: ReactNode;
 };
@@ -24,6 +24,9 @@ export function DialogShell({
 	children
 }: TDialogShellProps): ReactElement {
 	let maxWidthClass = 'max-w-md';
+	if (maxWidth === 'review') {
+		maxWidthClass = 'max-w-5xl';
+	}
 	if (maxWidth === 'sm') {
 		maxWidthClass = 'max-w-sm';
 	}

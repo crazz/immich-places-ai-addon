@@ -11,6 +11,8 @@ it('opens an exact saved unknown outcome with original provenance and inert obse
  const detail = resultDetail(); vi.mocked(fetchResult).mockResolvedValue(detail);
  render(<ResultDetail owner={'owner'} reference={{analysisId: detail.entry.analysisId!}} />);
  expect(await screen.findByText('Proposal: unknown')).toBeVisible();
+ expect(screen.getByRole('tab', {name: 'en · Primary'})).toBeVisible();
+ fireEvent.click(screen.getByText('Evidence and limitations'));
  expect(screen.getByText('<script>Untrusted scene</script>')).toBeVisible();
  fireEvent.click(screen.getByText('Original run provenance'));
  expect(screen.getByText('Model')).toBeVisible();
