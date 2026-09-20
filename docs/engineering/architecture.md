@@ -96,3 +96,5 @@ CH13 adds gallery preview/consent and durable progress/cancel/rerun UI under `sr
 ## Decisions and changes
 
 Record a consequential architectural departure in an ADR with its requirement, alternatives, consequences and affected documents. Amend the applicable standard and technical design together; an individual change's design cannot silently override them. Routine choices within the accepted boundaries need no extra approval. Keep future Research/search interfaces deferred until an accepted consumer requires them.
+
+CH14 places terminal-history query/DTO validation in `backend/internal/ai/review/`, with focused root `aiResult*.go` read adapters and private UI under `src/features/ai/`. Migration 025 maintains an immutable indexed read projection in the existing job transaction. The authenticated history shell is independent of catalog readiness and execution enablement; current images use a separately checked read boundary. See [history contract](../ai-results-history.md).

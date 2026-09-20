@@ -119,6 +119,15 @@ func main() {
 	jobHandler := newAIJobHandler(productionRuntime.jobs, cfg.AIPublicOrigin)
 	mainMux.Handle("/ai/jobs", jobHandler)
 	mainMux.Handle("/ai/jobs/", jobHandler)
+	resultImages, err := newAIImagePreparer(db, selectionHandler.store, cfg.ImmichURL)
+	if err != nil {
+		log.Printf("[AI results] Current image reads unavailable")
+	}
+	resultHandler := newAIResultHandler(&aiResultStore{jobs: productionRuntime.jobs.store}, resultImages)
+	mainMux.Handle("/ai/results", resultHandler)
+	mainMux.Handle("/ai/results/", resultHandler)
+	mainMux.Handle("GET /ai/jobs/{jobID}/items/{itemID}/result", resultHandler)
+	mainMux.Handle("GET /ai/jobs/{jobID}/items/{itemID}/thumbnail", resultHandler)
 
 	mainMux.Handle("/", sessionMiddleware(db, protectedMux))
 

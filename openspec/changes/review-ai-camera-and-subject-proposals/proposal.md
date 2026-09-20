@@ -23,6 +23,6 @@ None.
 
 ## Impact
 
-Depends on planned [CH14](../browse-persistent-ai-results/proposal.md), consuming CH07's canonical proposal and CH10/CH13 provenance when present. Adds focused view models/panels under `src/features/ai/` and a narrow read-only overlay integration with the existing Leaflet map. Reuses installed map/UI libraries; no new dependency or schema change is planned.
+Depends on planned [CH14](../archive/2026-09-20-browse-persistent-ai-results/proposal.md), consuming CH07's canonical proposal and CH10/CH13 provenance when present. Adds focused view models/panels under `src/features/ai/` and a narrow read-only overlay integration with the existing Leaflet map. Reuses installed map/UI libraries; no new dependency or schema change is planned.
 
 CH16 owns choosing/editing/accepting a durable draft, and CH17 owns translation correction/retry. This change has no approval or write actions. Covers FR-06–09/13, AC-02/03 and NFR-01/06 in the [PRD](../../../docs/ai-locate/PRD.md), [technical design](../../../docs/ai-locate/TECHNICAL_DESIGN.md) and [roadmap](../../../docs/ai-locate/OPENSPEC_ROADMAP.md).

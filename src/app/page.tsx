@@ -1,5 +1,6 @@
 'use client';
 
+import {AIResultsWorkspace} from '@/features/ai';
 import {AuthProvider, useAuth} from '@/features/auth/AuthContext';
 import {AuthMapDynamic} from '@/features/auth/AuthMapDynamic';
 import {AuthSidebar} from '@/features/auth/AuthSidebar';
@@ -171,10 +172,16 @@ function AppRoutes(): ReactElement {
 	);
 }
 
+function ResultNavigation(): ReactElement | null {
+	const {user, isLoading} = useAuth();
+	return user && !isLoading ? <AIResultsWorkspace owner={user.ID} /> : null;
+}
+
 export default function Home(): ReactElement {
 	return (
 		<AuthProvider>
 			<AppRoutes />
+			<ResultNavigation />
 		</AuthProvider>
 	);
 }

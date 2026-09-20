@@ -74,7 +74,10 @@ context: |
   Visual execution, conservative call/token/cost accounting and bounded startup/shutdown workers.
   Migration 023 and docs/ai-production-jobs.md define that production contract. CH13 adds
   gallery preview/consent, progress/cancel/rerun UI under src/features/ai, migration 024 for frozen
-  context and docs/ai-batch-workflow.md. CH14 detailed result browsing and CH15 read-only maps remain planned.
+  context and docs/ai-batch-workflow.md. CH14 implements private terminal history under
+  internal/ai/review and aiResult adapters, with independent authenticated AI Results UI and
+  separately authorized current images. Migration 025 provides indexed immutable terminal
+  projections. See docs/ai-results-history.md. CH15 read-only maps remain planned.
   GATE-03 has recorded live synthetic evidence for gpt-5.6-sol through the existing NAS codex-proxy:
   docs/engineering/nas-provider-capability-2026-09-19.md. It covers only that runtime/configuration;
   production deployment and writeback remain planned.

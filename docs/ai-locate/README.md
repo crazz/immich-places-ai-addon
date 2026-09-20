@@ -16,6 +16,7 @@ Before planning, implementation or review, read the adopted [architecture](../en
 - [OPENSPEC_ROADMAP.md](OPENSPEC_ROADMAP.md): eight capability areas decomposed into 26 smaller candidate changes, dependencies, requirement ownership, and artifact-generation approach.
 - [CH10 and CH12–CH15 planning batch](CH10_CH12_CH15_PLAN.md): change order, dependencies, requirement/task mapping and current implementation status.
 - [Consented context](../ai-consented-context.md): CH10's internal Context-assisted contract and verification.
+- [Persistent history](../ai-results-history.md): CH14 private terminal history, stable pagination and separately authorized current images.
 - [Batch workflow](../ai-batch-workflow.md): CH13 gallery preview/consent, durable Context execution, progress, cancellation and explicit reruns.
 - [ENGINEERING_STANDARDS_PROPOSAL.md](ENGINEERING_STANDARDS_PROPOSAL.md): adoption record linking the authoritative engineering standards; the earlier proposal is superseded.
 - [SOURCES.md](SOURCES.md): pinned repository references, package provenance, and verification limits.

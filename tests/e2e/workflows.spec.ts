@@ -1,4 +1,10 @@
 import {connectAccount, expect, fixtureState, providerState, test} from './app-fixture';
+import {reviewHistory} from './result-history';
+
+test.afterEach(async ({request}) => {
+ const response = await request.post('http://127.0.0.1:8091/configure', {data: {enabled: true}});
+ expect(response.ok()).toBe(true);
+});
 
 test('launches a durable Visual job, restores progress and creates a separately consented Context reanalysis', async ({page, account}) => {
  test.setTimeout(90000);
@@ -78,6 +84,7 @@ test('launches a durable Visual job, restores progress and creates a separately 
  await page.reload();
  await expect(page.getByText(`Job ${child}`, {exact: true})).toBeVisible();
  await expect(page.getByText('Succeeded · Location unknown', {exact: true})).toBeVisible();
+ await reviewHistory(page);
  expect((await fixtureState(page.request, account.key)).writes).toEqual([]);
  await page.request.post('http://127.0.0.1:8091/configure', {data: {enabled: true}});
 });

@@ -1,6 +1,6 @@
 # CH10 and CH12–CH15 planning batch
 
-Status: CH10, CH12 and CH13 implemented and archived; CH14–CH15 planned. Prepared on 20 September 2026 against `23c6ca6` on `codex/plan-ai-selection-and-validation`. All five changes contain proposal, design, delta specs and vertical-slice tasks; CH10/CH12/CH13 tasks are complete and CH14–CH15 tasks remain unchecked. OpenSpec Plus artifact reviews were performed inline, honoring the explicit instruction to use no subagents.
+Status: CH10, CH12, CH13 and CH14 implemented and archived; CH15 planned. Prepared on 20 September 2026 against `23c6ca6` on `codex/plan-ai-selection-and-validation`. All five changes contain proposal, design, delta specs and vertical-slice tasks; CH10/CH12/CH13/CH14 tasks are complete and CH15 tasks remain unchecked. OpenSpec Plus artifact reviews were performed inline, honoring the explicit instruction to use no subagents.
 
 ## Changes and application order
 
@@ -9,7 +9,7 @@ Status: CH10, CH12 and CH13 implemented and archived; CH14–CH15 planned. Prepa
 | 1 | [CH10: consented context](../../openspec/changes/archive/2026-09-20-add-consented-ai-context/proposal.md) | Internal bounded metadata-only Context-assisted analysis | 6 / 18 / 8 |
 | 2 | [CH12: durable Visual integration](../../openspec/changes/archive/2026-09-20-connect-visual-analysis-to-durable-jobs/proposal.md) | Authorized real execution with finite resource reservations | 10 / 34 / 9 |
 | 3 | [CH13: batch progress and reruns](../../openspec/changes/archive/2026-09-20-add-ai-batch-progress-and-reruns/proposal.md) | Launch both modes, follow/cancel work and create explicit new runs | 8 / 24 / 10 |
-| 4 | [CH14: persistent results](../../openspec/changes/browse-persistent-ai-results/proposal.md) | Private terminal history independent of Missing GPS | 5 / 15 / 7 |
+| 4 | [CH14: persistent results](../../openspec/changes/archive/2026-09-20-browse-persistent-ai-results/proposal.md) | Private terminal history independent of Missing GPS | 5 / 15 / 7 |
 | 5 | [CH15: proposal inspection](../../openspec/changes/review-ai-camera-and-subject-proposals/proposal.md) | Read-only camera/subject, evidence and language presentation | 6 / 17 / 8 |
 
 Totals count each delta occurrence, including deliberately repeated modified requirements: 35 requirements, 108 scenarios and 42 tasks. CH14 technically requires CH12 rather than CH13; the sequence above keeps this batch linear. Finish verification and sync/archive each predecessor before applying a conflicting successor. CH13's modified job requirements preserve CH12's full replacement requirements and inherited scenarios. CH14 creates `ai-results-and-review`; CH15 adds to it afterward. Do not apply CH15 against a main spec where CH14 has not been synchronized.
