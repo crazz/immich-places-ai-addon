@@ -8,36 +8,45 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
+	"immich-places-backend/internal/ai/jobs"
 	"immich-places-backend/internal/ai/providers"
 )
 
 type Config struct {
-	ImmichURL              string `env:"IMMICH_URL,notEmpty"`
-	ImmichExternalURL      string `env:"IMMICH_EXTERNAL_URL"`
-	Port                   int    `env:"PORT" envDefault:"8082"`
-	DataDir                string `env:"DATA_DIR" envDefault:"/data"`
-	SyncIntervalMS         int    `env:"SYNC_INTERVAL_MS" envDefault:"300000"`
-	TrustProxyTLS          bool   `env:"TRUST_PROXY_TLS" envDefault:"true"`
-	AllowInsecure          bool   `env:"ALLOW_INSECURE" envDefault:"false"`
-	RegistrationEnabled    bool   `env:"REGISTRATION_ENABLED" envDefault:"true"`
-	EncryptionKey          string `env:"ENCRYPTION_KEY,notEmpty"`
-	DawarichURL            string `env:"DAWARICH_URL"`
-	DawarichSyncIntervalMS int    `env:"DAWARICH_SYNC_INTERVAL_MS" envDefault:"86400000"`
-	DefaultTimezone        string `env:"DEFAULT_TIMEZONE"`
-	GeocodeProvider        string `env:"GEOCODE_PROVIDER" envDefault:"nominatim"`
-	GeocodeAPIKey          string `env:"GEOCODE_API_KEY"`
-	HereAPIKey             string `env:"HERE_API_KEY"`
-	GoogleAPIKey           string `env:"GOOGLE_API_KEY"`
-	GeocodeTimeoutSecs     int    `env:"GEOCODE_TIMEOUT" envDefault:"10"`
-	NeighborWindowHours    int    `env:"SUGGESTIONS_NEIGHBOR_WINDOW_HOURS" envDefault:"6"`
-	Debug                  bool   `env:"DEBUG" envDefault:"false"`
-	AIEnabled              bool   `env:"AI_ENABLED" envDefault:"false"`
-	AIPublicOrigin         string `env:"AI_PUBLIC_ORIGIN"`
-	AIEgressPolicyJSON     string `env:"AI_PROVIDER_EGRESS_POLICY"`
-	AIProviderEgressPolicy providers.EgressPolicy
-	AISelectionMaxAssets   int    `env:"AI_SELECTION_MAX_ASSETS" envDefault:"500"`
-	AISelectionTTLSeconds  int    `env:"AI_SELECTION_TTL_SECONDS" envDefault:"900"`
-	AIInstanceEpoch        string `env:"AI_INSTANCE_EPOCH" envDefault:"1"`
+	ImmichURL               string `env:"IMMICH_URL,notEmpty"`
+	ImmichExternalURL       string `env:"IMMICH_EXTERNAL_URL"`
+	Port                    int    `env:"PORT" envDefault:"8082"`
+	DataDir                 string `env:"DATA_DIR" envDefault:"/data"`
+	SyncIntervalMS          int    `env:"SYNC_INTERVAL_MS" envDefault:"300000"`
+	TrustProxyTLS           bool   `env:"TRUST_PROXY_TLS" envDefault:"true"`
+	AllowInsecure           bool   `env:"ALLOW_INSECURE" envDefault:"false"`
+	RegistrationEnabled     bool   `env:"REGISTRATION_ENABLED" envDefault:"true"`
+	EncryptionKey           string `env:"ENCRYPTION_KEY,notEmpty"`
+	DawarichURL             string `env:"DAWARICH_URL"`
+	DawarichSyncIntervalMS  int    `env:"DAWARICH_SYNC_INTERVAL_MS" envDefault:"86400000"`
+	DefaultTimezone         string `env:"DEFAULT_TIMEZONE"`
+	GeocodeProvider         string `env:"GEOCODE_PROVIDER" envDefault:"nominatim"`
+	GeocodeAPIKey           string `env:"GEOCODE_API_KEY"`
+	HereAPIKey              string `env:"HERE_API_KEY"`
+	GoogleAPIKey            string `env:"GOOGLE_API_KEY"`
+	GeocodeTimeoutSecs      int    `env:"GEOCODE_TIMEOUT" envDefault:"10"`
+	NeighborWindowHours     int    `env:"SUGGESTIONS_NEIGHBOR_WINDOW_HOURS" envDefault:"6"`
+	Debug                   bool   `env:"DEBUG" envDefault:"false"`
+	AIEnabled               bool   `env:"AI_ENABLED" envDefault:"false"`
+	AIPublicOrigin          string `env:"AI_PUBLIC_ORIGIN"`
+	AIEgressPolicyJSON      string `env:"AI_PROVIDER_EGRESS_POLICY"`
+	AIProviderEgressPolicy  providers.EgressPolicy
+	AIExecutionPoliciesJSON string `env:"AI_EXECUTION_POLICIES"`
+	AIExecutionPolicies     jobs.ExecutionPolicies
+	AISelectionMaxAssets    int `env:"AI_SELECTION_MAX_ASSETS" envDefault:"500"`
+	AISelectionTTLSeconds   int `env:"AI_SELECTION_TTL_SECONDS" envDefault:"900"`
+	AIJobWorkers            int `env:"AI_JOB_WORKERS" envDefault:"2"`
+	AIJobPerOwner           int `env:"AI_JOB_PER_OWNER" envDefault:"1"`
+	AIJobLeaseSeconds       int `env:"AI_JOB_LEASE_SECONDS" envDefault:"180"`
+	AIJobHeartbeatSeconds   int `env:"AI_JOB_HEARTBEAT_SECONDS" envDefault:"30"`
+	AIJobIdleMS             int `env:"AI_JOB_IDLE_MS" envDefault:"1000"`
+	AIJobSettings           jobs.ConsumerSettings
+	AIInstanceEpoch         string `env:"AI_INSTANCE_EPOCH" envDefault:"1"`
 
 	defaultTimezoneLocation *time.Location
 }
@@ -53,7 +62,18 @@ func loadConfig() (*Config, error) {
 	if cfg.ImmichExternalURL == "" {
 		cfg.ImmichExternalURL = cfg.ImmichURL
 	}
+	cfg.AIExecutionPolicies, err = jobs.ParseExecutionPolicies(cfg.AIExecutionPoliciesJSON)
+	if err != nil {
+		return nil, fmt.Errorf("AI_EXECUTION_POLICIES is invalid; provide complete revision-bound execution attestations")
+	}
 
+	if cfg.AIJobLeaseSeconds < 1 || cfg.AIJobLeaseSeconds > 600 || cfg.AIJobHeartbeatSeconds < 1 || cfg.AIJobHeartbeatSeconds > 60 || cfg.AIJobIdleMS < 100 || cfg.AIJobIdleMS > 30000 {
+		return nil, fmt.Errorf("AI job worker timing settings are outside finite bounds")
+	}
+	cfg.AIJobSettings = jobs.ConsumerSettings{Policy: jobs.Policy{Global: cfg.AIJobWorkers, PerOwner: cfg.AIJobPerOwner, LeaseDuration: time.Duration(cfg.AIJobLeaseSeconds) * time.Second}, Heartbeat: time.Duration(cfg.AIJobHeartbeatSeconds) * time.Second, Idle: time.Duration(cfg.AIJobIdleMS) * time.Millisecond}
+	if !cfg.AIJobSettings.Valid() {
+		return nil, fmt.Errorf("AI job worker concurrency or lease settings are invalid")
+	}
 	if cfg.SyncIntervalMS <= 0 {
 		return nil, fmt.Errorf("SYNC_INTERVAL_MS must be > 0, got %d", cfg.SyncIntervalMS)
 	}

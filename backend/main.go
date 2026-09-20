@@ -112,12 +112,28 @@ func main() {
 	selectionHandler := newAISelectionHandler(db, cfg)
 	mainMux.Handle("/ai/selection-preview", selectionHandler)
 	mainMux.Handle("/ai/selections/", selectionHandler)
+	productionRuntime, err := newAIProductionRuntime(db, cfg, selectionHandler.store, providerDispatcher)
+	if err != nil {
+		log.Fatalf("[AI jobs] Production job runtime initialization failed")
+	}
+	jobHandler := newAIJobHandler(productionRuntime.jobs, cfg.AIPublicOrigin)
+	mainMux.Handle("/ai/jobs", jobHandler)
+	mainMux.Handle("/ai/jobs/", jobHandler)
+
 	mainMux.Handle("/", sessionMiddleware(db, protectedMux))
 
 	handler := requestHardeningMiddleware(mainMux)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
+	productionDone := make(chan struct{})
+	go func() {
+		defer close(productionDone)
+		if err := productionRuntime.run(ctx, func() { log.Printf("[AI jobs] Worker operation failed; bounded recovery will retry") }); err != nil {
+			log.Printf("[AI jobs] Worker runtime stopped with an invalid configuration")
+		}
+	}()
+
 	selectionCleanupTicker := time.NewTicker(time.Minute)
 	defer selectionCleanupTicker.Stop()
 	go selectionHandler.store.runCleanup(ctx, selectionCleanupTicker.C, func() { log.Printf("[AI selection] Expired snapshot cleanup failed; next pass will retry") })
@@ -167,6 +183,7 @@ func main() {
 		log.Printf("[Server] HTTP shutdown error: %v", err)
 	}
 
+	<-productionDone
 	syncService.wg.Wait()
 	dawarichSync.wg.Wait()
 	log.Println("[Server] All sync goroutines completed")

@@ -24,7 +24,7 @@ func (s *aiImagePreparer) fetch(ctx context.Context, key, path string, limit int
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		return nil, "", errAIImageUpstream
+		return nil, "", aiImageHTTPError{Status: response.StatusCode}
 	}
 	if encoding := response.Header.Get("Content-Encoding"); encoding != "" && encoding != "identity" {
 		return nil, "", errAIImageUpstream
@@ -46,3 +46,8 @@ func (s *aiImagePreparer) fetch(ctx context.Context, key, path string, limit int
 	}
 	return data, response.Header.Get("Content-Type"), nil
 }
+
+type aiImageHTTPError struct{ Status int }
+
+func (aiImageHTTPError) Error() string { return "image source unavailable" }
+func (aiImageHTTPError) Unwrap() error { return errAIImageUpstream }

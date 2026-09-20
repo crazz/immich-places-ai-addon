@@ -1,6 +1,6 @@
 ## Context
 
-See [proposal.md](proposal.md), the [job caller contract](../../../docs/ai-analysis-jobs.md) and adopted [architecture](../../../docs/engineering/architecture.md), [testing](../../../docs/engineering/testing.md) and [coding standards](../../../docs/engineering/coding-standards.md). Grounded at `23c6ca6`: GitNexus resolves `RunOne` to store/guard/complete operations and synthetic test callers. Source confirms that the selection loader validates frozen catalog facts, completion revalidates Visual proposals, and `main.go` registers provider/selection handlers but no jobs consumer. CH03 observations do not establish output-token parameter support. These are integration gaps, not already working production behavior.
+See [proposal.md](proposal.md), the [job caller contract](../../../../docs/ai-analysis-jobs.md) and adopted [architecture](../../../../docs/engineering/architecture.md), [testing](../../../../docs/engineering/testing.md) and [coding standards](../../../../docs/engineering/coding-standards.md). Grounded at `23c6ca6`: GitNexus resolves `RunOne` to store/guard/complete operations and synthetic test callers. Source confirms that the selection loader validates frozen catalog facts, completion revalidates Visual proposals, and `main.go` registers provider/selection handlers but no jobs consumer. CH03 observations do not establish output-token parameter support. These are integration gaps, not already working production behavior.
 
 ## Goals / Non-Goals
 

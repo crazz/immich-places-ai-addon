@@ -22,6 +22,6 @@ None.
 
 ## Impact
 
-Depends on the planned [CH12](../connect-visual-analysis-to-durable-jobs/proposal.md); it can browse Visual history without CH13, while remaining compatible with CH13's Context provenance. Adds focused read policy/DTOs under `backend/internal/ai/review/`, root persistence/HTTP adapters, additive query metadata/indexes and UI under `src/features/ai/`. No new dependency or deployment service is proposed.
+Depends on the planned [CH12](../archive/2026-09-20-connect-visual-analysis-to-durable-jobs/proposal.md); it can browse Visual history without CH13, while remaining compatible with CH13's Context provenance. Adds focused read policy/DTOs under `backend/internal/ai/review/`, root persistence/HTTP adapters, additive query metadata/indexes and UI under `src/features/ai/`. No new dependency or deployment service is proposed.
 
 CH15 owns map/evidence/language presentation; CH16 owns drafts and CH19 onward owns writes. No editing, acceptance, result deletion/export or automatic retention is included. Covers FR-01/09/13 and NFR-01/03/06 in the [PRD](../../../docs/ai-locate/PRD.md) and REC-05 in the [reconciliation](../../../docs/ai-locate/RECONCILIATION.md).

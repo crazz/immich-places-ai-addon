@@ -31,26 +31,30 @@ func (s *aiJobStore) leaseState(ctx context.Context, tx *sql.Tx, lease jobs.Leas
 
 func (s *aiJobStore) Reserve(ctx context.Context, lease jobs.Lease) error {
 	return s.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
-		state, err := s.leaseState(ctx, tx, lease)
-		if err != nil {
-			return err
-		}
-		if state.Canceled || state.Blocked {
-			return jobs.ErrDenied
-		}
-		if state.Calls >= 3 || state.JobCalls >= state.MaxCalls {
-			return jobs.ErrBudget
-		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_job_items SET calls=calls+1,leaseCalls=leaseCalls+1 WHERE userID=? AND jobID=? AND id=? AND leaseToken=?`, lease.Owner, lease.JobID, lease.ItemID, lease.Token); err != nil {
-			return err
-		}
-		_, err = tx.ExecContext(ctx, `UPDATE ai_jobs SET calls=calls+1 WHERE userID=? AND id=?`, lease.Owner, lease.JobID)
-		if err != nil {
-			return err
-		}
-		if state.JobCalls+1 == state.MaxCalls {
-			_, err = tx.ExecContext(ctx, `UPDATE ai_job_items SET state='failed',failure='budget',finishedAt=? WHERE userID=? AND jobID=? AND state IN ('queued','retry_wait')`, s.now().UnixNano(), lease.Owner, lease.JobID)
-		}
-		return err
+		return s.reserveInTx(ctx, tx, lease)
 	})
+}
+
+func (s *aiJobStore) reserveInTx(ctx context.Context, tx *sql.Tx, lease jobs.Lease) error {
+	state, err := s.leaseState(ctx, tx, lease)
+	if err != nil {
+		return err
+	}
+	if state.Canceled || state.Blocked {
+		return jobs.ErrDenied
+	}
+	if state.Calls >= 3 || state.JobCalls >= state.MaxCalls {
+		return jobs.ErrBudget
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE ai_job_items SET calls=calls+1,leaseCalls=leaseCalls+1 WHERE userID=? AND jobID=? AND id=? AND leaseToken=?`, lease.Owner, lease.JobID, lease.ItemID, lease.Token); err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `UPDATE ai_jobs SET calls=calls+1 WHERE userID=? AND id=?`, lease.Owner, lease.JobID)
+	if err != nil {
+		return err
+	}
+	if state.JobCalls+1 == state.MaxCalls {
+		_, err = tx.ExecContext(ctx, `UPDATE ai_job_items SET state='failed',failure='budget',finishedAt=? WHERE userID=? AND jobID=? AND state IN ('queued','retry_wait')`, s.now().UnixNano(), lease.Owner, lease.JobID)
+	}
+	return err
 }

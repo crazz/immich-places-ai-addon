@@ -10,6 +10,10 @@ import (
 )
 
 func (s *aiJobStore) Claim(ctx context.Context, policy jobs.Policy) (jobs.Lease, bool, error) {
+	return s.claim(ctx, policy, false)
+}
+
+func (s *aiJobStore) claim(ctx context.Context, policy jobs.Policy, productionOnly bool) (jobs.Lease, bool, error) {
 	if !policy.Valid() {
 		return jobs.Lease{}, false, jobs.ErrInvalid
 	}
@@ -29,9 +33,9 @@ func (s *aiJobStore) Claim(ctx context.Context, policy jobs.Policy) (jobs.Lease,
 		}
 		err := tx.QueryRowContext(ctx, `SELECT i.userID,i.jobID,i.id,i.assetID,i.attempts,i.calls
    FROM ai_job_items i JOIN ai_jobs j ON j.userID=i.userID AND j.id=i.jobID
-   WHERE j.installationID=? AND j.cancelRequested=0 AND j.blocked=0 AND i.state IN ('queued','retry_wait') AND i.nextAttemptAt<=? AND i.attempts<3 AND i.calls<3 AND j.calls<j.maxCalls
+   WHERE (?=0 OR EXISTS(SELECT 1 FROM ai_job_admissions a WHERE a.userID=j.userID AND a.jobID=j.id AND a.version='production-v1')) AND j.installationID=? AND j.cancelRequested=0 AND j.blocked=0 AND i.state IN ('queued','retry_wait') AND i.nextAttemptAt<=? AND i.attempts<3 AND i.calls<3 AND j.calls<j.maxCalls
    AND (SELECT count(*) FROM ai_job_items active WHERE active.userID=i.userID AND active.state='running' AND active.leaseExpiresAt>?)<?
-   ORDER BY j.createdAt,j.id,i.position LIMIT 1`, s.binding, now.UnixNano(), now.UnixNano(), policy.PerOwner).Scan(&lease.Owner, &lease.JobID, &lease.ItemID, &lease.Asset, &lease.Attempts, &lease.Calls)
+   ORDER BY j.createdAt,j.id,i.position LIMIT 1`, productionOnly, s.binding, now.UnixNano(), now.UnixNano(), policy.PerOwner).Scan(&lease.Owner, &lease.JobID, &lease.ItemID, &lease.Asset, &lease.Attempts, &lease.Calls)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}

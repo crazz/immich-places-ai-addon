@@ -12,6 +12,10 @@ import (
 )
 
 func (s *aiJobStore) Complete(ctx context.Context, lease jobs.Lease, completion jobs.Completion) (string, error) {
+	return s.complete(ctx, lease, completion, nil)
+}
+
+func (s *aiJobStore) complete(ctx context.Context, lease jobs.Lease, completion jobs.Completion, authorize func(context.Context, *sql.Tx) error) (string, error) {
 	job, err := s.Get(ctx, lease.Owner, lease.JobID)
 	if err != nil {
 		return "", err
@@ -60,6 +64,11 @@ func (s *aiJobStore) Complete(ctx context.Context, lease jobs.Lease, completion 
 		}
 		if state.LeaseCalls == 0 {
 			return jobs.ErrBudget
+		}
+		if authorize != nil {
+			if err := authorize(ctx, tx); err != nil {
+				return err
+			}
 		}
 		now := s.now().UnixNano()
 		if _, err = tx.ExecContext(ctx, `INSERT INTO ai_analyses(userID,id,jobID,itemID,assetID,outcome,payload,metadata,createdAt) VALUES(?,?,?,?,?,?,?,?,?)`, lease.Owner, id, lease.JobID, lease.ItemID, lease.Asset, document.Outcome, string(payload), string(metadata), now); err != nil {

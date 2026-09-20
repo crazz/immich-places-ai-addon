@@ -50,6 +50,9 @@ func ExecutionFailure(err error) Failure {
 	if errors.As(err, &pointer) && pointer != nil {
 		return *pointer
 	}
+	if errors.Is(err, ErrDenied) {
+		return Failure{Code: Blocked}
+	}
 	if errors.Is(err, ErrBudget) {
 		return Failure{Code: Budget}
 	}

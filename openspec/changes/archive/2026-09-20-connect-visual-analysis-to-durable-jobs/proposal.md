@@ -26,4 +26,4 @@ None.
 
 Depends on implemented CH05–CH09 and CH11. Uses the same Go process, SQLite database, approved provider transport and read-only Immich adapters. Adds ordered migrations for admission/usage metadata and backend-only execution settings; no new library is proposed.
 
-CH13 owns the launch/progress UI, Context-assisted durable dispatch and reruns. History browsing, drafts, writeback, automatic retention and production deployment are outside this change. Covers FR-02–05/09 and NFR-01–05/07 in the [PRD](../../../docs/ai-locate/PRD.md), [execution design](../../../docs/ai-locate/TECHNICAL_DESIGN.md#8-durable-execution-states-and-budgets) and [roadmap](../../../docs/ai-locate/OPENSPEC_ROADMAP.md).
+CH13 owns the launch/progress UI, Context-assisted durable dispatch and reruns. History browsing, drafts, writeback, automatic retention and production deployment are outside this change. Covers FR-02–05/09 and NFR-01–05/07 in the [PRD](../../../../docs/ai-locate/PRD.md), [execution design](../../../../docs/ai-locate/TECHNICAL_DESIGN.md#8-durable-execution-states-and-budgets) and [roadmap](../../../../docs/ai-locate/OPENSPEC_ROADMAP.md).

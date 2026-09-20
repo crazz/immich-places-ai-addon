@@ -7,7 +7,7 @@ Status: CH10 implemented and archived; CH12–CH15 planned. Prepared on 20 Septe
 | Order | Change | Outcome | Requirements / scenarios / tasks |
 |---|---|---|---|
 | 1 | [CH10: consented context](../../openspec/changes/archive/2026-09-20-add-consented-ai-context/proposal.md) | Internal bounded metadata-only Context-assisted analysis | 6 / 18 / 8 |
-| 2 | [CH12: durable Visual integration](../../openspec/changes/connect-visual-analysis-to-durable-jobs/proposal.md) | Authorized real execution with finite resource reservations | 10 / 34 / 9 |
+| 2 | [CH12: durable Visual integration](../../openspec/changes/archive/2026-09-20-connect-visual-analysis-to-durable-jobs/proposal.md) | Authorized real execution with finite resource reservations | 10 / 34 / 9 |
 | 3 | [CH13: batch progress and reruns](../../openspec/changes/add-ai-batch-progress-and-reruns/proposal.md) | Launch both modes, follow/cancel work and create explicit new runs | 8 / 24 / 10 |
 | 4 | [CH14: persistent results](../../openspec/changes/browse-persistent-ai-results/proposal.md) | Private terminal history independent of Missing GPS | 5 / 15 / 7 |
 | 5 | [CH15: proposal inspection](../../openspec/changes/review-ai-camera-and-subject-proposals/proposal.md) | Read-only camera/subject, evidence and language presentation | 6 / 17 / 8 |

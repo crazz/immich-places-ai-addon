@@ -1,0 +1,58 @@
+# CH12 production Visual job verification
+
+Implemented against CH10 commit `def4369cc3a9b888a229c7004623bdf67da3535c`, using sequential inline OpenSpec Plus apply/TDD and self-review without subagents. The [production guide](../ai-production-jobs.md) defines API, policy, accounting and lifecycle boundaries. All repository artifacts are English. No real provider or private photo was used.
+
+## Scenario traceability
+
+All ten delta requirements and 34 scenarios map below. New production tests use real temporary SQLite, actual migrations/transactions and bounded synthetic Immich/provider HTTP services. Foundation tests remain relevant where the production adapter reuses the same lifecycle, canonical validator and transport. Persistence evidence never substitutes an in-memory store.
+
+| Scenario | Automated evidence |
+|---|---|
+| Admit without waiting for inference | [`TestAIProductionAdmissionIsDurableWithoutUpstreamWork`](../../backend/aiProductionAdmission_test.go) |
+| Reject stale or incomplete authority | [`TestAIProductionRejectsIncompleteConsentAndAuthorityAtomically`](../../backend/aiProductionAdmissionValidation_test.go) |
+| Retry an admitted key after snapshot expiry | [`TestAIProductionIdempotentRetrySurvivesSnapshotExpiry`](../../backend/aiProductionIdempotency_test.go) |
+| Read and cancel an owned job | [`TestAIProductionHTTPSubmitReadAndDisabledCancel`](../../backend/aiProductionHTTP_test.go); [`TestAIJobCancellationRejectsLateResultsAndPreservesCompleted`](../../backend/aiJobCancellation_test.go) |
+| Reject foreign or unprotected access | [`TestAIProductionHTTPRejectsUnprotectedAndAmbiguousRequests`](../../backend/aiProductionHTTPProtection_test.go) |
+| Reload stable private job pages | [`TestAIProductionListingUsesStableOwnerBoundKeyset`](../../backend/aiProductionList_test.go) |
+| Complete a real composed attempt | [`TestAIProductionCompletesRealVisualAfterSnapshotCleanup`](../../backend/aiProductionExecution_test.go); [`TestVisualAlwaysValidatesOutcomeGeometryProvenanceAndLanguages`](../../backend/internal/ai/analysis/outcomes_test.go) |
+| Lose authority during an attempt | [`TestAIProductionRechecksConsentAndPolicyAfterResolution`](../../backend/aiProductionDispatchAuthority_test.go); [`TestAIProductionPublicationRechecksProviderAtCommit`](../../backend/aiProductionPublication_test.go); [`TestAIProductionAssetLossStaysLocalAndOwnerLossBlocks`](../../backend/aiProductionAssetScope_test.go) |
+| Keep failure scope and retry bounds explicit | [`TestAIProductionFailuresKeepRetryAndBlockScopeExplicit`](../../backend/aiProductionFailureScope_test.go); [`TestAIProductionWorkerBlocksAuthorityLostAtPublication`](../../backend/aiProductionFinalAuthority_test.go) |
+| Concurrent calls reach the allowance | [`TestAIProductionReservationsAtomicallyConsumeTokensAndCalls`](../../backend/aiProductionReservation_test.go); [`TestAIProductionExhaustedTokenAllowanceStopsPendingImages`](../../backend/aiProductionBudgetStop_test.go) |
+| Lose the response after reservation | [`TestAIProductionRuntimeJoinsShutdownAndRecoversAcceptedWork`](../../backend/aiProductionRuntime_test.go); [`TestAIProductionEstimatedCostCapIsConservativeAcrossRetries`](../../backend/aiProductionCost_test.go) |
+| Report cost or policy uncertainty honestly | [`TestAIProductionReportedUsageNeverRefundsAllowance`](../../backend/aiProductionUsage_test.go); [`TestAIProductionOverAllowanceInvalidatesPolicyEvenForInvalidOutput`](../../backend/aiProductionPolicyViolation_test.go); [`TestAIProductionEstimatedCostCapIsConservativeAcrossRetries`](../../backend/aiProductionCost_test.go) |
+| Execute after selection snapshot cleanup | [`TestAIProductionCompletesRealVisualAfterSnapshotCleanup`](../../backend/aiProductionExecution_test.go) |
+| Continue after browser closure and backend restart | [`TestAIProductionRuntimeJoinsShutdownAndRecoversAcceptedWork`](../../backend/aiProductionRuntime_test.go); [`TestAIProductionFiveHundredItemsStayBoundedAndPersistAcrossReopen`](../../backend/aiProductionScale_test.go) |
+| Disable or shut down execution | [`TestAIProductionRuntimeJoinsShutdownAndRecoversAcceptedWork`](../../backend/aiProductionRuntime_test.go); [`TestAIProductionHTTPSubmitReadAndDisabledCancel`](../../backend/aiProductionHTTP_test.go); [`TestAIProductionWorkerConfigurationRejectsUnboundedSettings`](../../backend/aiProductionConfig_test.go) |
+| Upgrade without inventing consent | [`TestAIProductionUpgradeRetainsInternalHistoryWithoutConsentPromotion`](../../backend/aiProductionMigration_test.go); [`TestAIProductionConsumerCannotPromoteInternalJobs`](../../backend/aiProductionClaim_test.go) |
+| Valid submission survives reopening | [`TestAIProductionFiveHundredItemsStayBoundedAndPersistAcrossReopen`](../../backend/aiProductionScale_test.go) |
+| Invalid or foreign submission is rejected atomically | [`TestAIProductionRejectsIncompleteConsentAndAuthorityAtomically`](../../backend/aiProductionAdmissionValidation_test.go); [`TestAIProductionHTTPRejectsUnprotectedAndAmbiguousRequests`](../../backend/aiProductionHTTPProtection_test.go) |
+| Insertion failure rolls back membership | [`TestAIProductionAdmissionStorageFailureRollsBackEveryRecord`](../../backend/aiProductionAtomic_test.go) |
+| Restart recovers expired work and fences old worker | [`TestAIJobRestartRecoveryFencesOldLeaseAndReservation`](../../backend/aiJobRecovery_test.go); [`TestAIProductionRuntimeJoinsShutdownAndRecoversAcceptedWork`](../../backend/aiProductionRuntime_test.go) |
+| Repeated interruptions reach a terminal bound | [`TestAIJobRepeatedInterruptionsStopAtAttemptBound`](../../backend/aiJobRecovery_test.go) |
+| Cancellation rejects late completion | [`TestAIJobCancellationRejectsLateResultsAndPreservesCompleted`](../../backend/aiJobCancellation_test.go); [`TestAIProductionRechecksConsentAndPolicyAfterResolution`](../../backend/aiProductionDispatchAuthority_test.go) |
+| Worker observes cancellation and heartbeat failure | [`TestAIJobWorkerCancellationAndHeartbeatFailureJoinExecutor`](../../backend/aiJobWorkerCancellation_test.go); [`TestAIProductionRuntimeJoinsShutdownAndRecoversAcceptedWork`](../../backend/aiProductionRuntime_test.go) |
+| Installation rotation invalidates unfinished work | [`TestAIProductionLifecycleFencesInstallationAndCascadesAccountData`](../../backend/aiProductionLifecycle_test.go) |
+| Account deletion removes private lifecycle data | [`TestAIProductionLifecycleFencesInstallationAndCascadesAccountData`](../../backend/aiProductionLifecycle_test.go) |
+| Explicit cleanup is bounded and terminal only | [`TestAIJobCleanupIsBoundedPrivateAndTerminalOnly`](../../backend/aiJobCleanup_test.go); [`TestAIJobCleanupRejectsInvalidBoundsAndWorksWhenAIDisabled`](../../backend/aiJobCleanup_test.go) |
+| Existing database upgrades safely | [`TestAIProductionUpgradeRetainsInternalHistoryWithoutConsentPromotion`](../../backend/aiProductionMigration_test.go) |
+| Visual payload contains only permitted inputs | [`TestVisualEncodingKeepsOneImageAndCanonicalFormat`](../../backend/internal/aiadapters/providerhttp/visual_request_test.go); [`TestAIProductionCompletesRealVisualAfterSnapshotCleanup`](../../backend/aiProductionExecution_test.go) |
+| Strict request retains the canonical contract | [`TestVisualEncodingKeepsOneImageAndCanonicalFormat`](../../backend/internal/aiadapters/providerhttp/visual_request_test.go); [`TestLimitedVisualUsesOnlyTheAttestedOutputField`](../../backend/internal/aiadapters/providerhttp/visual_limits_test.go) |
+| JSON format requires explicit permission and support | [`TestAIProductionRejectsIncompleteConsentAndAuthorityAtomically`](../../backend/aiProductionAdmissionValidation_test.go); [`TestAIVisualAnalysisUsesExactAuthorizedImageAndProvider`](../../backend/aiVisualAnalysis_test.go) |
+| Language normalization cannot widen disclosure or coverage | [`TestVisualAlwaysValidatesOutcomeGeometryProvenanceAndLanguages`](../../backend/internal/ai/analysis/outcomes_test.go) |
+| Use an explicitly supported output limit | [`TestLimitedVisualUsesOnlyTheAttestedOutputField`](../../backend/internal/aiadapters/providerhttp/visual_limits_test.go); [`TestAIProductionReservationsAtomicallyConsumeTokensAndCalls`](../../backend/aiProductionReservation_test.go) |
+| Refuse unknown or stale token support | [`TestExecutionPolicyRejectsIncompleteAndUnboundedAttestations`](../../backend/internal/ai/jobs/execution_policy_test.go); [`TestAIProductionRejectsIncompleteConsentAndAuthorityAtomically`](../../backend/aiProductionAdmissionValidation_test.go); [`TestAIProductionRechecksConsentAndPolicyAfterResolution`](../../backend/aiProductionDispatchAuthority_test.go) |
+| Read readiness without changing evidence | [`TestAIExecutionReadinessIsPrivateAttestationWithoutProviderCalls`](../../backend/aiExecutionReadiness_test.go); [`TestAIExecutionProfileEditRequiresItsOwnAttestation`](../../backend/aiExecutionReadinessRevision_test.go) |
+
+Additional checks cover retained capture/selected-album provenance, explicit incomplete/malformed accounting, storage failure at reservation/usage/completion, HTTP session-storage errors, policy isolation, ambiguous JSON, exact 500-item bounded detail and summary responses, and database reopen. The browser journey in [providers.spec.ts](../../tests/e2e/providers.spec.ts) exercises jobs routing through actual application startup, session, frontend proxy and SQLite with unchanged provider/image/write counters.
+
+## Verification status
+
+All thirteen installed gates pass against `def4369`. The first cumulative run passed twelve gates and exposed a stale migration-bootstrap assertion (22 instead of the new schema 23). After reconciling that assertion, the complete Go race/coverage gate passed: AI statement coverage **88.33% (3640/4121)**. Frontend tests (28), browser journeys (eight: three legacy and five AI), frontend/backend builds and Docker packaging passed. Three inherited lint warnings remain unchanged.
+
+Final GitNexus analysis used the correct checkout and a refreshed PDG index. The complete change report listed all 358 changed symbols across 98 files and 78 affected flows, with CRITICAL risk from startup and shared execution/authority boundaries. Those paths were reviewed against the lifecycle, failure, reservation and publication tests. Import-cycle enumeration was complete with zero cycles. Targeted HTTP/reservation taint queries reported no findings; callback/property and sampled-process limitations remain, so this is not proof of safety. Go routes were absent from route-map output and were verified through source registration and the real browser proxy journey.
+
+Local ignored evidence is under `out/checks/ch12-apply/`: per-cycle RED/GREEN or characterization output, the TDD log, shared-gate log and inline review. Compile/harness mistakes were corrected before evaluating semantic RED. Characterizations of already implemented behavior passed on their first semantic run; no artificial failure, skip or mutation-test requirement was introduced.
+
+## Limits
+
+Synthetic provider responses establish transport framing, guard placement, finite reservation, durable outcomes and zero Immich mutations. They do not establish model quality, real pricing, independent token-bound correctness, exactly-once billing or deployment compatibility. The 500-item local fixture establishes bounded semantics and reopen behavior, not the separate reference-NAS latency/throughput target. GATE-04 operating/retention decisions remain release prerequisites. No public cleanup, automatic retention, Context-assisted production job, draft or confirmed writer is introduced.

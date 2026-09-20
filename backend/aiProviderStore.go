@@ -9,11 +9,12 @@ import (
 
 type aiProviderProfile struct {
 	providers.Config
-	ID               string               `json:"id"`
-	Revision         int                  `json:"revision"`
-	Enabled          bool                 `json:"enabled"`
-	HasSecret        bool                 `json:"hasSecret"`
-	CapabilityReport *capabilities.Report `json:"capabilityReport,omitempty"`
+	ID                 string                `json:"id"`
+	Revision           int                   `json:"revision"`
+	Enabled            bool                  `json:"enabled"`
+	HasSecret          bool                  `json:"hasSecret"`
+	CapabilityReport   *capabilities.Report  `json:"capabilityReport,omitempty"`
+	ExecutionReadiness *aiExecutionReadiness `json:"executionReadiness,omitempty"`
 }
 
 type aiProviderInputError struct{ message string }

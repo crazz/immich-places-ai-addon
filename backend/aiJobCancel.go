@@ -9,7 +9,7 @@ import (
 
 func (s *aiJobStore) Cancel(ctx context.Context, owner, id string) error {
 	return s.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
-		if err := s.current(ctx, tx); err != nil {
+		if err := s.currentInstallation(ctx, tx); err != nil {
 			return err
 		}
 		changed, err := tx.ExecContext(ctx, `UPDATE ai_jobs SET cancelRequested=1 WHERE userID=? AND id=? AND installationID=?`, owner, id, s.binding)

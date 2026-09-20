@@ -43,18 +43,22 @@ func (s *aiJobStore) Submit(ctx context.Context, input jobs.Submission) (jobs.Jo
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO ai_jobs(userID,id,installationID,idempotencyKey,requestDigest,requestJSON,model,maxCalls,createdAt) VALUES(?,?,?,?,?,?,?,?,?)`, input.Owner, id, input.Installation, input.Key, digest, string(data), model, input.MaxCalls, s.now().UnixNano()); err != nil {
-			return err
-		}
-		for position, asset := range input.AssetIDs {
-			if _, err := tx.ExecContext(ctx, `INSERT INTO ai_job_items(userID,jobID,id,assetID,position) VALUES(?,?,?,?,?)`, input.Owner, id, uuid.NewString(), asset, position); err != nil {
-				return err
-			}
-		}
-		return nil
+		return s.insertJob(ctx, tx, id, input, digest, string(data), model)
 	})
 	if err != nil {
 		return jobs.Job{}, err
 	}
 	return s.Get(ctx, input.Owner, id)
+}
+
+func (s *aiJobStore) insertJob(ctx context.Context, tx *sql.Tx, id string, input jobs.Submission, digest, data, model string) error {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO ai_jobs(userID,id,installationID,idempotencyKey,requestDigest,requestJSON,model,maxCalls,createdAt) VALUES(?,?,?,?,?,?,?,?,?)`, input.Owner, id, input.Installation, input.Key, digest, data, model, input.MaxCalls, s.now().UnixNano()); err != nil {
+		return err
+	}
+	for position, asset := range input.AssetIDs {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO ai_job_items(userID,jobID,id,assetID,position) VALUES(?,?,?,?,?)`, input.Owner, id, uuid.NewString(), asset, position); err != nil {
+			return err
+		}
+	}
+	return nil
 }

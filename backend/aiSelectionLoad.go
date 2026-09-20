@@ -25,6 +25,19 @@ func (s *aiSelectionStore) load(ctx context.Context, owner, id string) (selectio
 		return selection.Manifest{}, err
 	}
 	defer tx.Rollback()
+	manifest, err := s.loadInTx(ctx, tx, owner, id)
+	if err != nil {
+		return selection.Manifest{}, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return selection.Manifest{}, err
+	}
+	return manifest, nil
+}
+
+func (s *aiSelectionStore) loadInTx(ctx context.Context, tx *sql.Tx, owner, id string) (selection.Manifest, error) {
+	var err error
 	if err := s.checkBinding(ctx, tx); err != nil {
 		return selection.Manifest{}, err
 	}
@@ -65,9 +78,6 @@ func (s *aiSelectionStore) load(ctx context.Context, owner, id string) (selectio
 		if item.id != manifest.AssetIDs[i] || selection.ExclusionReason(candidate.Candidate) != "" || facts != item.facts {
 			return selection.Manifest{}, errAISelectionStale
 		}
-	}
-	if err = tx.Commit(); err != nil {
-		return selection.Manifest{}, err
 	}
 	return manifest, nil
 }

@@ -66,7 +66,7 @@ func (w Worker) RunOne(ctx context.Context, ticks <-chan time.Time) (bool, error
 		return true, w.recordFailure(ctx, lease, err)
 	}
 	_, err = w.Store.Complete(ctx, lease, completion)
-	if errors.Is(err, ErrInvalid) {
+	if errors.Is(err, ErrInvalid) || errors.Is(err, ErrDenied) || errors.Is(err, ErrBudget) {
 		return true, w.recordFailure(ctx, lease, err)
 	}
 	return true, err

@@ -127,3 +127,25 @@ exclusionCounts: {}
 	expect(await fixtureState(page.request, account.key)).toEqual(before);
 	expect(await providerState(page.request)).toEqual(providersBefore);
 });
+
+test('exposes protected durable job APIs through the real application startup and proxy', async ({page, account}) => {
+	await connectAccount(page, account);
+	const before = await fixtureState(page.request, account.key);
+	const providersBefore = await providerState(page.request);
+	const listing = await page.request.get('/api/backend/ai/jobs?limit=20');
+	expect(listing.status()).toBe(200);
+	expect(listing.headers()['cache-control']).toBe('no-store');
+	expect(await listing.json()).toEqual({items: []});
+	const invalid = await page.request.post('/api/backend/ai/jobs', {
+		headers: {Origin: 'http://127.0.0.1:3080'}, data: {}
+	});
+	expect(invalid.status()).toBe(400);
+	const unprotected = await page.request.post('/api/backend/ai/jobs/absent/cancel', {data: {}});
+	expect(unprotected.status()).toBe(403);
+	const absent = await page.request.get('/api/backend/ai/jobs/absent');
+	expect(absent.status()).toBe(404);
+	expect((await providerState(page.request)).requests).toHaveLength(providersBefore.requests.length);
+	const after = await fixtureState(page.request, account.key);
+	expect(after.writes).toEqual(before.writes);
+	expect(after.imageRequests).toBe(before.imageRequests);
+});

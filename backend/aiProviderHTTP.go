@@ -9,16 +9,18 @@ import (
 
 	"github.com/google/uuid"
 	"immich-places-backend/internal/ai/capabilities"
+	"immich-places-backend/internal/ai/jobs"
 	"immich-places-backend/internal/ai/providers"
 )
 
 type aiProviderHandlers struct {
-	db         *Database
-	enabled    bool
-	origin     string
-	policy     providers.EgressPolicy
-	dispatcher *providers.Dispatcher
-	limiter    *capabilities.Limiter
+	db                *Database
+	enabled           bool
+	origin            string
+	policy            providers.EgressPolicy
+	dispatcher        *providers.Dispatcher
+	limiter           *capabilities.Limiter
+	executionPolicies jobs.ExecutionPolicies
 }
 
 type aiProviderRequest struct {
@@ -28,12 +30,13 @@ type aiProviderRequest struct {
 
 func newAIProviderHandler(db *Database, cfg *Config, dispatcher *providers.Dispatcher) http.Handler {
 	h := &aiProviderHandlers{
-		db:         db,
-		enabled:    cfg.AIEnabled,
-		origin:     cfg.AIPublicOrigin,
-		policy:     cfg.AIProviderEgressPolicy,
-		dispatcher: dispatcher,
-		limiter:    capabilities.NewLimiter(2, 1),
+		db:                db,
+		enabled:           cfg.AIEnabled,
+		origin:            cfg.AIPublicOrigin,
+		policy:            cfg.AIProviderEgressPolicy,
+		dispatcher:        dispatcher,
+		limiter:           capabilities.NewLimiter(2, 1),
+		executionPolicies: cfg.AIExecutionPolicies,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ai/providers", h.list)
@@ -60,6 +63,13 @@ func (h *aiProviderHandlers) list(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			writeAIProviderFailure(w, err)
 			return
+		}
+		for i := range items {
+			items[i].ExecutionReadiness, err = h.executionReadiness(r.Context(), getUserFromContext(r).ID, items[i])
+			if err != nil {
+				writeAIProviderFailure(w, err)
+				return
+			}
 		}
 	}
 	writeJSON(w, http.StatusOK, struct {
@@ -106,6 +116,11 @@ func (h *aiProviderHandlers) save(w http.ResponseWriter, r *http.Request) {
 	} else {
 		profile, err = h.db.updateAIProvider(r.Context(), getUserFromContext(r).ID, r.PathValue("id"), request.ExpectedRevision, request.Input)
 	}
+	if err != nil {
+		writeAIProviderFailure(w, err)
+		return
+	}
+	profile.ExecutionReadiness, err = h.executionReadiness(r.Context(), getUserFromContext(r).ID, profile)
 	if err != nil {
 		writeAIProviderFailure(w, err)
 		return

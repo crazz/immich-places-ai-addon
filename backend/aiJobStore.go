@@ -54,8 +54,15 @@ func aiJobFailure(ctx context.Context, err error) error {
 }
 
 func (s *aiJobStore) current(ctx context.Context, tx *sql.Tx) error {
+	if !s.enabled {
+		return jobs.ErrDenied
+	}
+	return s.currentInstallation(ctx, tx)
+}
+
+func (s *aiJobStore) currentInstallation(ctx context.Context, tx *sql.Tx) error {
 	var current string
-	if !s.enabled || s.binding == "" {
+	if s.binding == "" {
 		return jobs.ErrDenied
 	}
 	if err := tx.QueryRowContext(ctx, "SELECT id FROM ai_installation_identity WHERE singleton=1").Scan(&current); err != nil || current != s.binding {
