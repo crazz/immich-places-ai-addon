@@ -45,7 +45,7 @@ it('previews selected, page and all matching with authoritative exclusions and e
 });
 
 
-it('invalidates the displayed preview and consent when selection or page inputs change', async () => {
+it('invalidates the displayed launch when selection or page inputs change', async () => {
  const user = userEvent.setup();
  const preview = aiPreview();
  const input = {scope: preview.scope, selected: preview.assetIDs, page: preview.assetIDs, blockedReason: ''};
@@ -53,7 +53,7 @@ it('invalidates the displayed preview and consent when selection or page inputs 
  vi.mocked(fetchProviders).mockResolvedValue({enabled: true, items: [aiProfile]});
  const {rerender} = render(<BatchLaunch input={input} onSubmittedAction={() => undefined} />);
  await user.click(screen.getByRole('button', {name: 'Preview selected assets'}));
- await user.click(await screen.findByLabelText(/I consent to sending/));
+ await screen.findByRole('button', {name: 'Start analysis'});
  expect(screen.getByRole('button', {name: 'Start analysis'})).toBeEnabled();
  rerender(<BatchLaunch input={{...input, page: ['different-page']}} onSubmittedAction={() => undefined} />);
  expect(screen.queryByLabelText(/I consent to sending/)).not.toBeInTheDocument();

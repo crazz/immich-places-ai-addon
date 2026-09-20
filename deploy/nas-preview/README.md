@@ -72,10 +72,10 @@ profile for `http://codex-proxy:3466/v1` and the chosen model, then explicitly r
 the disclosed synthetic capability test. No provider call runs just from saving
 a profile or deploying the stack.
 
-`AI_EXECUTION_POLICIES` starts empty. Production analysis stays unavailable until
-an operator adds a verified policy bound to this new owner, installation, profile
-revision, model and egress fingerprint. Follow the
-[production guide](../../docs/ai-production-jobs.md) and
-[batch workflow](../../docs/ai-batch-workflow.md); a historical synthetic proxy
-test is not an execution-policy attestation for this fresh installation. Result
-history starts empty. CH15 review is read-only and does not implement AI writeback.
+`AI_EXECUTION_POLICIES` stays empty for ordinary analysis, which uses application
+defaults after a current capability test. Optional operator restrictions are
+explained in the [production guide](../../docs/ai-production-jobs.md). The
+[batch workflow](../../docs/ai-batch-workflow.md) launches with one explicit Start
+action; token estimates are not a billing guarantee. CH15 review remains read-only
+and does not implement AI writeback. Set `PREVIEW_REVISION` to the tested image tag
+when updating both preview services; preserve the existing secret and data mount.

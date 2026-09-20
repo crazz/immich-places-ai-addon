@@ -36,7 +36,7 @@ func TestAIExecutionReadinessRequiresPolicyAndObservedSupport(t *testing.T) {
 			case "disabled":
 				p.Enabled = false
 				want = "unavailable"
-			case "anonymous":
+			case "anonymous", "no-policy":
 				want = "ready"
 			}
 			h := &aiProviderHandlers{db: f.image.db, enabled: true, policy: f.analyzer.dispatcher.Policy, executionPolicies: policies}

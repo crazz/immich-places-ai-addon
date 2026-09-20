@@ -36,11 +36,14 @@ func (h *aiProviderHandlers) executionReadiness(ctx context.Context, owner strin
 	if err != nil {
 		return nil, err
 	}
-	p, digest, found := h.executionPolicies.Find(jobs.ExecutionBinding{Owner: owner, Installation: installation, Profile: profile.ID, Revision: profile.Revision, Model: profile.Model, EgressFingerprint: policyFingerprint(h.policy)})
+	p, digest, found := h.executionPolicies.Resolve(jobs.ExecutionBinding{Owner: owner, Installation: installation, Profile: profile.ID, Revision: profile.Revision, Model: profile.Model, EgressFingerprint: policyFingerprint(h.policy)})
 	if !found {
 		return ready, nil
 	}
 	ready.Source, ready.PolicyID = "operator-attested", digest
+	if p.Version == jobs.DefaultExecutionVersion {
+		ready.Source = "application-defaults"
+	}
 	ready.ContextAllowed = p.Context
 	ready.MaxInputTokens, ready.MaxOutputTokens = p.MaxInputTokens, p.MaxOutputTokens
 	ready.MaxRequestBytes, ready.MaxImageBytes = p.MaxRequestBytes, p.MaxImageBytes

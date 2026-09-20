@@ -131,7 +131,7 @@ Each provider profile SHALL belong to one application user and use an administra
 
 ### FR-04 — Obtain and record data-sharing consent
 
-The user SHALL control image and context disclosure. The system SHALL record the authorized context classes, provider revision, and asset selection. The default payload SHALL exclude file paths, people identities, device serials, unrelated albums, and unselected images. Revoking access or disabling the provider SHALL stop future dispatches; already transmitted data cannot be recalled by the add-on.
+The user SHALL control image and context disclosure. Clicking **Start analysis** with the provider and selection displayed SHALL authorize that image analysis without an additional consent checkbox; context classes beyond the images SHALL remain separately selectable. The system SHALL record the authorized context classes, provider revision, and asset selection. The default payload SHALL exclude file paths, people identities, device serials, unrelated albums, and unselected images. Revoking access or disabling the provider SHALL stop future dispatches; already transmitted data cannot be recalled by the add-on.
 
 ### FR-05 — Run durable, bounded work
 

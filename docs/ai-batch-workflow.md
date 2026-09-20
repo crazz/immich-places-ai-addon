@@ -6,11 +6,11 @@ CH13 connects gallery selection, explicit disclosure and durable Visual or Conte
 
 Choose selected assets, the current page or all matching assets. The server freezes exact eligible membership and reports counts, exclusions and expiry; at most 500 eligible assets may enter a job. Changing page, selection or filters clears the preview and confirmation. An active GPX preview/status filter, an unopened album/folder listing or an unsettled catalog page blocks a new preview with an explanation.
 
-The form defaults to Visual, strict schema output and editable English language choices. It identifies the exact provider/model/revision and current capability/execution-policy readiness. Calls, total tokens and per-call output tokens are finite; a smaller allowance may finish only part of a batch. Estimated cost caps use the displayed currency and require an attested tariff. Unknown reported usage or cost remains unknown.
+The form defaults to Visual, a supported output format (strict preferred) and editable English language choices. It identifies the provider/model and uses current capability observations plus application defaults. Advanced settings contains format, token and cost controls. Calls, total tokens and per-call output tokens are finite; a smaller allowance may finish only part of a batch. Estimated cost caps use the displayed currency and require an attested tariff. Unknown reported usage or cost remains unknown.
 
-Image disclosure starts unchecked. Context-assisted mode additionally requires an explicit choice for each of capture time, the concrete selected album, user hint and nearby known locations. Hints are limited to 2,000 UTF-8 bytes and are sent only when their class is selected. Nearby context includes at most six metadata records within six hours, with no neighbor images. Empty context remains a valid Context-assisted choice. Visual sends no context envelope. Configuration changes reset confirmation.
+**Start analysis** authorizes the displayed selection and settings; the destination is shown beside the action, with no separate image checkbox. Context-assisted mode additionally requires an explicit choice for each of capture time, the concrete selected album, user hint and nearby known locations. Hints are limited to 2,000 UTF-8 bytes and are sent only when their class is selected. Nearby context includes at most six metadata records within six hours, with no neighbor images. Empty context remains a valid Context-assisted choice. Visual sends no context envelope. The click captures the latest configuration; editing or previewing never dispatches work.
 
-An execution policy must explicitly contain `"context": true` before Context-assisted admission is ready. This attests that its existing request-size and token allowances cover the bounded context envelope. Existing Visual policies retain their identity when this optional field is absent. Provider tests never start automatically from launch.
+Application defaults permit bounded Context-assisted requests. An explicitly configured operator policy must contain `"context": true` before Context-assisted admission is ready. This attests that its existing request-size and token allowances cover the bounded context envelope. Existing Visual policies retain their identity when this optional field is absent. Provider tests never start automatically from launch.
 
 ## Durable execution and observation
 
@@ -24,6 +24,8 @@ Progress distinguishes execution states from successful `unknown` or `ambiguous`
 
 ## Explicit reruns
 
-**Retry failed** includes only terminal failed members of the owned parent. Reanalysis includes explicitly selected parent members, including successful, canceled or blocked items. Both return to fresh eligibility preview and unchecked disclosure, use a new run ID and persist the parent/kind in the confirmation-bound admission. The server checks every member against the owned parent inside admission. Neither action resets the parent or overwrites a result.
+**Retry failed** includes only terminal failed members of the owned parent. Reanalysis includes explicitly selected parent members, including successful, canceled or blocked items. Both return to a fresh eligibility preview and require a new **Start analysis** action, use a new run ID and persist the parent/kind in the confirmation-bound admission. The server checks every member against the owned parent inside admission. Neither action resets the parent or overwrites a result.
 
 Detailed persistent result browsing belongs to CH14; the read-only proposal map belongs to CH15. See the [verification record](engineering/ai-batch-workflow-verification.md) and [production job contract](ai-production-jobs.md).
+
+[ADR-08](engineering/decisions/ADR-08-simple-ai-launch.md) records the simplified launch and the distinction between default token estimates and optional operator attestations.

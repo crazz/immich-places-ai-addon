@@ -53,7 +53,7 @@ func (p *aiProductionJobs) submit(ctx context.Context, owner string, req jobs.Ad
 		if err := tx.QueryRowContext(ctx, `SELECT v.model FROM ai_provider_profiles p JOIN ai_provider_versions v ON v.userID=p.userID AND v.profileID=p.id AND v.revision=p.activeRevision WHERE p.userID=? AND p.id=? AND p.activeRevision=? AND p.enabled=1`, owner, cfg.ProfileID, cfg.Revision).Scan(&model); err != nil {
 			return jobs.ErrDenied
 		}
-		policy, policyID, ok := p.policies.Find(jobs.ExecutionBinding{Owner: owner, Installation: p.store.binding, Profile: cfg.ProfileID, Revision: cfg.Revision, Model: model, EgressFingerprint: p.fingerprint})
+		policy, policyID, ok := p.policies.Resolve(jobs.ExecutionBinding{Owner: owner, Installation: p.store.binding, Profile: cfg.ProfileID, Revision: cfg.Revision, Model: model, EgressFingerprint: p.fingerprint})
 		if !ok || policyID != cfg.PolicyID || !policy.Allows(cfg.Limits) || (cfg.Mode == "context-assisted" && !policy.Context) {
 			return jobs.ErrDenied
 		}

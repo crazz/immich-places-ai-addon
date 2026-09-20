@@ -204,7 +204,7 @@ The production worker SHALL compose authorized image preparation, one Visual att
 
 ### Requirement: Reserve finite usage before every production call
 
-Every provider call SHALL atomically consume a durable call reservation and conservative token allowance under the current lease before dispatch. Concurrent attempts and retries SHALL not exceed admitted item/job limits. Reservations SHALL remain consumed when actual usage is smaller, unavailable or delivery is uncertain. Reported usage and monetary estimates SHALL remain separate from enforced allowances; unknown values SHALL not become zero or exact billing claims.
+Every provider call SHALL atomically consume a durable call reservation and token scheduling allowance under the current lease before dispatch. Concurrent attempts and retries SHALL not exceed admitted item/job limits. Reservations SHALL remain consumed when actual usage is smaller, unavailable or delivery is uncertain. For application defaults, token allowances SHALL be labeled planning estimates and SHALL NOT claim provider-enforced token ceilings. Reported usage and monetary estimates SHALL remain separate from enforced call and reservation limits; unknown values SHALL not become zero or exact billing claims.
 
 #### Scenario: Concurrent calls reach the allowance
 - **GIVEN** multiple workers whose next reservations would exceed a call or token limit
@@ -220,6 +220,11 @@ Every provider call SHALL atomically consume a durable call reservation and cons
 - **GIVEN** missing tariffs, incomplete usage or usage exceeding the attested allowance
 - **WHEN** accounting is recorded and exposed
 - **THEN** unknown cost/usage remains explicit, estimates remain labeled, and a violated policy blocks further dispatch without claiming charges were reversed
+
+#### Scenario: Retain usage above default token estimates
+- **GIVEN** a run using application defaults and a provider reporting more tokens than requested
+- **WHEN** its otherwise valid result completes
+- **THEN** actual usage and the result are retained without fabricating an operator-policy violation, and cost remains unknown
 
 ### Requirement: Start and stop a bounded recoverable production consumer
 
@@ -266,11 +271,11 @@ Launch SHALL distinguish selected assets, current page and all matching assets t
 
 ### Requirement: Confirm explicit mode and data disclosure
 
-Launch SHALL show exact provider revision/readiness, mode, format, languages, limits and disclosure before submission. Image consent and each Context-assisted class SHALL require explicit choice. Visual SHALL reject context payloads; Context-assisted SHALL enforce CH10 bounds, including explicit empty context. Changes to confirmed inputs SHALL invalidate confirmation. Missing compatibility, policy or consent SHALL disable launch without automatic provider tests.
+Launch SHALL identify the provider, selection, mode and languages, with working settings and optional advanced format/limit controls. Clicking Start analysis SHALL authorize the displayed images and exact current configuration without a second consent checkbox. Context-assisted classes SHALL remain individually selected. Visual SHALL reject context payloads; Context-assisted SHALL enforce CH10 bounds, including explicit empty context. Merely previewing or changing fields SHALL NOT submit a job. Missing compatibility or an unsatisfied explicit restriction SHALL disable launch with an actionable explanation, without automatic provider tests. Ordinary launch SHALL NOT require a manually authored policy.
 
 #### Scenario: Launch Visual without hidden context
 - **GIVEN** a ready provider, valid preview and chosen languages/limits
-- **WHEN** the user confirms image disclosure in Visual mode
+- **WHEN** the user clicks Start analysis in Visual mode
 - **THEN** the exact batch is submitted once with no context fields and no implicit fallback or extra provider test
 
 #### Scenario: Choose bounded Context-assisted inputs
@@ -278,10 +283,10 @@ Launch SHALL show exact provider revision/readiness, mode, format, languages, li
 - **WHEN** the user confirms disclosure
 - **THEN** only those classes and their bounded values are admitted, with image consent still required and absent usable context made explicit
 
-#### Scenario: Reset confirmation after changes
-- **GIVEN** a confirmed launch form
-- **WHEN** provider revision, selection, mode, hint/classes, languages, format or limits changes
-- **THEN** submission requires renewed confirmation for the exact new input
+#### Scenario: Bind the current choices to the Start action
+- **GIVEN** a displayed launch form
+- **WHEN** the user changes providers or other choices and then clicks Start analysis
+- **THEN** provider defaults are refreshed and the submitted authorization binds exactly the new choices, with no dispatch caused by editing
 
 ### Requirement: Persist and validate the exact contextual attempt
 

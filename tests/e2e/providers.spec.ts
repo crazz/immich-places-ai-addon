@@ -1,5 +1,40 @@
 import {connectAccount, expect, fixtureState, providerState, test} from './app-fixture';
 
+test('keeps AI launch fields inside their columns and dialog at desktop and phone widths', async ({page, account}) => {
+	await connectAccount(page, account);
+	const response = await page.request.post('/api/backend/ai/providers', {
+		headers: {Origin: 'http://127.0.0.1:3080'},
+		data: {name: 'Local provider with a descriptive name', baseURL: 'http://127.0.0.1:8090/v1', model: 'synthetic-vision-model', enabled: true}
+	});
+	expect(response.status()).toBe(201);
+	await page.getByRole('button', {name: 'AI Locate', exact: true}).click();
+	await page.getByRole('button', {name: 'Preview current page'}).click();
+	const dialog = page.getByRole('dialog', {name: 'AI Locate', exact: true});
+	await expect(dialog.getByLabel('Provider', {exact: true})).toBeVisible();
+	await dialog.getByText('Advanced settings', {exact: true}).click();
+	for (const width of [1440, 390]) {
+		await page.setViewportSize({width, height: 900});
+		const layout = await dialog.evaluate(element => {
+			const panel = element.getBoundingClientRect();
+			return {
+				width: panel.width,
+				overflows: [...element.querySelectorAll('input:not([type=checkbox]), select, textarea')].map(control => {
+					const field = control.getBoundingClientRect();
+					const label = control.closest('label')!.getBoundingClientRect();
+					return Math.max(field.right - label.right, label.left - field.left, field.right - panel.right, panel.left - field.left);
+				}),
+				scrollOverflow: element.scrollWidth - element.clientWidth
+			};
+		});
+		expect(layout.overflows.every(value => value <= 1), JSON.stringify(layout)).toBe(true);
+		expect(layout.scrollOverflow).toBeLessThanOrEqual(1);
+		if (width === 1440) {expect(layout.width).toBeGreaterThanOrEqual(640);}
+		await page.screenshot({path: `out/checks/ai-launch-${width}.png`});
+	}
+	expect((await fixtureState(page.request, account.key)).writes).toEqual([]);
+	expect((await providerState(page.request)).requests).toEqual([]);
+});
+
 test('manages a private profile through the real session, proxy and database without external writes', async ({page, account}) => {
 	await connectAccount(page, account);
 	await page.getByRole('button', {name: 'Settings', exact: true}).click();

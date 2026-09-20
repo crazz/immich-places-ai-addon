@@ -6,7 +6,7 @@ test.afterEach(async ({request}) => {
  expect(response.ok()).toBe(true);
 });
 
-test('launches a durable Visual job, restores progress and creates a separately consented Context reanalysis', async ({page, account}) => {
+test('launches a durable Visual job, restores progress and starts Context reanalysis with application defaults', async ({page, account}) => {
  test.setTimeout(90000);
  await connectAccount(page, account);
  await page.getByRole('button', {name: 'Settings', exact: true}).click();
@@ -20,20 +20,15 @@ test('launches a durable Visual job, restores progress and creates a separately 
  await expect(page.getByText('Saved revision 1', {exact: true})).toBeVisible();
  await page.getByRole('button', {name: 'Test provider'}).click();
  await expect(page.getByText(/Strict: supported/i)).toBeVisible({timeout: 45000});
- const me = await (await page.request.get('/api/backend/auth/me')).json();
  const profiles = await (await page.request.get('/api/backend/ai/providers')).json();
- const configured = await page.request.post('http://127.0.0.1:8091/configure', {data: {owner: me.user.ID, profile: profiles.items[0].id}});
- expect(await configured.text()).toBe('{"ready":true}');
- expect(configured.ok()).toBe(true);
+ expect(profiles.items[0].executionReadiness).toMatchObject({status: 'ready', source: 'application-defaults'});
  await page.getByRole('button', {name: 'Close dialog'}).click();
  await page.getByRole('button', {name: 'AI Locate', exact: true}).click();
  await page.getByRole('button', {name: 'Preview all matching assets'}).click();
  await expect(page.getByText(/Eligible: 2/)).toBeVisible();
- await page.getByRole('checkbox', {name: /I consent/}).check();
  await page.getByRole('button', {name: 'Preview current page'}).click();
  await expect(page.getByText(/Eligible: 2/)).toBeVisible();
- const consent = page.getByRole('checkbox', {name: /I consent/});
- await expect(consent).not.toBeChecked();
+ await expect(page.getByRole('checkbox', {name: /I consent/})).toHaveCount(0);
  let didLoseAcknowledgement = false;
  const submissionKeys: string[] = [];
  await page.route('**/api/backend/ai/jobs', async route => {
@@ -46,7 +41,6 @@ test('launches a durable Visual job, restores progress and creates a separately 
   }
   await route.continue();
  });
- await consent.check();
  await page.getByRole('button', {name: 'Start analysis', exact: true}).click();
  await page.getByRole('button', {name: 'Reconcile submission'}).click();
  expect(submissionKeys).toHaveLength(2);
@@ -65,8 +59,6 @@ test('launches a durable Visual job, restores progress and creates a separately 
  await expect(page.getByRole('checkbox', {name: 'Capture time', exact: true})).not.toBeChecked();
  await page.getByRole('checkbox', {name: 'User hint', exact: true}).check();
  await page.getByLabel('Hint', {exact: true}).fill('Synthetic context hint');
- await expect(consent).not.toBeChecked();
- await consent.check();
  await page.getByRole('button', {name: 'Start analysis', exact: true}).click();
  await expect(page.getByText('Job complete', {exact: true})).toBeVisible({timeout: 15000});
  await expect(page.getByText('Succeeded · Location unknown', {exact: true})).toHaveCount(1);
@@ -116,10 +108,8 @@ test('keyboard users can preview, authorize and cancel mixed work without losing
  for (let step = 0; step < 4; step++) {await page.keyboard.press('Tab');}
  await expect(preview).toBeFocused(); await page.keyboard.press('Enter');
  await expect(page.getByText(/Eligible: 2/)).toBeVisible();
- const consent = page.getByRole('checkbox', {name: /I consent/});
- await consent.focus(); await consent.press('Space');
- await page.keyboard.press('Tab');
  const start = page.getByRole('button', {name: 'Start analysis', exact: true});
+ await start.focus();
  await expect(start).toBeFocused(); await page.keyboard.press('Enter');
  await expect(page.getByText('Succeeded · Location unknown', {exact: true})).toHaveCount(1);
  const cancel = page.getByRole('button', {name: 'Cancel remaining work'});

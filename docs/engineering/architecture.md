@@ -101,3 +101,5 @@ CH14 places terminal-history query/DTO validation in `backend/internal/ai/review
 
 
 CH15 keeps typed immutable proposal projections, local inspection state and read-only Leaflet layers in `src/features/ai/`. A narrow public map contract reuses base initialization and tile configuration without importing manual interaction state. The original manual map remains mounted; private result/owner changes remove AI detail/layers. See [proposal inspection](../ai-proposal-review.md). No approval, draft, provider or mutation boundary is added.
+
+[ADR-08](decisions/ADR-08-simple-ai-launch.md) simplifies launch: the explicit Start action binds image authorization, and deterministic application defaults replace mandatory operator token attestations. Default tokens are estimates; exact scope, call/payload/deadline limits and optional explicit restrictions remain enforced.

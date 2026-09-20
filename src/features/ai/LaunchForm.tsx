@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 
 import {submitJob} from './jobApi';
-import {buildAdmission} from './launchAdmission';
+import {buildAdmission, launchDefaults} from './launchAdmission';
 import {LaunchFields} from './LaunchFields';
 import {useProviderList} from './useProviderList';
 
@@ -15,9 +15,7 @@ type TLaunchProps = {preview: TSelectionPreview; onSubmittedAction: (job: TJobPr
 
 function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TLaunchProps & {providers: TProviderList; reload: () => void}): ReactElement {
 	const initial = providers.items.find(item => item.executionReadiness?.status === 'ready') ?? providers.items[0];
-	const output = Math.min(4000, initial?.executionReadiness?.maxOutputTokens ?? 1);
-	const [fields, setFields] = useState<TLaunchFields>({profileId: initial?.id ?? '', mode: 'visual', format: 'strict', languages: 'en', primaryLanguage: 'en', maxCalls: String(preview.eligibleCount), maxTokens: String(((initial?.executionReadiness?.maxInputTokens ?? 0) + output) * preview.eligibleCount), outputTokens: String(output), costCap: '', classes: [], hint: ''});
-	const [isConsented, setConsented] = useState(false);
+	const [fields, setFields] = useState<TLaunchFields>({...launchDefaults(initial, preview.eligibleCount), mode: 'visual', languages: 'en', primaryLanguage: 'en', classes: [], hint: ''});
 	const [pending, setPending] = useState<TJobAdmission | null>(null);
 	const [isBusy, setBusy] = useState(false);
 	const [isSubmitted, setSubmitted] = useState(false);
@@ -38,7 +36,8 @@ function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TL
 		validationError = error instanceof Error ? error.message : 'Check the launch configuration.';
 	}
 	const update = (change: Partial<TLaunchFields>): void => {
-		setFields(current => ({...current, ...change})); setConsented(false); setPending(null); setFailure('');
+		const defaults = change.profileId ? launchDefaults(providers.items.find(item => item.id === change.profileId), preview.eligibleCount) : {};
+		setFields(current => ({...current, ...defaults, ...change})); setPending(null); setFailure('');
 	};
 	const send = async (request: TJobAdmission): Promise<void> => {
 		if (locked.current) { return; }
@@ -57,24 +56,22 @@ function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TL
 	};
 	const start = async (): Promise<void> => {
 		if (!profile || pending || locked.current) { return; }
-		try { await send(buildAdmission(fields, preview, profile, isConsented, crypto.randomUUID(), rerun)); }
+		try { await send(buildAdmission(fields, preview, profile, true, crypto.randomUUID(), rerun)); }
 		catch (error) { setFailure(error instanceof Error ? error.message : 'Check the launch configuration.'); }
 	};
 	const ready = profile?.executionReadiness;
 	const isPartial = Number(fields.maxCalls) < preview.eligibleCount || Number(fields.maxTokens) < ((ready?.maxInputTokens ?? 0) + Number(fields.outputTokens)) * preview.eligibleCount;
 	return <form aria-label={'AI analysis launch'} className={'space-y-3'} onSubmit={event => { event.preventDefault(); void start(); }}>
 		<LaunchFields fields={fields} profiles={providers.items} preview={preview} disabled={isBusy || pending !== null} onChangeAction={update} />
-		<p>{`Readiness: ${ready?.status ?? 'policy required'} · Input allowance per call: ${ready?.maxInputTokens ?? 'unknown'} · Cost: ${ready?.costStatus ?? 'unknown'} ${ready?.currency ?? ''}`}</p>
 		{isPartial && <p>{'This allowance may complete only part of the batch.'}</p>}
-		<p>{'Results are proposals for review. Reservations remain consumed after uncertain delivery; reported usage and charges may differ.'}</p>
-		<label className={'block'}><input type={'checkbox'} checked={isConsented} disabled={isBusy || pending !== null} onChange={event => setConsented(event.target.checked)} />{`I consent to sending the selected images and chosen context to ${profile?.name ?? 'the selected provider'} for this exact run.`}</label>
+		<p>{`Start analysis sends ${preview.eligibleCount} selected image${preview.eligibleCount === 1 ? '' : 's'}${fields.mode === 'context-assisted' ? ' and the chosen context' : ''} to ${profile?.name ?? 'the selected provider'}. Results are proposals for review.`}</p>
 		{(validationError || isExpired) && <p role={'alert'}>{isExpired ? 'Selection preview expired. Preview again.' : validationError}</p>}
 		{failure && <p role={'alert'}>{`${failure} The run may already exist. Reconcile this submission before starting another run.`}</p>}
 		{isBusy && <p role={'status'}>{'Submitting analysis…'}</p>}
 		{isSubmitted && <p role={'status'}>{'Analysis accepted. Work continues after this window closes.'}</p>}
-		{!pending && <button type={'submit'} disabled={!isConsented || !!validationError || isExpired || isBusy}>{'Start analysis'}</button>}
+		{!pending && <button type={'submit'} disabled={!!validationError || isExpired || isBusy}>{'Start analysis'}</button>}
 		{pending && !isSubmitted && <button type={'button'} disabled={isBusy} onClick={async () => send(pending)}>{'Reconcile submission'}</button>}
-		{pending && <button type={'button'} disabled={isBusy} onClick={() => { setPending(null); setSubmitted(false); setConsented(false); setFailure(''); }}>{'Start a different run'}</button>}
+		{pending && <button type={'button'} disabled={isBusy} onClick={() => { setPending(null); setSubmitted(false); setFailure(''); }}>{'Start a different run'}</button>}
 		<button type={'button'} disabled={isBusy || pending !== null} onClick={reload}>{'Reload provider readiness'}</button>
         </form>;
 }

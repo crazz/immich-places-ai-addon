@@ -24,7 +24,6 @@ export async function launchReview(page: Page, model: string): Promise<void> {
  await page.getByRole('button', {name: 'Preview selected assets'}).click();
  await expect(page.getByText(/Eligible: 1/)).toBeVisible();
  await page.getByLabel('Requested languages', {exact: true}).fill('en, uk');
- await page.getByRole('checkbox', {name: /I consent/}).check();
  await page.getByRole('button', {name: 'Start analysis', exact: true}).click();
  await expect(page.getByText('Job complete', {exact: true})).toBeVisible({timeout: 15000});
 }

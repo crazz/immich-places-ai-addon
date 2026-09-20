@@ -371,21 +371,26 @@ Provider Settings SHALL offer a labeled keyboard-accessible test action for save
 - **AND** it exposes neither secret values nor raw provider responses
 - **AND** it distinguishes observed compatibility from private-photo authorization and geolocation quality
 
-### Requirement: Require explicit production token compatibility policy
+### Requirement: Resolve bounded production settings without mandatory operator setup
 
-Production analysis SHALL require a complete administrator-controlled token policy bound to the exact owner, installation, profile revision/model and destination policy. It SHALL identify an approved output-limit parameter and conservative input/output bounds for the enforced request envelope. Operator-attested policy and observed capability results SHALL remain distinct. Unknown, stale, malformed or violated policy SHALL block production dispatch without guessing parameters or probing private input. Safe readiness MAY be exposed to the profile owner without secrets or evidence documents.
+Production analysis SHALL resolve deterministic application defaults when no operator restriction exists for the owner/profile. Defaults SHALL bind the exact owner, installation, profile revision/model and destination policy, with finite call, payload and scheduling allowances. Default token values SHALL remain estimates and the output-limit parameter a request, without claiming observed support or a billing ceiling. Optional operator attestations SHALL take precedence and retain exact compatibility and violation checks; stale explicit restrictions SHALL NOT silently fall back to defaults. Capability observations SHALL remain required and distinct from either settings source. Safe readiness SHALL identify `application-defaults` or `operator-attested` without exposing secrets or evidence documents.
 
 #### Scenario: Use an explicitly supported output limit
 - **GIVEN** a current complete policy and applicable image/format observations
 - **WHEN** a bounded production request is authorized
 - **THEN** it uses only the approved output-limit field and reserves the policy's full permitted input plus chosen output allowance
 
-#### Scenario: Refuse unknown or stale token support
-- **GIVEN** absent, conflicting, incomplete or outdated token policy, or a request outside its bounded envelope
+#### Scenario: Launch without manual policy setup
+- **GIVEN** an enabled provider with current image/format support and no operator restriction
+- **WHEN** its owner launches a valid selection
+- **THEN** application defaults permit the bounded run without manual JSON configuration or invented attestation
+
+#### Scenario: Preserve explicit operator restrictions
+- **GIVEN** an explicitly configured restriction with stale identity or a violated allowance
 - **WHEN** production admission or dispatch is attempted
-- **THEN** it fails safely without guessing a field, inferring support from another observation or sending a private probe
+- **THEN** it fails safely without substituting application defaults or sending a private probe
 
 #### Scenario: Read readiness without changing evidence
 - **GIVEN** a saved profile and observed capability results
 - **WHEN** the owner reads readiness or edits the profile
-- **THEN** the response distinguishes attested policy from observed support, a changed revision needs its own policy, and no automatic provider call occurs
+- **THEN** the response distinguishes default settings, attested policy and observed support; changed authority changes the default identity or requires an updated explicit restriction, and no automatic provider call occurs

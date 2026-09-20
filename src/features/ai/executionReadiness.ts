@@ -19,7 +19,7 @@ export function isExecutionReadiness(value: unknown): value is TExecutionReadine
 		return false;
 	}
 	if (value.status === 'ready' || value.status === 'capability_required' || value.status === 'policy_violated') {
-		return value.source === 'operator-attested' && typeof value.policyID === 'string' && /^[a-f0-9]{64}$/.test(value.policyID) &&
+		return (value.source === 'operator-attested' || value.source === 'application-defaults') && typeof value.policyID === 'string' && /^[a-f0-9]{64}$/.test(value.policyID) &&
 			['maxInputTokens', 'maxOutputTokens', 'maxRequestBytes', 'maxImageBytes'].every(key => typeof value[key] === 'number' && Number.isSafeInteger(value[key]) && value[key] > 0) &&
 			(value.costStatus === 'unknown' || (typeof value.currency === 'string' && /^[A-Z]{3}$/.test(value.currency)));
 	}

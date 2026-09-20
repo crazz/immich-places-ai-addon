@@ -103,7 +103,7 @@ A profile identifies a user, approved base URL, model, credential reference, and
 
 The V1 adapter sends a non-streaming request to the configured Chat Completions endpoint, with text and an image data URL. OpenAI supports encoded image input; compatible endpoints must pass a real synthetic-image test rather than inherit that assumption. [O01]
 
-Manual model entry is supported even when discovery is unavailable. Do not attach optional parameters such as temperature, reasoning settings, or a particular maximum-token field unless enabled by the profile's capability policy. An unsupported strict-schema parameter can trigger one explicit downgrade to JSON mode when allowed; authentication failures must not be treated as schema incompatibility.
+Manual model entry is supported even when discovery is unavailable. Do not attach optional parameters such as temperature or reasoning settings without profile support. As amended by [ADR-08](../engineering/decisions/ADR-08-simple-ai-launch.md), ordinary launch uses application defaults with `max_tokens` as a requested output hint, not evidence of provider enforcement. Optional operator attestations retain their exact parameter and allowance checks. An unsupported strict-schema parameter can trigger one explicit downgrade to JSON mode when allowed; authentication failures must not be treated as schema incompatibility.
 
 OpenAI distinguishes schema-constrained output from JSON mode and documents refusal/truncation edge cases. The application therefore validates every result independently of transport mode. A valid JSON object does not prove a correct geolocation. [O02]
 
@@ -241,7 +241,7 @@ Defaults are operator-configurable and must be tested: global concurrency 2; per
 
 Retry transient 429/5xx/network failures with jitter and bounded `Retry-After`. Treat authentication, disallowed egress, unsupported image format, refusal, and persistent invalid output as nontransient unless an explicit capability fallback applies. Pause new provider dispatches on repeated systemic failures rather than consuming every item.
 
-Enforce hard call/token limits. Monetary budgets are estimates when tariffs or usage are incomplete. Reserve estimated concurrent cost before dispatch and stop launching new requests at the cap; in-flight provider charges cannot be canceled reliably. Do not label a monetary estimate as an exact billing ceiling.
+Enforce hard call limits and token reservation budgets. Default token reservations are scheduling estimates; actual provider tokens are not a verified hard ceiling. Explicit operator-attested policies retain their violation checks. Monetary budgets are estimates when tariffs or usage are incomplete. Reserve estimated concurrent cost before dispatch and stop launching new requests at the cap; in-flight provider charges cannot be canceled reliably. Do not label a monetary estimate as an exact billing ceiling.
 
 Deduplicate repeated HTTP submissions by an application idempotency key. A content/context hash supports explicit reuse of unchanged results, but never caches across users or bypasses a requested reanalysis. Detect changed image versions before using a previously staged result.
 
@@ -336,7 +336,7 @@ Expose pre-save discard and a complete before-value audit. Full restoration to m
 
 ## 12. Security, privacy, and lifecycle
 
-Recheck access before image fetch, context assembly, review, and write. A local cached asset is not permanent authorization after sharing or API-key permissions change. Provider tests never use a private library image. Egress consent is versioned and does not expand when a user changes filters later.
+Recheck access before image fetch, context assembly, review, and write. A local cached asset is not permanent authorization after sharing or API-key permissions change. Provider tests never use a private library image. Egress authorization is captured by the explicit Start analysis action, is versioned and does not expand when a user changes filters later. A separate image consent checkbox is not required.
 
 Treat image text, album names, hints, web pages, and model content as untrusted data. System instructions and application policies are not editable by those inputs. The structured response can propose facts but cannot alter limits, select another user, call arbitrary tools, or authorize a write.
 

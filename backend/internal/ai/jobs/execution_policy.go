@@ -57,7 +57,7 @@ func ParseExecutionPolicies(raw string) (ExecutionPolicies, error) {
 	}
 	seen := map[ExecutionBinding]bool{}
 	for _, p := range policies.entries {
-		if !p.Valid() || seen[p.Binding] {
+		if p.Version != "execution-v1" || !p.Valid() || seen[p.Binding] {
 			return ExecutionPolicies{}, ErrInvalid
 		}
 		seen[p.Binding] = true
@@ -66,10 +66,13 @@ func ParseExecutionPolicies(raw string) (ExecutionPolicies, error) {
 }
 
 func (p ExecutionPolicy) Valid() bool {
-	if p.Version != "execution-v1" || p.Binding.Revision < 1 || (p.OutputField != "max_tokens" && p.OutputField != "max_completion_tokens") {
+	if (p.Version != "execution-v1" && p.Version != DefaultExecutionVersion) || p.Binding.Revision < 1 || (p.OutputField != "max_tokens" && p.OutputField != "max_completion_tokens") {
 		return false
 	}
-	for _, value := range []string{p.Binding.Owner, p.Binding.Profile, p.Binding.Model, p.EvidenceRef} {
+	if p.Version == "execution-v1" && (!boundedIdentity(p.EvidenceRef) || strings.TrimSpace(p.EvidenceRef) == "") {
+		return false
+	}
+	for _, value := range []string{p.Binding.Owner, p.Binding.Profile, p.Binding.Model} {
 		if !boundedIdentity(value) || strings.TrimSpace(value) == "" {
 			return false
 		}
@@ -114,7 +117,7 @@ func (p ExecutionPolicies) Find(binding ExecutionBinding) (ExecutionPolicy, stri
 	return ExecutionPolicy{}, "", false
 }
 
-func (ExecutionPolicy) String() string     { return "attested AI execution policy" }
-func (ExecutionPolicy) GoString() string   { return "attested AI execution policy" }
+func (ExecutionPolicy) String() string     { return "AI execution policy" }
+func (ExecutionPolicy) GoString() string   { return "AI execution policy" }
 func (ExecutionPolicies) String() string   { return "AI execution policies" }
 func (ExecutionPolicies) GoString() string { return "AI execution policies" }

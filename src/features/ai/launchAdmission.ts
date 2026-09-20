@@ -10,6 +10,19 @@ export type TLaunchFields = {
 	classes: TContextClass[]; hint: string;
 };
 
+export function launchDefaults(profile: TProviderProfile | undefined, count: number): Pick<TLaunchFields, 'profileId' | 'format' | 'maxCalls' | 'maxTokens' | 'outputTokens' | 'costCap'> {
+	const ready = profile?.executionReadiness;
+	const output = Math.min(4000, ready?.maxOutputTokens ?? 4000);
+	return {
+		profileId: profile?.id ?? '',
+		format: profile?.capabilityReport?.observations.strict.status !== 'supported' && profile?.capabilityReport?.observations.json.status === 'supported' ? 'json' : 'strict',
+		maxCalls: String(count),
+maxTokens: String(((ready?.maxInputTokens ?? 100000) + output) * count),
+outputTokens: String(output),
+costCap: ''
+	};
+}
+
 export function buildAdmission(fields: TLaunchFields, preview: Pick<TSelectionPreview, 'snapshotID' | 'eligibleCount' | 'expiresAt' | 'scope'>, profile: TProviderProfile, confirmed: boolean, key: string, rerun?: TRerunChoice): TJobAdmission {
 	if (!confirmed) {
 		throw new Error('Image disclosure consent is required.');
@@ -19,10 +32,19 @@ export function buildAdmission(fields: TLaunchFields, preview: Pick<TSelectionPr
 	}
 	const ready = profile.executionReadiness;
 	const observed = profile.capabilityReport;
+	if (!profile.enabled) {
+		throw new Error('Enable this provider in Settings → AI providers.');
+	}
+	if (ready?.status === 'policy_required') {
+		throw new Error('An operator-configured restriction needs updating for this provider.');
+	}
+	if (ready?.status === 'policy_violated') {
+		throw new Error('This provider exceeded its configured limits. Review the operator restriction before restarting.');
+	}
 	if (fields.profileId !== profile.id || !profile.enabled || ready?.status !== 'ready' || !ready.policyID || !ready.maxInputTokens || !ready.maxOutputTokens ||
 		!observed?.applicable || observed.observations.image.status !== 'supported' || observed.observations[fields.format].status !== 'supported' ||
 		(fields.mode === 'context-assisted' && !ready.contextAllowed)) {
-		throw new Error('Choose an enabled provider with current capability and execution policy for this mode and format.');
+		throw new Error('Test this provider in Settings → AI providers and choose a supported mode and output format.');
 	}
 	let languages: string[];
 	let primaryLanguage: string;

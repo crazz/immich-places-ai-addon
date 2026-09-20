@@ -26,7 +26,7 @@ func (p *aiProductionJobs) executionAuthority(ctx context.Context, tx *sql.Tx, l
 	if err != nil || actual != digest || !enabled || revision != req.Configuration.Revision || storedPolicy != req.Configuration.PolicyID {
 		return req, jobs.ExecutionPolicy{}, jobs.ErrDenied
 	}
-	policy, id, ok := p.policies.Find(jobs.ExecutionBinding{Owner: lease.Owner, Installation: lease.Installation, Profile: req.Configuration.ProfileID, Revision: revision, Model: model, EgressFingerprint: p.fingerprint})
+	policy, id, ok := p.policies.Resolve(jobs.ExecutionBinding{Owner: lease.Owner, Installation: lease.Installation, Profile: req.Configuration.ProfileID, Revision: revision, Model: model, EgressFingerprint: p.fingerprint})
 	if !ok || id != storedPolicy || !policy.Allows(req.Configuration.Limits) || (req.Configuration.Mode == "context-assisted" && !policy.Context) {
 		return req, jobs.ExecutionPolicy{}, jobs.ErrDenied
 	}

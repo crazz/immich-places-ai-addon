@@ -30,9 +30,12 @@ func (p *aiProductionJobs) recordUsage(ctx context.Context, lease jobs.Lease, us
 		}
 
 		var input, output int64
-		var policyID string
-		if err = tx.QueryRowContext(ctx, `SELECT inputReserved,outputReserved,policyID FROM ai_job_usage WHERE userID=? AND jobID=? AND itemID=? AND leaseToken=?`, lease.Owner, lease.JobID, lease.ItemID, lease.Token).Scan(&input, &output, &policyID); err != nil {
+		var policyID, policyVersion string
+		if err = tx.QueryRowContext(ctx, `SELECT u.inputReserved,u.outputReserved,u.policyID,json_extract(a.policyJSON,'$.version') FROM ai_job_usage u JOIN ai_job_admissions a ON a.userID=u.userID AND a.jobID=u.jobID WHERE u.userID=? AND u.jobID=? AND u.itemID=? AND u.leaseToken=?`, lease.Owner, lease.JobID, lease.ItemID, lease.Token).Scan(&input, &output, &policyID, &policyVersion); err != nil {
 			return err
+		}
+		if policyVersion == jobs.DefaultExecutionVersion {
+			return nil
 		}
 		violated = (usage.PromptTokens != nil && int64(*usage.PromptTokens) > input) || (usage.CompletionTokens != nil && int64(*usage.CompletionTokens) > output) || (usage.TotalTokens != nil && int64(*usage.TotalTokens) > input+output)
 		if violated {

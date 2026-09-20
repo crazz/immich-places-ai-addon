@@ -18,6 +18,18 @@ it('binds exact normalized language choices, policy limits and separately select
  expect(() => buildAdmission(fields, preview, profile, false, 'key')).toThrow('consent');
 });
 
+it('explains the concrete action needed when a provider cannot launch', () => {
+ const cases = [
+  {profile: {...aiProfile, enabled: false}, message: 'Enable this provider'},
+  {profile: {...aiProfile, executionReadiness: {...aiProfile.executionReadiness!, status: 'capability_required' as const}}, message: 'Test this provider in Settings'},
+  {profile: {...aiProfile, executionReadiness: {...aiProfile.executionReadiness!, status: 'policy_required' as const}}, message: 'An operator-configured restriction'},
+  {profile: {...aiProfile, executionReadiness: {...aiProfile.executionReadiness!, status: 'policy_violated' as const}}, message: 'exceeded its configured limits'}
+ ];
+ for (const {profile, message} of cases) {
+  expect(() => buildAdmission(aiFields, aiPreview(), profile, true, 'key')).toThrow(message);
+ }
+});
+
 it('accepts an estimated cost cap in currency units and stores exact integer millionths', () => {
  const profile = {...aiProfile, executionReadiness: {...aiProfile.executionReadiness!, costStatus: 'estimated' as const, currency: 'USD'}};
  const admission = buildAdmission({...aiFields, costCap: '1.25'}, aiPreview(), profile, true, 'key');

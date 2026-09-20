@@ -7,26 +7,26 @@ import {LaunchForm} from './LaunchForm';
 import {fetchProviders} from './providerApi';
 import {aiPreview, aiProfile, aiProgress} from './testing/fixtures';
 
+import type {TProviderProfile} from './providerApi';
+
 vi.mock('./providerApi', () => ({fetchProviders: vi.fn()}));
 vi.mock('./jobApi', () => ({submitJob: vi.fn()}));
 afterEach(() => vi.resetAllMocks());
 
-it('requires fresh image consent after changing choices and submits one exact Visual run', async () => {
+it('starts the displayed Visual run with one click and binds the latest choices', async () => {
  const user = userEvent.setup();
  vi.mocked(fetchProviders).mockResolvedValue({enabled: true, items: [aiProfile]});
  vi.mocked(submitJob).mockResolvedValue(aiProgress());
  const onSubmitted = vi.fn();
  render(<LaunchForm preview={aiPreview()} onSubmittedAction={onSubmitted} />);
- const consent = await screen.findByLabelText(/I consent to sending/);
- expect(consent).not.toBeChecked();
- expect(screen.getByRole('button', {name: 'Start analysis'})).toBeDisabled();
- await user.click(consent);
+ await screen.findByLabelText('Requested languages');
+ expect(screen.queryByLabelText(/I consent to sending/)).not.toBeInTheDocument();
+ expect(screen.getByRole('button', {name: 'Start analysis'})).toBeEnabled();
+ expect(submitJob).not.toHaveBeenCalled();
  await user.clear(screen.getByLabelText('Requested languages'));
  await user.type(screen.getByLabelText('Requested languages'), 'uk');
  await user.clear(screen.getByLabelText('Primary language'));
  await user.type(screen.getByLabelText('Primary language'), 'uk');
- expect(consent).not.toBeChecked();
- await user.click(consent);
  await user.click(screen.getByRole('button', {name: 'Start analysis'}));
  await waitFor(() => expect(onSubmitted).toHaveBeenCalledTimes(1));
  expect(submitJob).toHaveBeenCalledTimes(1);
@@ -34,6 +34,26 @@ it('requires fresh image consent after changing choices and submits one exact Vi
  expect(request.configuration).toMatchObject({mode: 'visual', languages: ['uk'], primaryLanguage: 'uk'});
  expect(request.configuration).not.toHaveProperty('context');
  expect(request.consent.configuration).toEqual(request.configuration);
+ expect(request.consent.image).toBe(true);
+});
+
+it('keeps advanced controls optional and refreshes working defaults when the provider changes', async () => {
+ const user = userEvent.setup();
+ const jsonProvider: TProviderProfile = {...aiProfile, id: 'json-provider', name: 'JSON provider', executionReadiness: {...aiProfile.executionReadiness!, source: 'application-defaults', maxInputTokens: 200000, maxOutputTokens: 8000}, capabilityReport: {...aiProfile.capabilityReport!, observations: {...aiProfile.capabilityReport!.observations, strict: {status: 'unsupported'}}}};
+ vi.mocked(fetchProviders).mockResolvedValue({enabled: true, items: [aiProfile, jsonProvider]});
+ vi.mocked(submitJob).mockResolvedValue(aiProgress());
+ render(<LaunchForm preview={aiPreview()} onSubmittedAction={() => undefined} />);
+ await screen.findByLabelText('Provider');
+ expect(screen.getByLabelText('Output tokens per call')).not.toBeVisible();
+ await user.selectOptions(screen.getByLabelText('Provider'), jsonProvider.id);
+ expect(screen.getByRole('button', {name: 'Start analysis'})).toBeEnabled();
+ expect(submitJob).not.toHaveBeenCalled();
+ await user.click(screen.getByText('Advanced settings'));
+ expect(screen.getByLabelText('Output tokens per call')).toHaveValue(4000);
+ expect(screen.getByLabelText('Total token allowance')).toHaveValue(204000 * aiPreview().eligibleCount);
+ await user.click(screen.getByRole('button', {name: 'Start analysis'}));
+ await waitFor(() => expect(submitJob).toHaveBeenCalledTimes(1));
+ expect(vi.mocked(submitJob).mock.calls[0][0].configuration).toMatchObject({profileId: jsonProvider.id, format: 'json', allowJson: true, limits: {outputTokens: 4000}});
 });
 
 it('keeps Context classes unchecked and preserves the exact key while reconciling an ambiguous POST', async () => {
@@ -49,7 +69,6 @@ it('keeps Context classes unchecked and preserves the exact key while reconcilin
  expect(screen.getByLabelText('Selected album label')).toBeDisabled();
  await user.click(screen.getByLabelText('User hint'));
  await user.type(screen.getByLabelText('Hint'), 'near a bridge');
- await user.click(screen.getByLabelText(/I consent to sending/));
  await user.click(screen.getByRole('button', {name: 'Start analysis'}));
  await screen.findByText(/Acknowledgement lost/);
  await user.click(screen.getByRole('button', {name: 'Reconcile submission'}));
@@ -59,5 +78,6 @@ it('keeps Context classes unchecked and preserves the exact key while reconcilin
  expect(vi.mocked(submitJob).mock.calls[1][0]).toEqual(first);
  expect(first.configuration.context).toEqual({version: 'context-v1', classes: ['user_hint'], hint: 'near a bridge'});
  await user.click(screen.getByRole('button', {name: 'Start a different run'}));
- expect(screen.getByLabelText(/I consent to sending/)).not.toBeChecked();
+ expect(screen.getByRole('button', {name: 'Start analysis'})).toBeEnabled();
+ expect(submitJob).toHaveBeenCalledTimes(2);
 });
