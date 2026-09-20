@@ -16,7 +16,7 @@ Before planning, implementation or review, read the adopted [architecture](../en
 - [OPENSPEC_ROADMAP.md](OPENSPEC_ROADMAP.md): eight capability areas decomposed into 26 smaller candidate changes, dependencies, requirement ownership, and artifact-generation approach.
 - [ENGINEERING_STANDARDS_PROPOSAL.md](ENGINEERING_STANDARDS_PROPOSAL.md): adoption record linking the authoritative engineering standards; the earlier proposal is superseded.
 - [SOURCES.md](SOURCES.md): pinned repository references, package provenance, and verification limits.
-- [Analysis-result schema](contracts/ai-analysis-result.v1.schema.json): canonical proposed model-output contract.
+- [Analysis-result schema](../../backend/internal/ai/results/ai-analysis-result.v1.schema.json): canonical v1.0 model-output contract embedded by CH07.
 - [Unknown-location example](examples/ai-analysis-result.unknown.json) and [synthetic example](examples/ai-analysis-result.synthetic.json): contract fixtures; the synthetic example is not a real geolocation.
 - [Semantic validation](examples/SEMANTIC_VALIDATION.md): checks required in addition to JSON Schema.
 - [Original PRD export](exports/Immich_Places_AI_PRD.docx) and [original design export](exports/Immich_Places_AI_Technical_Design.docx): unchanged Word reading copies from package v1.0. They do **not** include the checkout reconciliation or adopted engineering amendments.
@@ -37,7 +37,7 @@ Subsequent F01–F03 implementation installed shared engineering checks, fronten
 
 Extend the existing Go/Next.js/SQLite application. Treat AI as a proposal producer. Retain camera/subject separation, nullable heading, selected-language descriptions, durable jobs/results, and explicit field-level approval. Use an exact-target API writer that does not inherit implicit stack expansion. Keep full results locally and mirror optional extended metadata only when supported and approved.
 
-CH04 implements the catalog date-query portion of FR-01: [maintained capture-date contract](../../openspec/specs/catalog-capture-dates/spec.md). It preserves recorded calendar days and raw timestamps, rejects reversed ranges, and keeps undated assets in unbounded browsing. The undated-group UI and AI selection/eligibility remain planned.
+CH04 implements the catalog date-query portion of FR-01: [maintained capture-date contract](../../openspec/specs/catalog-capture-dates/spec.md). It preserves recorded calendar days and raw timestamps, rejects reversed ranges, and keeps undated assets in unbounded browsing. The undated-group UI remains planned; CH05–CH06 implement AI selection/eligibility below.
 
 CH01 implements private provider configuration: [maintained provider contract](../../openspec/specs/ai-provider-configuration/spec.md) and [operator guide](../ai-provider-settings.md). Profiles are encrypted, revisioned, user-scoped and globally disabled by default. Saving does not contact a provider.
 
@@ -45,4 +45,6 @@ CH02 [provider egress policy](../../openspec/changes/archive/2026-09-19-enforce-
 
 CH05 implements [explicit selection snapshots](../../openspec/specs/ai-selection-snapshots/spec.md): strict owner-scoped preview/read APIs, scope-aware eligibility, immutable expiring manifests, installation binding and bounded cleanup. See the [operator guide](../ai-selection-snapshots.md) and [verification](../engineering/ai-selection-verification.md). It makes no provider/image-fetch/Immich-write calls and adds no launch UI.
 
-CH06 implements all-matching selection through the same snapshot contract: whole-catalog scope resolution, exact aggregate counts, eligible-asset limits and frozen query membership. See [CH06 verification](../engineering/ai-matching-selection-verification.md). CH07 [result validation](../../openspec/changes/validate-ai-analysis-results/proposal.md) is next; its planning artifacts and validator dependency approval are complete. Work continues sequentially in this repository without subagents.
+CH06 implements all-matching selection through the same snapshot contract: whole-catalog scope resolution, exact aggregate counts, eligible-asset limits and frozen query membership. See [CH06 verification](../engineering/ai-matching-selection-verification.md).
+
+CH07 implements [result validation](../../openspec/specs/ai-location-proposals/spec.md): one embedded canonical schema, bounded parsing, semantic/evidence/language checks and immutable proposals without write authority. See the [caller contract](../ai-result-validation.md) and [verification](../engineering/ai-result-validation-verification.md). Provider analysis, image preparation and durable result/job consumers remain planned.

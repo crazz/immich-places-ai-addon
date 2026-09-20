@@ -115,3 +115,18 @@ test('rejects direct and transitive selection access to writer packages', t => {
 	assert.equal(direct.status, 1);
 	assert.match(direct.stderr, /selection cannot reach writer/);
 });
+
+test('rejects direct and transitive result-validation access to writer packages', t => {
+	const root = createRepository(t);
+	write(root, 'backend/go.mod', 'module example.test/app\n\ngo 1.25\n');
+	write(root, 'backend/internal/ai/results/result.go', 'package results\nimport _ "example.test/app/internal/ai/jobs"\n');
+	write(root, 'backend/internal/ai/jobs/job.go', 'package jobs\nimport _ "example.test/app/internal/ai/writeback"\n');
+	write(root, 'backend/internal/ai/writeback/write.go', 'package writeback\n');
+	const transitive = check(root);
+	assert.notEqual(transitive.status, 0);
+	assert.match(transitive.stderr, /results cannot reach writer/);
+	write(root, 'backend/internal/ai/results/result.go', 'package results\nimport _ "example.test/app/internal/ai/writeback"\n');
+	const direct = check(root);
+	assert.notEqual(direct.status, 0);
+	assert.match(direct.stderr, /results cannot reach writer/);
+});

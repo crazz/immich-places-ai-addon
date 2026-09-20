@@ -35,7 +35,7 @@ function writerViolations(imports, module) {
 	}
 	const violations = [];
 	for (const {file, imports: dependencies} of imports) {
-		const readOnlyScope = /^backend\/internal\/ai\/(analysis|selection)\//.exec(file)?.[1];
+		const readOnlyScope = /^backend\/internal\/ai\/(analysis|selection|results)\//.exec(file)?.[1];
 		if (!readOnlyScope) {
 			continue;
 		}

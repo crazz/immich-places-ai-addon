@@ -4,7 +4,7 @@ See [proposal.md](proposal.md) for intent and the [capability delta](specs/ai-lo
 
 GitNexus query/context and source verification identify `providerhttp.ParseAssistantText` as the current synthetic capability response boundary, called by the capability protocol and its tests. It rejects refusal/truncation/tool responses but is bounded and coupled to the capability probe contract; it does not validate analysis results. Leave that path intact. The backend Dockerfile already copies `internal/`, so a schema embedded inside a focused AI package can reach the binary without runtime filesystem access. The installed dependency checker has general AI-core rules and an analysis-to-writer rule; extend its protected package coverage to the actual new result package.
 
-Follow the adopted [architecture](../../../docs/engineering/architecture.md), [testing](../../../docs/engineering/testing.md), [coding standards](../../../docs/engineering/coding-standards.md) and [ADR-07](../../../docs/engineering/decisions/ADR-07-ai-internal-packages.md). The owner approved the v6.0.3 validator recommendation recorded in [library-evaluation.md](library-evaluation.md). No architectural exception or runtime upgrade is needed.
+Follow the adopted [architecture](../../../../docs/engineering/architecture.md), [testing](../../../../docs/engineering/testing.md), [coding standards](../../../../docs/engineering/coding-standards.md) and [ADR-07](../../../../docs/engineering/decisions/ADR-07-ai-internal-packages.md). The owner approved the v6.0.3 validator recommendation recorded in [library-evaluation.md](library-evaluation.md). No architectural exception or runtime upgrade is needed.
 
 ## Goals / Non-Goals
 
