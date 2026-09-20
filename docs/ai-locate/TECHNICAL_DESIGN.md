@@ -165,7 +165,7 @@ Model self-assessment is not calibrated confidence. The UI's verification status
 
 ## 6. Structured analysis contract
 
-The [canonical backend schema](../../backend/internal/ai/results/ai-analysis-result.v1.schema.json) defines the provider-facing result, with examples in `examples/`. CH07 embeds its unchanged v1.0 bytes and implements bounded structural/semantic validation; see the [caller contract](../ai-result-validation.md) and [verification](../engineering/ai-result-validation-verification.md). This full analysis contract has not been acceptance-tested with a model endpoint. Provider invocation and the server-owned persistence envelope below remain later work.
+The [canonical backend schema](../../backend/internal/ai/results/ai-analysis-result.v1.schema.json) defines the provider-facing result, with examples in `examples/`. CH07 embeds its unchanged v1.0 bytes and implements bounded structural/semantic validation; see the [caller contract](../ai-result-validation.md) and [verification](../engineering/ai-result-validation-verification.md). This full analysis contract has not been acceptance-tested with a model endpoint. CH09 implements the [internal Visual attempt](../ai-visual-analysis.md) with exact revision binding, current authority checks, one explicit reservation and canonical validation. Durable admission, the server-owned persistence envelope below and production dispatch remain later work.
 
 The object contains `schema_version`, `outcome`, `selected_candidate_id`, `observations`, `candidates`, `descriptions`, and `warnings`. An outcome is `located`, `ambiguous`, or `unknown`. Candidates contain separate camera and subject information, nullable direction, evidence references, and a support summary.
 
