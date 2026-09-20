@@ -7,6 +7,14 @@ import (
 )
 
 func EncodeLimitedVisual(model, instruction, imageDataURL, format, outputField string, outputTokens int64, maxRequestBytes, maxImageBytes int) ([]byte, error) {
+	return encodeLimitedImage(EncodeVisual, model, instruction, imageDataURL, format, outputField, outputTokens, maxRequestBytes, maxImageBytes)
+}
+
+func EncodeLimitedResearch(model, instruction, imageDataURL, format, outputField string, outputTokens int64, maxRequestBytes, maxImageBytes int) ([]byte, error) {
+	return encodeLimitedImage(EncodeResearch, model, instruction, imageDataURL, format, outputField, outputTokens, maxRequestBytes, maxImageBytes)
+}
+
+func encodeLimitedImage(encode func(string, string, string, string) ([]byte, error), model, instruction, imageDataURL, format, outputField string, outputTokens int64, maxRequestBytes, maxImageBytes int) ([]byte, error) {
 	if (outputField != "max_tokens" && outputField != "max_completion_tokens") || outputTokens < 1 || outputTokens > 1_000_000_000 || maxRequestBytes < 1 || maxRequestBytes > 15<<20 || maxImageBytes < 1 || maxImageBytes > 10<<20 {
 		return nil, ErrVisualRequest
 	}
@@ -20,7 +28,7 @@ func EncodeLimitedVisual(model, instruction, imageDataURL, format, outputField s
 	if size > maxImageBytes {
 		return nil, ErrVisualRequest
 	}
-	raw, err := EncodeVisual(model, instruction, imageDataURL, format)
+	raw, err := encode(model, instruction, imageDataURL, format)
 	if err != nil {
 		return nil, err
 	}

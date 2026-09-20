@@ -5,7 +5,7 @@ import type {TProviderProfile} from './providerApi';
 import type {TSelectionPreview} from './selectionTypes';
 
 export type TLaunchFields = {
-	profileId: string; mode: 'visual' | 'context-assisted'; format: 'strict' | 'json';
+	profileId: string; mode: 'visual' | 'context-assisted' | 'research'; format: 'strict' | 'json';
 	languages: string; primaryLanguage: string; maxCalls: string; maxTokens: string; outputTokens: string; costCap: string;
 	classes: TContextClass[]; hint: string;
 };
@@ -43,7 +43,7 @@ export function buildAdmission(fields: TLaunchFields, preview: Pick<TSelectionPr
 	}
 	if (fields.profileId !== profile.id || !profile.enabled || ready?.status !== 'ready' || !ready.policyID || !ready.maxInputTokens || !ready.maxOutputTokens ||
 		!observed?.applicable || observed.observations.image.status !== 'supported' || observed.observations[fields.format].status !== 'supported' ||
-		(fields.mode === 'context-assisted' && !ready.contextAllowed)) {
+		(fields.mode !== 'visual' && !ready.contextAllowed)) {
 		throw new Error('Test this provider in Settings → AI providers and choose a supported mode and output format.');
 	}
 	let languages: string[];
@@ -82,9 +82,12 @@ policyId: ready.policyID,
 			throw new Error('An estimated cost cap requires an attested tariff.');
 		}
 	}
-	if (fields.mode === 'context-assisted') {
+	if (fields.mode !== 'visual') {
 		configuration.context = {version: 'context-v1', classes: [...fields.classes]};
-		if (fields.classes.includes('user_hint')) {
+		if (fields.mode === 'research' && fields.hint !== '' && !configuration.context.classes.includes('user_hint')) {
+			configuration.context.classes.push('user_hint');
+		}
+		if (configuration.context.classes.includes('user_hint')) {
 			configuration.context.hint = fields.hint;
 		}
 		if (fields.classes.includes('selected_album')) {

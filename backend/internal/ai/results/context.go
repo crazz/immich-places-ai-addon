@@ -5,6 +5,7 @@ type Mode string
 const (
 	Visual          Mode = "visual"
 	ContextAssisted Mode = "context-assisted"
+	Research        Mode = "research"
 )
 
 type Completion string

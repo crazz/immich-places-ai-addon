@@ -75,6 +75,7 @@ func (s *aiResultStore) detail(ctx context.Context, owner, analysisID, jobID, it
 				return review.Detail{}, review.ErrUnavailable
 			}
 		}
+		document.Sources = review.PresentSources(document.Sources)
 		detail.Proposal = &document
 		detail.Provenance = &provenance
 	} else {

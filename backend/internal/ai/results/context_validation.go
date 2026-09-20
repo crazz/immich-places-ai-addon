@@ -18,7 +18,7 @@ func validateContext(input Context) (validationContext, error) {
 	invalid := func() (validationContext, error) {
 		return validationContext{}, failure("invalid_context", "context", "/")
 	}
-	if input.Mode != Visual && input.Mode != ContextAssisted {
+	if input.Mode != Visual && input.Mode != ContextAssisted && input.Mode != Research {
 		return invalid()
 	}
 	if len(input.Languages) < 1 || len(input.Languages) > 10 || len(input.Sources) > 100 || input.Mode == Visual && len(input.Sources) != 0 {

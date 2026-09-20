@@ -7,6 +7,10 @@
 **Product owner:** Alex  
 **Status:** Ready for product and engineering review; not an implementation claim.
 
+## Accepted Research amendment — 20 September 2026
+
+[ADR-09](../engineering/decisions/ADR-09-approximate-ai-location-proposals.md) supersedes the Research deferral and precision/source restrictions below for the new planned Research workflow. Return the best available meaningful camera coordinates with estimated error, explanation and optional links from the AI answer. An estimate of ±500 meters or substantially more is eligible for user review; there is no maximum acceptable error or minimum confidence. Approximate site/city/region points are allowed when labeled honestly. Search logs, tool provenance and independent source checks are not required. The user decides whether to use the coordinates. Historical v1 behavior remains supported; no implementation is claimed here.
+
 ## 1. Product decision
 
 Extend the existing Immich Places fork with an **AI Locate** capability. Reuse its gallery, album and date filtering, selection, image previews, Leaflet map, authentication, synchronization, and manual review experience. Do not build a second photo-management application or write directly to the Immich database.
@@ -239,3 +243,5 @@ When a technical choice conflicts with an explicit product requirement, surface 
 ## References
 
 Reference IDs resolve in `SOURCES.md`. Repository statements are observations of public source, not runtime verification. All other requirements, targets, defaults, and architectural choices in this document are proposals for this project.
+
+Research implementation note — 21 September 2026: the active change implements dual-version results, approximate coordinates/error, frozen displayed context and safe answer references. See the [Research guide](../ai-research.md) for behavior, execution bounds and rollout limitations. This does not revise archived v1 evidence.

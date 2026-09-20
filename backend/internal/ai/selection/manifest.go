@@ -19,19 +19,25 @@ type QuerySummary struct {
 
 type Manifest struct {
 	*QuerySummary
-	SnapshotID     *string     `json:"snapshotID"`
-	Mode           string      `json:"mode"`
-	Scope          Scope       `json:"scope"`
-	PolicyVersion  string      `json:"policyVersion"`
-	AssetIDs       []string    `json:"assetIDs"`
-	Exclusions     []Exclusion `json:"exclusions"`
-	RequestedCount int         `json:"requestedCount"`
-	UniqueCount    int         `json:"uniqueCount"`
-	DuplicateCount int         `json:"duplicateCount"`
-	EligibleCount  int         `json:"eligibleCount"`
-	ExcludedCount  int         `json:"excludedCount"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	ExpiresAt      time.Time   `json:"expiresAt"`
+	ContextPreview *ContextPreview `json:"contextPreview,omitempty"`
+	SnapshotID     *string         `json:"snapshotID"`
+	Mode           string          `json:"mode"`
+	Scope          Scope           `json:"scope"`
+	PolicyVersion  string          `json:"policyVersion"`
+	AssetIDs       []string        `json:"assetIDs"`
+	Exclusions     []Exclusion     `json:"exclusions"`
+	RequestedCount int             `json:"requestedCount"`
+	UniqueCount    int             `json:"uniqueCount"`
+	DuplicateCount int             `json:"duplicateCount"`
+	EligibleCount  int             `json:"eligibleCount"`
+	ExcludedCount  int             `json:"excludedCount"`
+	CreatedAt      time.Time       `json:"createdAt"`
+	ExpiresAt      time.Time       `json:"expiresAt"`
+}
+
+type ContextPreview struct {
+	AlbumLabel   *string           `json:"albumLabel"`
+	CaptureTimes map[string]string `json:"captureTimes"`
 }
 
 func (m Manifest) Current(now time.Time) bool {

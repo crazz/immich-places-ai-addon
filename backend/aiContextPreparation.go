@@ -12,6 +12,7 @@ type aiContextRequest struct {
 	Hint      string
 	Window    time.Duration
 	Authorize func(context.Context) error
+	Displayed *aiResearchInputs
 }
 type aiContextPreparer struct {
 	images  *aiImagePreparer
@@ -41,7 +42,10 @@ func (s *aiContextPreparer) prepare(ctx context.Context, req aiContextRequest) (
 		return nil, errAIImageDenied
 	}
 	in := contextual.Input{Binding: req.Binding, Consent: req.Consent, Hint: req.Hint, Window: req.Window}
-	if req.Consent.Has(contextual.Capture) || req.Consent.Has(contextual.Neighbors) {
+	if req.Displayed != nil {
+		in.CaptureTime, in.Album = req.Displayed.CaptureTime, req.Displayed.Album
+	}
+	if req.Displayed == nil && (req.Consent.Has(contextual.Capture) || req.Consent.Has(contextual.Neighbors)) {
 		exif, err := aiContextExif(data)
 		if err != nil {
 			return nil, err
@@ -56,7 +60,7 @@ func (s *aiContextPreparer) prepare(ctx context.Context, req aiContextRequest) (
 			return nil, err
 		}
 	}
-	if req.Consent.Has(contextual.AlbumLabel) {
+	if req.Displayed == nil && req.Consent.Has(contextual.AlbumLabel) {
 		in.Album, err = s.album(ctx, req, authority.key)
 		if err != nil {
 			return nil, err

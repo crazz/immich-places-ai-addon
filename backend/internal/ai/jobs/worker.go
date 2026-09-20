@@ -29,7 +29,8 @@ func (w Worker) RunOne(ctx context.Context, ticks <-chan time.Time) (bool, error
 	if w.Store == nil || w.Execute == nil || ticks == nil || !w.Policy.Valid() {
 		return false, ErrInvalid
 	}
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	parent := ctx
+	ctx, cancel := context.WithTimeout(parent, 120*time.Second)
 	defer cancel()
 	if _, err := w.Store.Recover(ctx); err != nil {
 		return false, err
@@ -37,6 +38,15 @@ func (w Worker) RunOne(ctx context.Context, ticks <-chan time.Time) (bool, error
 	lease, claimed, err := w.Store.Claim(ctx, w.Policy)
 	if err != nil || !claimed {
 		return false, err
+	}
+	if lease.Input.Mode == "research" {
+		cancel()
+		duration := w.Policy.ResearchDuration
+		if duration == 0 {
+			duration = 10 * time.Minute
+		}
+		ctx, cancel = context.WithTimeout(parent, duration)
+		defer cancel()
 	}
 	guard := Guard{
 		Authorize: func(caller context.Context) error {

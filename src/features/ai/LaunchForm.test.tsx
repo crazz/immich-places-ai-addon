@@ -57,6 +57,7 @@ it('starts the displayed Visual run with one click and binds the latest choices'
  const onSubmitted = vi.fn();
  render(<LaunchForm preview={aiPreview()} onSubmittedAction={onSubmitted} />);
  await screen.findByLabelText('Requested languages');
+ await user.selectOptions(screen.getByLabelText('Analysis mode'), 'visual');
  expect(screen.queryByLabelText(/I consent to sending/)).not.toBeInTheDocument();
  expect(screen.getByRole('button', {name: 'Start analysis'})).toBeEnabled();
  expect(submitJob).not.toHaveBeenCalled();

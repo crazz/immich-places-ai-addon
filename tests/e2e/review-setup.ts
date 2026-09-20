@@ -2,7 +2,7 @@ import {MATCHED_ID, expect, photo} from './app-fixture';
 
 import type {Page} from '@playwright/test';
 
-export async function launchReview(page: Page, model: string): Promise<void> {
+export async function launchReview(page: Page, model: string, mode: 'visual' | 'research' = 'visual'): Promise<void> {
  await page.getByRole('button', {name: 'Settings', exact: true}).click();
  await page.getByRole('button', {name: 'AI providers', exact: true}).click();
  await page.getByRole('button', {name: 'Create provider'}).click();
@@ -23,6 +23,8 @@ export async function launchReview(page: Page, model: string): Promise<void> {
  await page.getByRole('button', {name: 'AI Locate', exact: true}).click();
  await page.getByRole('button', {name: 'Preview selected assets'}).click();
  await expect(page.getByText(/Eligible: 1/)).toBeVisible();
+ await page.getByLabel('Analysis mode', {exact: true}).selectOption(mode);
+ if (mode === 'research') {await page.getByLabel('Hint', {exact: true}).fill('Synthetic context hint');}
  await page.getByLabel('Requested languages', {exact: true}).fill('en, uk');
  await page.getByRole('button', {name: 'Start analysis', exact: true}).click();
  await expect(page.getByText('Job complete', {exact: true})).toBeVisible({timeout: 15000});

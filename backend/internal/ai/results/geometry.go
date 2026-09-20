@@ -34,10 +34,12 @@ func geometryFindings(document Document, ctx validationContext) []Finding {
 				}
 			} else {
 				radius, err := location.EstimatedRadiusM.Float64()
-				if err != nil || location.Granularity == "city" || location.Granularity == "region" || location.Granularity != "point" && radius == 0 {
+				legacyPrecision := ctx.mode != Research && (location.Granularity == "city" || location.Granularity == "region" || location.Granularity != "point" && radius == 0)
+				if err != nil || legacyPrecision {
 					findings = append(findings, Finding{Code: "radius_granularity", Path: path + "/estimated_radius_m"})
 				}
 				supported := location.RadiusBasis == "visual_estimate" && support.visual || location.RadiusBasis == "context_extent" && support.contextExtent || location.RadiusBasis == "source_reported" && support.sourceReported
+				supported = supported || ctx.mode == Research && location.RadiusBasis == "model_estimate"
 				if !supported {
 					findings = append(findings, Finding{Code: "radius_evidence", Path: path + "/radius_basis"})
 				}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -56,6 +57,7 @@ func newAIVisualFixture(t *testing.T) *aiVisualFixture {
 				t.Error("private source in provider body")
 			}
 		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
 		if f.handle != nil && f.handle(w, r) {
 			return
 		}

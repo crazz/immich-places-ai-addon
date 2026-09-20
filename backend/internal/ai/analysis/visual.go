@@ -27,6 +27,7 @@ type DispatchReply struct{ Body []byte }
 type DispatchFunc func(context.Context, DispatchRequest) (DispatchReply, error)
 type Guard struct{ Authorize, Reserve func(context.Context) error }
 type Request struct {
+	Mode                                                 results.Mode
 	Owner, Installation, Asset, ProfileID, Model, Format string
 	Revision                                             int
 	AllowJSON                                            bool
@@ -61,7 +62,11 @@ func (r *Runner) RunVisual(ctx context.Context, req Request) (result *Result, er
 }
 
 func (r *Runner) run(ctx context.Context, req Request, mode results.Mode) (result *Result, err error) {
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	duration := 120 * time.Second
+	if mode == results.Research {
+		duration = 10 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(ctx, duration)
 	defer cancel()
 	defer func() {
 		if ctx.Err() != nil {
@@ -112,7 +117,11 @@ func (r *Runner) run(ctx context.Context, req Request, mode results.Mode) (resul
 		return nil, err
 	}
 	validation.Languages, validation.PrimaryLanguage = tags, primary
-	instruction := prompt + "\nLanguage settings: " + string(languageSettings) + "\nCanonical JSON schema: " + string(results.CanonicalSchema())
+	schema := results.CanonicalSchema()
+	if mode == results.Research {
+		schema = results.ResearchSchema()
+	}
+	instruction := prompt + "\nLanguage settings: " + string(languageSettings) + "\nCanonical JSON schema: " + string(schema)
 	body, err := r.protocol.Encode(req.Model, instruction, "data:image/jpeg;base64,"+base64.StdEncoding.EncodeToString(data), req.Format)
 	if err != nil {
 		return nil, ErrInvalidRequest
@@ -162,10 +171,13 @@ func (r *Runner) run(ctx context.Context, req Request, mode results.Mode) (resul
 		return nil, err
 	}
 	metadata := Metadata{Mode: mode, Image: info, ProfileID: req.ProfileID, Revision: req.Revision, Model: req.Model, Format: req.Format, PromptVersion: PromptVersion, SchemaVersion: "1.0", Languages: tags, PrimaryLanguage: primary, Usage: parsed.Usage}
-	if mode == results.ContextAssisted {
+	if mode == results.ContextAssisted || mode == results.Research {
 		contextInfo := req.Context.Info()
 		metadata.Context = &contextInfo
 		metadata.PromptVersion = ContextPromptVersion
+	}
+	if mode == results.Research {
+		metadata.PromptVersion, metadata.SchemaVersion = ResearchPromptVersion, "2.0"
 	}
 	return newResult(proposal, metadata), nil
 }

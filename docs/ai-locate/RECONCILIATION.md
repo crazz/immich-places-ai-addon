@@ -1,5 +1,7 @@
 # Planning package reconciliation — `5e70c61`
 
+> Subsequent planning amendment, 20 September 2026: [ADR-09](../engineering/decisions/ADR-09-approximate-ai-location-proposals.md) and the [Research change](../../openspec/changes/research-photo-locations-with-web-evidence/proposal.md) supersede the historical Research deferral for the new workflow. They accept approximate coordinates, model-estimated error of any nonnegative finite magnitude and optional answer-provided links without search metadata. The pinned-checkout observations and verification limits in this report remain historical.
+
 **Date:** 17 September 2026  
 **Repository baseline:** `5e70c6165777949c9d8b50ede3b2768bcaa5df87`  
 **Result:** GATE-01 complete for this checkout. The package fits the application architecture; the corrections below are incorporated into the Markdown baseline. AI functionality remains proposed.
@@ -157,3 +159,5 @@ No ADR or required V1 capability was removed. FR-01–14, NFR-01–08, and AC-01
 [workflow]: https://github.com/crazz/immich-places-ai-addon/blob/5e70c6165777949c9d8b50ede3b2768bcaa5df87/.github/workflows/release.yml
 [docker-frontend]: https://github.com/crazz/immich-places-ai-addon/blob/5e70c6165777949c9d8b50ede3b2768bcaa5df87/Dockerfile
 [docker-backend]: https://github.com/crazz/immich-places-ai-addon/blob/5e70c6165777949c9d8b50ede3b2768bcaa5df87/backend/Dockerfile
+
+Research implementation note — 21 September 2026: the active change implements dual-version results, approximate coordinates/error, frozen displayed context and safe answer references. See the [Research guide](../ai-research.md) for behavior, execution bounds and rollout limitations. This does not revise archived v1 evidence.

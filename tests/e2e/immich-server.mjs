@@ -84,7 +84,18 @@ async function handleProvider(request, response, url, raw) {
 		assistant = '{"color":"blue","shape":"circle"}';
 	}
 	if (bodyText.includes('schema_version')) {
-		assistant = JSON.stringify(payload.model === 'review-located' ? reviewResult : payload.model === 'review-ambiguous' ? ambiguousResult : unknownResult);
+		const answer = structuredClone(payload.model.endsWith('located') ? reviewResult : payload.model.endsWith('ambiguous') ? ambiguousResult : unknownResult);
+		if (bodyText.includes('Research mode')) {
+			answer.schema_version = '2.0';
+			answer.sources = [{id: 'web-reference', url: 'https://example.org/reference', title: 'Public reference', relevance: 'Matching synthetic facade.'}];
+			for (const candidate of answer.candidates) {
+				candidate.camera_location.granularity = 'city';
+				candidate.camera_location.estimated_radius_m = 5000;
+				candidate.camera_location.radius_basis = 'model_estimate';
+				candidate.source_refs = ['web-reference'];
+			}
+		}
+		assistant = JSON.stringify(answer);
 		providerRequests.at(-1).analysis = true;
 		providerRequests.at(-1).outputTokens = payload.max_tokens;
 		providerRequests.at(-1).contextHintIncluded = bodyText.includes('Synthetic context hint');

@@ -15,8 +15,12 @@ func (p Proposal) MarshalJSON() ([]byte, error) {
 }
 
 func (p Proposal) PolicyVersion() (string, error) {
-	if len(p.data) == 0 {
+	document, err := p.Data()
+	if err != nil {
 		return "", failure("uninitialized", "proposal", "/")
+	}
+	if document.SchemaVersion == "2.0" {
+		return "analysis-result-v2", nil
 	}
 	return "analysis-result-v1", nil
 }

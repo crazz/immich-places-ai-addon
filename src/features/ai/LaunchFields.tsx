@@ -1,8 +1,11 @@
+import {ResearchContextFields} from './ResearchContextFields';
+
 import type {TContextClass} from './jobTypes';
 import type {TLaunchFields} from './launchAdmission';
 import type {TProviderProfile} from './providerApi';
 import type {TSelectionPreview} from './selectionTypes';
 import type {ReactElement} from 'react';
+
 
 const classes: {id: TContextClass; label: string}[] = [
 	{id: 'capture_time', label: 'Capture time'}, {id: 'selected_album', label: 'Selected album label'},
@@ -17,11 +20,14 @@ export function LaunchFields({fields, profiles, preview, disabled, onChangeActio
                                                  </select>
   </label>
 		<label>{'Analysis mode'}<select aria-label={'Analysis mode'} value={fields.mode} onChange={event => onChangeAction({mode: event.target.value as TLaunchFields['mode']})}>
+			<option value={'research'}>{'Research'}</option>
 			<option value={'visual'}>{'Visual'}</option><option value={'context-assisted'}>{'Context-assisted'}</option>
                           </select>
   </label>
 		<label>{'Requested languages'}<input aria-label={'Requested languages'} value={fields.languages} onChange={event => onChangeAction({languages: event.target.value})} placeholder={'en, uk'} /></label>
 		<label>{'Primary language'}<input aria-label={'Primary language'} value={fields.primaryLanguage} onChange={event => onChangeAction({primaryLanguage: event.target.value})} /></label>
+		{fields.mode === 'research' && <label className={'sm:col-span-2'}>{'Hint'}<textarea aria-label={'Hint'} value={fields.hint} onChange={event => onChangeAction({hint: event.target.value})} placeholder={'Places, dates or details you remember (optional)'} /><span>{`${new TextEncoder().encode(fields.hint).length}/2,000 UTF-8 bytes`}</span></label>}
+		{fields.mode === 'research' && <ResearchContextFields fields={fields} preview={preview} onChangeAction={onChangeAction} />}
 		{fields.mode === 'context-assisted' && <fieldset className={'space-y-2 sm:col-span-2'}>
 			<legend>{'Context disclosure — choose each class explicitly'}</legend>
 			{classes.map(choice => <label key={choice.id} className={'block'}><input type={'checkbox'} checked={fields.classes.includes(choice.id)} disabled={choice.id === 'selected_album' && (preview.scope.view !== 'album' || !preview.scope.albumID)} onChange={event => onChangeAction({classes: event.target.checked ? [...fields.classes, choice.id] : fields.classes.filter(item => item !== choice.id)})} />{choice.label}</label>)}

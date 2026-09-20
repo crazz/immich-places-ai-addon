@@ -14,6 +14,19 @@ func referenceFindings(document Document, ctx validationContext) []Finding {
 	add := func(code, path string) { findings = append(findings, Finding{Code: code, Path: path}) }
 	observations := map[string]bool{}
 	provided := map[string]bool{}
+	answerSources := map[string]bool{}
+	for i, source := range document.Sources {
+		if !validID(source.ID) || answerSources[source.ID] {
+			add("source_id", itemPath("sources", i, "id"))
+		}
+		answerSources[source.ID] = true
+		if len(source.URL) > 2048 {
+			add("source_bounds", itemPath("sources", i, "url"))
+		}
+		if source.Title != nil && len(*source.Title) > 512 || len(source.Relevance) > 2000 {
+			add("source_bounds", itemPath("sources", i, "relevance"))
+		}
+	}
 	for i, observation := range document.Observations {
 		if !validID(observation.ID) || observations[observation.ID] {
 			add("observation_id", itemPath("observations", i, "id"))
@@ -24,7 +37,7 @@ func referenceFindings(document Document, ctx validationContext) []Finding {
 		observations[observation.ID] = true
 		if observation.Kind == "provided_context" {
 			provided[observation.ID] = true
-			if ctx.mode != ContextAssisted || len(ctx.sources) == 0 {
+			if ctx.mode != ContextAssisted && ctx.mode != Research || len(ctx.sources) == 0 {
 				add("context_provenance", itemPath("observations", i, "kind"))
 			}
 		}
@@ -51,7 +64,7 @@ func referenceFindings(document Document, ctx validationContext) []Finding {
 			if authorized {
 				authorizedSources++
 			}
-			if !validID(ref) || !authorized || sourceSeen[ref] {
+			if !validID(ref) || !authorized && ctx.mode != Research || sourceSeen[ref] {
 				add("source_reference", itemPath("candidates", i, "source_refs")+"/"+strconv.Itoa(j))
 			}
 			sourceSeen[ref] = true

@@ -11,9 +11,12 @@ import (
 //go:embed ai-analysis-result.v1.schema.json
 var canonicalSchema string
 
+//go:embed ai-analysis-result.v2.schema.json
+var researchSchema string
+
 const schemaID = "urn:immich-places-ai-addon:analysis-result:1.0"
 
-type Validator struct{ schema *jsonschema.Schema }
+type Validator struct{ schema, research *jsonschema.Schema }
 
 type rejectingLoader struct{}
 
@@ -21,7 +24,18 @@ func (rejectingLoader) Load(string) (any, error) {
 	return nil, failure("unavailable", "schema_resource", "/")
 }
 
-func New() (*Validator, error) { return compileSchema(canonicalSchema) }
+func New() (*Validator, error) {
+	v, err := compileSchema(canonicalSchema)
+	if err != nil {
+		return nil, err
+	}
+	research, err := compileSchema(researchSchema)
+	if err != nil {
+		return nil, err
+	}
+	v.research = research.schema
+	return v, nil
+}
 
 func compileSchema(data string) (*Validator, error) {
 	var document any
@@ -58,12 +72,19 @@ func (v *Validator) Validate(data []byte, ctx Context) (Proposal, error) {
 	if err != nil {
 		return Proposal{}, err
 	}
+	schema, expectedVersion := v.schema, "1.0"
+	if ctx.Mode == Research {
+		schema, expectedVersion = v.research, "2.0"
+	}
+	if schema == nil {
+		return Proposal{}, failure("unavailable", "validator", "/")
+	}
 	if object, ok := document.(map[string]any); ok {
-		if version, present := object["schema_version"].(string); present && version != "1.0" {
+		if version, present := object["schema_version"].(string); present && version != expectedVersion {
 			return Proposal{}, failure("unsupported_schema", "version", "/schema_version")
 		}
 	}
-	if err := v.schema.Validate(document); err != nil {
+	if err := schema.Validate(document); err != nil {
 		return Proposal{}, failure("schema_violation", "schema", "/")
 	}
 	var typed Document

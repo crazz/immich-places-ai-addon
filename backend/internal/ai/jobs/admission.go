@@ -61,7 +61,7 @@ func NormalizeAdmission(req Admission) (Admission, string, error) {
 }
 func normalizeConfiguration(cfg Configuration) (Configuration, error) {
 	id, err := uuid.Parse(cfg.SelectionToken)
-	if err != nil || !boundedIdentity(cfg.ProfileID) || cfg.Revision < 1 || (cfg.Mode != "visual" && cfg.Mode != "context-assisted") || (cfg.Format != "strict" && cfg.Format != "json") || (cfg.Format == "json" && !cfg.AllowJSON) {
+	if err != nil || !boundedIdentity(cfg.ProfileID) || cfg.Revision < 1 || (cfg.Mode != "visual" && cfg.Mode != "context-assisted" && cfg.Mode != "research") || (cfg.Format != "strict" && cfg.Format != "json") || (cfg.Format == "json" && !cfg.AllowJSON) {
 		return Configuration{}, ErrInvalid
 	}
 	cfg.Context, err = normalizeContext(cfg.Mode, cfg.Context)

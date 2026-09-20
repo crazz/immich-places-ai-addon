@@ -8,6 +8,10 @@ Reconciled with [`5e70c61`](https://github.com/crazz/immich-places-ai-addon/tree
 
 Before planning, implementation or review, read the adopted [architecture](../engineering/architecture.md), [testing](../engineering/testing.md) and [coding standards](../engineering/coding-standards.md). These own engineering policy; this package owns AI product requirements and integration planning. [ADR-07](../engineering/decisions/ADR-07-ai-internal-packages.md) records the accepted internal-package amendment. The F01–F03 [tooling prerequisite](OPENSPEC_ROADMAP.md#engineering-tooling-prerequisite) is complete; CH01 adds backend AI coverage enforcement.
 
+## Research planning amendment — 20 September 2026
+
+[ADR-09](../engineering/decisions/ADR-09-approximate-ai-location-proposals.md) and the active [Research proposal](../../openspec/changes/research-photo-locations-with-web-evidence/proposal.md) add best-effort coordinates, unrestricted estimated-error magnitude and optional answer-provided links. Search metadata and a proxy extension are not required. Implementation is complete in the active change; see the [Research guide](../ai-research.md) and [verification record](../../openspec/changes/research-photo-locations-with-web-evidence/implementation-verification.md). Historical v1 contracts remain unchanged.
+
 ## Files
 
 - [PRD.md](PRD.md): product scope, stable requirements, acceptance scenarios, and release gates.

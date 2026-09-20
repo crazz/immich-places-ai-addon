@@ -6,6 +6,10 @@
 
 The adopted [architecture](../engineering/architecture.md), [testing](../engineering/testing.md), [coding standards](../engineering/coding-standards.md) and [ADR-07](../engineering/decisions/ADR-07-ai-internal-packages.md) now govern every candidate. They establish implementation rules, not completed tooling or product behavior.
 
+## Current Research change — 20 September 2026
+
+The user requested [research-photo-locations-with-web-evidence](../../openspec/changes/research-photo-locations-with-web-evidence/proposal.md) after CH01–CH15. It can proceed before the remaining draft/writeback candidates. [ADR-09](../engineering/decisions/ADR-09-approximate-ai-location-proposals.md) accepts useful approximate coordinates and estimated error without an upper accuracy cutoff or search-metadata dependency. This supersedes the Research deferral below for this specific change; it does not pull neighboring-image, sequence, provider-comparison or automatic-write work into scope. The change is planned, not implemented.
+
 ## Correction to the original breakdown
 
 The previous eight items bundled too many independently reviewable outcomes into individual changes. Retain them as capability areas and use the 26 smaller candidate changes below. This is a planning recommendation, not an OpenSpec size limit or a promise that exactly 26 proposals will be needed.
@@ -181,3 +185,5 @@ Treat final acceptance as a release gate, not an oversized “finish everything�
 If the gate finds missing behavior, open a bounded fix against its owner. Do not quietly enlarge CH26 or create a catch-all safety backlog. The release gate does not replace tests within each change, and passing document validation does not satisfy it.
 
 Research/web search, neighboring-image sharing, sequence analysis, provider comparison, automatic writeback and universal post-save undo remain outside V1. Direction and multilingual descriptions remain inside. Optional metadata mirroring is capability-gated and user-selected; required local direction/translation records remain usable without it.
+
+Research implementation note — 21 September 2026: the active change implements dual-version results, approximate coordinates/error, frozen displayed context and safe answer references. See the [Research guide](../ai-research.md) for behavior, execution bounds and rollout limitations. This does not revise archived v1 evidence.

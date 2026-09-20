@@ -24,6 +24,13 @@ func (p *aiProductionJobs) frozenContext(ctx context.Context, lease jobs.Lease, 
 		if _, err := p.store.leaseState(ctx, tx, lease); err != nil {
 			return err
 		}
+		if cfg.Mode == "research" {
+			var err error
+			req.Displayed, err = loadAIResearchInputs(ctx, tx, lease, cfg)
+			if err != nil {
+				return err
+			}
+		}
 		var raw string
 		err := tx.QueryRowContext(ctx, "SELECT bundleJSON FROM ai_job_context WHERE userID=? AND jobID=? AND itemID=?", lease.Owner, lease.JobID, lease.ItemID).Scan(&raw)
 		if errors.Is(err, sql.ErrNoRows) {

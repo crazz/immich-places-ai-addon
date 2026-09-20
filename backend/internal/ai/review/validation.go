@@ -13,7 +13,11 @@ func ValidateRecord(payload []byte, m jobs.ResultMetadata, job jobs.Job, asset, 
 	if mode == "" {
 		mode = "visual"
 	}
-	if m.SchemaVersion != "1.0" || m.ValidationVersion != "analysis-result-v1" || m.Installation != job.Input.Installation || m.Profile != job.Input.Profile || m.Revision != job.Input.Revision || m.Model != job.Model || m.SelectionDigest != job.Input.SelectionDigest || !slices.Equal(m.Languages, job.Input.Languages) || m.PrimaryLanguage != job.Input.PrimaryLanguage {
+	schema, policy := "1.0", "analysis-result-v1"
+	if mode == "research" {
+		schema, policy = "2.0", "analysis-result-v2"
+	}
+	if m.SchemaVersion != schema || m.ValidationVersion != policy || m.Installation != job.Input.Installation || m.Profile != job.Input.Profile || m.Revision != job.Input.Revision || m.Model != job.Model || m.SelectionDigest != job.Input.SelectionDigest || !slices.Equal(m.Languages, job.Input.Languages) || m.PrimaryLanguage != job.Input.PrimaryLanguage {
 		return results.Document{}, ErrUnavailable
 	}
 	if m.Mode != "" && string(m.Mode) != mode {
@@ -31,8 +35,8 @@ func ValidateRecord(payload []byte, m jobs.ResultMetadata, job jobs.Job, asset, 
 		if m.PromptVersion != "visual-v1" || m.Context != nil {
 			return results.Document{}, ErrUnavailable
 		}
-	case "context-assisted":
-		if m.PromptVersion != "context-assisted-v1" || m.Context == nil || m.Mode != results.ContextAssisted {
+	case "context-assisted", "research":
+		if m.PromptVersion != mode+"-v1" || m.Context == nil || m.Mode != results.Mode(mode) {
 			return results.Document{}, ErrUnavailable
 		}
 		binding := m.Context.Binding

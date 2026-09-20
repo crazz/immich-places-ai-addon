@@ -9,6 +9,7 @@ import (
 
 const MaxRequestBytes = 15 << 20
 const MaxDispatchDuration = 120 * time.Second
+const MaxResearchDuration = 10 * time.Minute
 
 var (
 	ErrUnavailable  = errors.New("provider profile is unavailable")
@@ -28,6 +29,7 @@ type DispatchRequest struct {
 	Revision  int
 	Body      []byte
 	Authorize func(context.Context) error
+	Timeout   time.Duration
 }
 
 type DispatchResult struct {
@@ -75,8 +77,16 @@ type Dispatcher struct {
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, req DispatchRequest) (DispatchResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, MaxDispatchDuration)
+	duration := req.Timeout
+	if duration == 0 {
+		duration = MaxDispatchDuration
+	}
+	if duration < 0 || duration > MaxResearchDuration {
+		return DispatchResult{}, ErrPolicyDenied
+	}
+	ctx, cancel := context.WithTimeout(ctx, duration)
 	defer cancel()
+	ctx = context.WithValue(ctx, dispatchTimeoutKey{}, duration)
 	if !d.Enabled {
 		return DispatchResult{}, ErrDisabled
 	}

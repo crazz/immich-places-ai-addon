@@ -8,6 +8,7 @@ import (
 	"immich-places-backend/internal/ai/analysis"
 	"immich-places-backend/internal/ai/images"
 	"immich-places-backend/internal/ai/providers"
+	"immich-places-backend/internal/ai/results"
 	"immich-places-backend/internal/aiadapters/providerhttp"
 )
 
@@ -41,7 +42,11 @@ func (a *aiVisualAnalyzer) analyze(ctx context.Context, req analysis.Request) (r
 }
 
 func (a *aiVisualAnalyzer) analyzeWith(ctx context.Context, req analysis.Request, run func(context.Context, analysis.Request) (*analysis.Result, error)) (result *analysis.Result, err error) {
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	duration := 120 * time.Second
+	if req.Mode == results.Research {
+		duration = providers.MaxResearchDuration
+	}
+	ctx, cancel := context.WithTimeout(ctx, duration)
 	defer cancel()
 	defer func() {
 		if ctx.Err() != nil {

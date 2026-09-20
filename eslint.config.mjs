@@ -236,9 +236,9 @@ const toolingRules = Object.fromEntries(applicationConfig.flatMap(config =>
 export default [
 	...applicationConfig.map(config => Object.keys(config).length === 1 && config.ignores
 		? config
-		: {...config, ignores: [...(config.ignores ?? []), 'scripts/checks/**/*.mjs', 'tests/e2e/**/*.mjs']}),
+		: {...config, ignores: [...(config.ignores ?? []), 'scripts/checks/**/*.mjs', 'scripts/ai/**/*.mjs', 'tests/e2e/**/*.mjs']}),
 	{
-		files: ['scripts/checks/**/*.mjs', 'tests/e2e/**/*.mjs'],
+		files: ['scripts/checks/**/*.mjs', 'scripts/ai/**/*.mjs', 'tests/e2e/**/*.mjs'],
 		languageOptions: {
 			ecmaVersion: 2022,
 			sourceType: 'module',

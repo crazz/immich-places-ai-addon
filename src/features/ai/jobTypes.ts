@@ -5,7 +5,7 @@ export type TJobConfiguration = {
 	selectionToken: string;
 	profileId: string;
 	revision: number;
-	mode: 'visual' | 'context-assisted';
+	mode: 'visual' | 'context-assisted' | 'research';
 	format: 'strict' | 'json';
 	allowJson: boolean;
 	languages: string[];

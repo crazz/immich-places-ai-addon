@@ -42,7 +42,11 @@ func (s *aiJobStore) complete(ctx context.Context, lease jobs.Lease, completion 
 			return "", jobs.ErrInvalid
 		}
 	}
-	if completion.SchemaVersion != "1.0" {
+	expectedSchema := "1.0"
+	if validation.Mode == results.Research {
+		expectedSchema = "2.0"
+	}
+	if completion.SchemaVersion != expectedSchema {
 		return "", jobs.ErrInvalid
 	}
 	document, err := proposal.Data()

@@ -1,5 +1,7 @@
 # Semantic validation beyond the JSON Schema
 
+> Version boundary: the rules below describe implemented v1 validation. The planned [Research v2 contract](../../../openspec/changes/research-photo-locations-with-web-evidence/specs/ai-location-proposals/spec.md), following [ADR-09](../../engineering/decisions/ADR-09-approximate-ai-location-proposals.md), accepts answer-provided sources and model-estimated city/region radii without an upper precision cutoff. It preserves the v1 fixtures and does not claim that v2 is implemented.
+
 The [canonical embedded JSON Schema](../../../backend/internal/ai/results/ai-analysis-result.v1.schema.json) validates structure and exact numeric bounds. CH07 now implements the accompanying semantic checks in `backend/internal/ai/results/`; see the [caller contract and budgets](../../ai-result-validation.md). A provider-specific transport schema may need simplification for that endpoint's supported subset; the backend still validates against the canonical schema.
 
 The following checks remain mandatory in application code:

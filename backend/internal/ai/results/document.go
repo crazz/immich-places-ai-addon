@@ -3,13 +3,21 @@ package results
 import "encoding/json"
 
 type Document struct {
-	SchemaVersion       string        `json:"schema_version"`
-	Outcome             string        `json:"outcome"`
-	SelectedCandidateID *string       `json:"selected_candidate_id"`
-	Observations        []Observation `json:"observations"`
-	Candidates          []Candidate   `json:"candidates"`
-	Descriptions        []Description `json:"descriptions"`
-	Warnings            []string      `json:"warnings"`
+	SchemaVersion       string         `json:"schema_version"`
+	Outcome             string         `json:"outcome"`
+	SelectedCandidateID *string        `json:"selected_candidate_id"`
+	Observations        []Observation  `json:"observations"`
+	Candidates          []Candidate    `json:"candidates"`
+	Descriptions        []Description  `json:"descriptions"`
+	Warnings            []string       `json:"warnings"`
+	Sources             []AnswerSource `json:"sources,omitempty"`
+}
+
+type AnswerSource struct {
+	ID        string  `json:"id"`
+	URL       string  `json:"url"`
+	Title     *string `json:"title"`
+	Relevance string  `json:"relevance"`
 }
 
 type Observation struct {

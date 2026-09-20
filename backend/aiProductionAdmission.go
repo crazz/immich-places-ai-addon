@@ -54,7 +54,7 @@ func (p *aiProductionJobs) submit(ctx context.Context, owner string, req jobs.Ad
 			return jobs.ErrDenied
 		}
 		policy, policyID, ok := p.policies.Resolve(jobs.ExecutionBinding{Owner: owner, Installation: p.store.binding, Profile: cfg.ProfileID, Revision: cfg.Revision, Model: model, EgressFingerprint: p.fingerprint})
-		if !ok || policyID != cfg.PolicyID || !policy.Allows(cfg.Limits) || (cfg.Mode == "context-assisted" && !policy.Context) {
+		if !ok || policyID != cfg.PolicyID || !policy.Allows(cfg.Limits) || (cfg.Mode != "visual" && !policy.Context) {
 			return jobs.ErrDenied
 		}
 		if err := p.policyAvailable(ctx, tx, owner, policyID); err != nil {
@@ -69,8 +69,11 @@ func (p *aiProductionJobs) submit(ctx context.Context, owner string, req jobs.Ad
 		}
 		calls := cfg.Limits.MaxCalls
 		consentVersion := "visual-v1"
-		if cfg.Mode == "context-assisted" {
+		if cfg.Mode == "context-assisted" || cfg.Mode == "research" {
 			consentVersion = "context-v1"
+			if cfg.Mode == "research" {
+				consentVersion = "research-v1"
+			}
 			if cfg.Context.AlbumID != "" && cfg.Context.AlbumID != manifest.Scope.AlbumID {
 				return jobs.ErrDenied
 			}

@@ -8,7 +8,7 @@ export const JOB_STATES = ['queued', 'running', 'retry_wait', 'blocked', 'succee
 
 export function isJobConfiguration(value: unknown): value is TJobConfiguration {
 	if (!isRecord(value) || !isUUID(value.selectionToken) || typeof value.profileId !== 'string' || !value.profileId || !isCount(value.revision) || value.revision < 1 ||
-		!['visual', 'context-assisted'].includes(String(value.mode)) || !['strict', 'json'].includes(String(value.format)) || typeof value.allowJson !== 'boolean' ||
+		!['visual', 'context-assisted', 'research'].includes(String(value.mode)) || !['strict', 'json'].includes(String(value.format)) || typeof value.allowJson !== 'boolean' ||
 		!Array.isArray(value.languages) || value.languages.length < 1 || value.languages.length > 10 || !value.languages.every(tag => typeof tag === 'string' && tag.length > 0 && tag.length <= 64) ||
 		typeof value.primaryLanguage !== 'string' || !value.languages.includes(value.primaryLanguage) || typeof value.policyId !== 'string' || !/^[a-f0-9]{64}$/.test(value.policyId) || !isRecord(value.limits)) {
 		return false;
@@ -26,6 +26,7 @@ export function isJobConfiguration(value: unknown): value is TJobConfiguration {
 	}
 	const context = value.context;
 	return isRecord(context) && context.version === 'context-v1' && Array.isArray(context.classes) && context.classes.length <= 4 && new Set(context.classes).size === context.classes.length &&
+		(value.mode !== 'research' || !context.classes.includes('nearby_locations')) &&
 		context.classes.every(item => ['capture_time', 'selected_album', 'user_hint', 'nearby_locations'].includes(String(item))) &&
 		(context.hint === undefined || (typeof context.hint === 'string' && new TextEncoder().encode(context.hint).length <= 2000 && context.classes.includes('user_hint'))) &&
 		(context.albumId === undefined || (typeof context.albumId === 'string' && context.classes.includes('selected_album')));

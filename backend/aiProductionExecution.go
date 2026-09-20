@@ -8,6 +8,7 @@ import (
 	"immich-places-backend/internal/ai/analysis"
 	"immich-places-backend/internal/ai/jobs"
 	"immich-places-backend/internal/ai/providers"
+	"immich-places-backend/internal/ai/results"
 	"immich-places-backend/internal/aiadapters/providerhttp"
 )
 
@@ -38,11 +39,19 @@ func (p *aiProductionJobs) executor(a *aiVisualAnalyzer) jobs.Execute {
 		var guardError, accountingError, dispatchError error
 		runner, err := analysis.New(analysis.Protocol{
 			Encode: func(model, instruction, dataURL, format string) ([]byte, error) {
-				return providerhttp.EncodeLimitedVisual(model, instruction, dataURL, format, policy.OutputField, cfg.Limits.OutputTokens, policy.MaxRequestBytes, policy.MaxImageBytes)
+				encode := providerhttp.EncodeLimitedVisual
+				if cfg.Mode == "research" {
+					encode = providerhttp.EncodeLimitedResearch
+				}
+				return encode(model, instruction, dataURL, format, policy.OutputField, cfg.Limits.OutputTokens, policy.MaxRequestBytes, policy.MaxImageBytes)
 			},
 			Parse: providerhttp.ParseVisual,
 		}, func(ctx context.Context, input analysis.DispatchRequest) (analysis.DispatchReply, error) {
-			reply, err := a.dispatcher.Dispatch(ctx, providers.DispatchRequest{OwnerID: input.OwnerID, ProfileID: input.ProfileID, Revision: input.Revision, Body: input.Body, Authorize: input.Authorize})
+			timeout := providers.MaxDispatchDuration
+			if cfg.Mode == "research" {
+				timeout = providers.MaxResearchDuration
+			}
+			reply, err := a.dispatcher.Dispatch(ctx, providers.DispatchRequest{OwnerID: input.OwnerID, ProfileID: input.ProfileID, Revision: input.Revision, Body: input.Body, Authorize: input.Authorize, Timeout: timeout})
 			if err != nil {
 				dispatchError = productionProviderFailure(err)
 				return analysis.DispatchReply{}, providerhttp.ClassifyVisualFailure(err)
@@ -57,7 +66,7 @@ func (p *aiProductionJobs) executor(a *aiVisualAnalyzer) jobs.Execute {
 		if err != nil {
 			return jobs.Completion{}, jobs.ErrStorage
 		}
-		request := analysis.Request{Owner: lease.Owner, Installation: lease.Installation, Asset: lease.Asset, ProfileID: cfg.ProfileID, Revision: cfg.Revision, Format: cfg.Format, AllowJSON: cfg.AllowJSON, Languages: cfg.Languages, PrimaryLanguage: cfg.PrimaryLanguage, Image: image, Guard: analysis.Guard{
+		request := analysis.Request{Mode: results.Mode(cfg.Mode), Owner: lease.Owner, Installation: lease.Installation, Asset: lease.Asset, ProfileID: cfg.ProfileID, Revision: cfg.Revision, Format: cfg.Format, AllowJSON: cfg.AllowJSON, Languages: cfg.Languages, PrimaryLanguage: cfg.PrimaryLanguage, Image: image, Guard: analysis.Guard{
 			Authorize: func(ctx context.Context) error {
 				err := guard.Authorize(ctx)
 				if err != nil {
@@ -74,12 +83,16 @@ func (p *aiProductionJobs) executor(a *aiVisualAnalyzer) jobs.Execute {
 			},
 		}}
 		var result *analysis.Result
-		if cfg.Mode == "context-assisted" {
+		if cfg.Mode == "context-assisted" || cfg.Mode == "research" {
 			preparer := &aiContextPreparer{images: a.images}
 			var contextReq aiContextRequest
 			request.Context, contextReq, err = p.frozenContext(ctx, lease, cfg, image, preparer, request.Guard.Authorize)
 			if err == nil {
-				result, err = a.analyzeContextWith(ctx, request, preparer, contextReq, runner.RunContext)
+				run := runner.RunContext
+				if cfg.Mode == "research" {
+					run = runner.RunResearch
+				}
+				result, err = a.analyzeContextWith(ctx, request, preparer, contextReq, run)
 			}
 		} else {
 			result, err = a.analyzeWith(ctx, request, runner.RunVisual)

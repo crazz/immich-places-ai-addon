@@ -12,6 +12,7 @@ export type TSelectionScope = {
 };
 export type TSelectionInput = {mode: 'explicit' | 'all-matching'; scope: TSelectionScope; assetIDs?: string[]};
 export type TSelectionPreview = {
+	contextPreview?: {albumLabel: string | null; captureTimes: Record<string, string>};
 	mode: 'explicit' | 'all-matching';
 	scope: TSelectionScope;
 	snapshotID: string | null;
@@ -50,6 +51,12 @@ export function isSelectionPreview(value: unknown): value is TSelectionPreview {
 	}
 	if (value.exclusions !== undefined && (!Array.isArray(value.exclusions) || !value.exclusions.every(item => isRecord(item) && typeof item.assetID === 'string' && typeof item.reason === 'string'))) {
 		return false;
+	}
+	if (value.contextPreview !== undefined) {
+		const context = value.contextPreview;
+		if (!isRecord(context) || (context.albumLabel !== null && (typeof context.albumLabel !== 'string' || new TextEncoder().encode(context.albumLabel).length > 256)) || !isRecord(context.captureTimes)) {return false;}
+		const ids = value.assetIDs;
+		if (!Object.entries(context.captureTimes).every(([id, capture]) => ids.includes(id) && typeof capture === 'string' && new TextEncoder().encode(capture).length <= 128)) {return false;}
 	}
 	return value.mode !== 'all-matching' || (isCount(value.matchedCount) && isRecord(value.exclusionCounts) && Object.values(value.exclusionCounts).every(isCount));
 }

@@ -9,6 +9,10 @@
 
 The adopted [architecture](../engineering/architecture.md), [testing](../engineering/testing.md) and [coding standards](../engineering/coding-standards.md) govern implementation. [ADR-07](../engineering/decisions/ADR-07-ai-internal-packages.md) supersedes the original flat-file AI package placement. The original Word export remains historical and does not contain this amendment.
 
+## Accepted Research amendment — 20 September 2026
+
+The active [Research design](../../openspec/changes/research-photo-locations-with-web-evidence/design.md) implements the product direction in [ADR-09](../engineering/decisions/ADR-09-approximate-ai-location-proposals.md) within the existing package and deployment boundaries. Its planned v2 answer accepts model-estimated radius for coarse camera proposals and answer-provided source URLs without search metadata. It reuses the configured provider request/answer path; no search adapter, source-audit database or proxy extension is required. Research duration is handled separately from unchanged Visual deadlines. The historical sections below do not impose a precision or source-provenance gate on this new workflow, and existing v1 records remain unchanged.
+
 ## 1. Architecture decision
 
 Implement AI Locate inside the existing Go backend and Next.js/React frontend. Use the existing SQLite database for durable jobs, immutable results, review drafts, and write operations. Preserve the existing frontend/backend deployment boundary. Do not add Python, Redis, PostgreSQL, a second photo catalog, or a direct connection to Immich's database.
@@ -389,3 +393,5 @@ OpenSpec should derive capability specifications, scenarios, and implementation 
 ## References
 
 Reference IDs resolve in `SOURCES.md`. External facts and inspected code are cited inline; module names, APIs, schemas, limits, and decisions labeled proposed are the design for this fork.
+
+Research implementation note — 21 September 2026: the active change implements dual-version results, approximate coordinates/error, frozen displayed context and safe answer references. See the [Research guide](../ai-research.md) for behavior, execution bounds and rollout limitations. This does not revise archived v1 evidence.

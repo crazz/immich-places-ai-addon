@@ -4,7 +4,7 @@ import {isUUID} from './selectionTypes';
 
 export type TResultEntry = {
 	id: string; jobId: string; assetId: string; analysisId: string | null;
-	terminalAt: string; mode: 'visual' | 'context-assisted'; model: string; label: string | null;
+	terminalAt: string; mode: 'visual' | 'context-assisted' | 'research'; model: string; label: string | null;
 	executionState: 'succeeded' | 'failed' | 'canceled'; proposalOutcome: 'located' | 'ambiguous' | 'unknown' | null;
 	reviewState: 'unreviewed'; writeState: 'not_requested'; failure?: string;
 	captureDay: string | null; albumId: string | null; albumLabel: string | null; sourceAvailable: boolean;
@@ -16,7 +16,7 @@ export type TResultQuery = TResultFilters & {limit?: number; cursor?: string};
 export function isResultEntry(value: unknown): value is TResultEntry {
 	if (!isRecord(value) || ![value.id, value.jobId, value.assetId].every(isUUID) ||
 		(value.analysisId !== null && !isUUID(value.analysisId)) ||
-		!['visual', 'context-assisted'].includes(String(value.mode)) || typeof value.model !== 'string' || value.model.length > 256 ||
+		!['visual', 'context-assisted', 'research'].includes(String(value.mode)) || typeof value.model !== 'string' || value.model.length > 256 ||
 		typeof value.terminalAt !== 'string' || !Number.isFinite(Date.parse(value.terminalAt)) ||
 		value.reviewState !== 'unreviewed' || value.writeState !== 'not_requested' || typeof value.sourceAvailable !== 'boolean') {return false;}
 	for (const key of ['label', 'captureDay', 'albumId', 'albumLabel']) {if (value[key] !== null && (typeof value[key] !== 'string' || value[key].length > 4096)) {return false;}}

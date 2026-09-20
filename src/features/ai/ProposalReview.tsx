@@ -20,7 +20,7 @@ export function ProposalReview({review}: {review: TReview}): ReactElement {
     <h3 className={'font-semibold'}>{item.name}</h3>
     {(item.locality || item.country) && <p>{[item.locality, item.country].filter(Boolean).join(' · ')}</p>}
     <button type={'button'} aria-pressed={focus === item.id} aria-controls={mapId} onClick={() => setFocus(item.id)}>{`Inspect candidate ${item.id}: ${item.name}`}</button>
-    <CandidateFacts candidate={item} />
+    <CandidateFacts candidate={item} isResearch={review.mode === 'research'} />
                                   </article>)}
    {focus && <button type={'button'} onClick={() => setFocus(null)}>{'Show all alternatives'}</button>}
    <DescriptionTabs review={review} focus={focus} />

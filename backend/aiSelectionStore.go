@@ -79,6 +79,10 @@ func (s *aiSelectionStore) preview(ctx context.Context, input selection.Input, o
 	if manifest.EligibleCount == 0 {
 		manifest.SnapshotID = nil
 	}
+	manifest.ContextPreview, err = aiSelectionContextPreview(ctx, tx, owner, manifest)
+	if err != nil {
+		return selection.Manifest{}, err
+	}
 
 	data, err := json.Marshal(manifest)
 	if err != nil {

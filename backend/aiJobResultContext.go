@@ -22,7 +22,9 @@ func aiJobResultContext(ctx context.Context, db aiContextRowReader, job jobs.Job
 		}
 		return validation, nil, nil
 	}
-	if job.Input.Mode != "context-assisted" || completion.PromptVersion != "context-assisted-v1" {
+	validContext := job.Input.Mode == "context-assisted" && completion.PromptVersion == "context-assisted-v1"
+	validResearch := job.Input.Mode == "research" && completion.PromptVersion == "research-v1"
+	if !validContext && !validResearch {
 		return validation, nil, jobs.ErrInvalid
 	}
 	var raw string
@@ -42,7 +44,7 @@ func aiJobResultContext(ctx context.Context, db aiContextRowReader, job jobs.Job
 	if m.Binding != expected {
 		return validation, nil, jobs.ErrDenied
 	}
-	validation.Mode = results.ContextAssisted
+	validation.Mode = results.Mode(job.Input.Mode)
 	for _, source := range m.Sources {
 		validation.Sources = append(validation.Sources, results.Source{ID: source.ID})
 	}

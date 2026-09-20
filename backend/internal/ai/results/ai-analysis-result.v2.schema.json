@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:immich-places-ai-addon:analysis-result:2.0",
+  "title": "Immich Places AI Add-on: Research result v2",
+  "description": "Best available camera-location estimate; references are answer content, not authority.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "2.0"
+      ]
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "located",
+        "ambiguous",
+        "unknown"
+      ]
+    },
+    "selected_candidate_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidate"
+      }
+    },
+    "descriptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/description"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/answer_source"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "outcome",
+    "selected_candidate_id",
+    "observations",
+    "candidates",
+    "descriptions",
+    "warnings"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "coordinate": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "additionalProperties": false
+    },
+    "camera_location": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "granularity": {
+          "type": "string",
+          "enum": [
+            "point",
+            "area",
+            "site",
+            "city",
+            "region"
+          ]
+        },
+        "estimated_radius_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "An uncalibrated estimate, not a statistical guarantee; null when unsupported."
+        },
+        "radius_basis": {
+          "type": "string",
+          "enum": [
+            "visual_estimate",
+            "context_extent",
+            "source_reported",
+            "unknown",
+            "model_estimate"
+          ]
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude",
+        "granularity",
+        "estimated_radius_m",
+        "radius_basis"
+      ],
+      "additionalProperties": false,
+      "description": "Estimated photographer position, never silently substituted with subject coordinates."
+    },
+    "camera_direction": {
+      "type": "object",
+      "properties": {
+        "azimuth_deg": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 360
+        },
+        "reference": {
+          "type": "string",
+          "enum": [
+            "true_north"
+          ]
+        },
+        "uncertainty_deg": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 180
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "visual_estimate",
+            "known_viewpoint_alignment"
+          ]
+        }
+      },
+      "required": [
+        "azimuth_deg",
+        "reference",
+        "uncertainty_deg",
+        "method"
+      ],
+      "additionalProperties": false,
+      "description": "Horizontal camera optical-axis direction. A camera-to-subject bearing alone is not camera heading."
+    },
+    "subject": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/coordinate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "observation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "visual",
+            "provided_context"
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "place_name": {
+          "type": "string"
+        },
+        "locality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Two-letter ISO country code when justified, otherwise null."
+        },
+        "camera_location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/camera_location"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/subject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "camera_direction": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/camera_direction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "support_summary": {
+          "type": "string"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "ID of an observation in this result."
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "ID of an answer source or displayed input context; a reference is not independent verification."
+          }
+        },
+        "uncertainty_notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "place_name",
+        "locality",
+        "country_code",
+        "camera_location",
+        "subject",
+        "camera_direction",
+        "support_summary",
+        "evidence_refs",
+        "source_refs",
+        "uncertainty_notes"
+      ],
+      "additionalProperties": false
+    },
+    "description": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Requested BCP 47 language tag; validate and normalize on the server."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "unavailable"
+          ]
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "scene_only",
+            "candidate"
+          ]
+        },
+        "candidate_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unavailable_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "language",
+        "status",
+        "text",
+        "basis",
+        "candidate_id",
+        "unavailable_reason"
+      ],
+      "additionalProperties": false
+    },
+    "answer_source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "relevance": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "title",
+        "relevance"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

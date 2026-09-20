@@ -15,7 +15,7 @@ type TLaunchProps = {preview: TSelectionPreview; onSubmittedAction: (job: TJobPr
 
 function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TLaunchProps & {providers: TProviderList; reload: () => void}): ReactElement {
 	const initial = providers.items.find(item => item.executionReadiness?.status === 'ready') ?? providers.items[0];
-	const [fields, setFields] = useState<TLaunchFields>({...launchDefaults(initial, preview.eligibleCount), mode: 'visual', languages: 'en', primaryLanguage: 'en', classes: [], hint: ''});
+	const [fields, setFields] = useState<TLaunchFields>({...launchDefaults(initial, preview.eligibleCount), mode: 'research', languages: 'en', primaryLanguage: 'en', classes: [], hint: ''});
 	const [pending, setPending] = useState<TJobAdmission | null>(null);
 	const [isBusy, setBusy] = useState(false);
 	const [isSubmitted, setSubmitted] = useState(false);
@@ -37,7 +37,7 @@ function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TL
 	}
 	const update = (change: Partial<TLaunchFields>): void => {
 		const defaults = change.profileId ? launchDefaults(providers.items.find(item => item.id === change.profileId), preview.eligibleCount) : {};
-		setFields(current => ({...current, ...defaults, ...change})); setPending(null); setFailure('');
+		setFields(current => ({...current, ...defaults, ...(change.mode ? {classes: []} : {}), ...change})); setPending(null); setFailure('');
 	};
 	const send = async (request: TJobAdmission): Promise<void> => {
 		if (locked.current) { return; }
@@ -68,7 +68,7 @@ function LaunchEditor({preview, providers, onSubmittedAction, rerun, reload}: TL
 	return <form aria-label={'AI analysis launch'} className={'space-y-3'} onSubmit={event => { event.preventDefault(); void start(); }}>
 		<LaunchFields fields={fields} profiles={providers.items} preview={preview} disabled={isBusy || pending !== null} onChangeAction={update} />
 		{isPartial && <p>{'This allowance may complete only part of the batch.'}</p>}
-		<p>{`Start analysis sends ${preview.eligibleCount} selected image${preview.eligibleCount === 1 ? '' : 's'}${fields.mode === 'context-assisted' ? ' and the chosen context' : ''} to ${profile?.name ?? 'the selected provider'}. Results are proposals for review.`}</p>
+		<p>{`Start analysis sends ${preview.eligibleCount} selected image${preview.eligibleCount === 1 ? '' : 's'}${fields.mode !== 'visual' ? ' and the chosen context' : ''} to ${profile?.name ?? 'the selected provider'}. Results are proposals for review.`}</p>
 		{(validationError || isExpired) && <p role={'alert'}>{isExpired ? 'Selection preview expired. Preview again.' : validationError}</p>}
 		{failure && <p role={'alert'}>{failure}{pending && ' The run may already exist. Reconcile this submission before starting another run.'}</p>}
 		{isBusy && <p role={'status'}>{'Submitting analysis…'}</p>}

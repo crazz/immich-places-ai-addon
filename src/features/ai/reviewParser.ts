@@ -16,7 +16,7 @@ export function parseReview(detail: TResultDetail): TReview | null {
  if (!proposal || !isRecord(proposal) || !nullableText(proposal.selected_candidate_id)) {return null;}
  const context = readReviewSources(detail);
  if (!context) {return null;}
- const candidates = proposal.candidates.map(readCandidate); const descriptions = proposal.descriptions.map(readDescription);
+ const candidates = proposal.candidates.map(value => readCandidate(value, detail.entry.mode === 'research')); const descriptions = proposal.descriptions.map(readDescription);
  if (candidates.some(value => !value) || descriptions.some(value => !value)) {return null;}
  const review: TReview = {outcome: proposal.outcome, initialCandidate: proposal.selected_candidate_id, candidates: candidates.filter(value => value !== null), descriptions: descriptions.filter(value => value !== null), observations: proposal.observations, sources: context.sources, omissions: context.omissions, languages: detail.provenance.Languages, primaryLanguage: detail.provenance.PrimaryLanguage, warnings: proposal.warnings, mode: detail.entry.mode};
  return validReview(review) ? review : null;

@@ -6,6 +6,10 @@ import (
 )
 
 func (r *Runner) RunContext(ctx context.Context, req Request) (*Result, error) {
+	return r.runWithContext(ctx, req, results.ContextAssisted)
+}
+
+func (r *Runner) runWithContext(ctx context.Context, req Request, mode results.Mode) (*Result, error) {
 	if req.Context == nil {
 		return nil, ErrInvalidRequest
 	}
@@ -14,7 +18,7 @@ func (r *Runner) RunContext(ctx context.Context, req Request) (*Result, error) {
 	if !valid || binding.Owner != req.Owner || binding.Installation != req.Installation || binding.Asset != req.Asset || binding.Profile != req.ProfileID || binding.Revision != req.Revision || binding.SourceDigest != image.Binding.SourceDigest {
 		return nil, ErrInvalidRequest
 	}
-	return r.run(ctx, req, results.ContextAssisted)
+	return r.run(ctx, req, mode)
 }
 
 func attemptContext(req Request, mode results.Mode) (string, results.Context, error) {
@@ -29,7 +33,11 @@ func attemptContext(req Request, mode results.Mode) (string, results.Context, er
 	for _, source := range req.Context.Info().Sources {
 		validation.Sources = append(validation.Sources, results.Source{ID: source.ID})
 	}
-	return contextPrompt + "\nAuthorized context data: " + string(projection), validation, nil
+	prompt := contextPrompt
+	if mode == results.Research {
+		prompt = researchPrompt
+	}
+	return prompt + "\nAuthorized context data: " + string(projection), validation, nil
 }
 
 const ContextPromptVersion = "context-assisted-v1"

@@ -28,6 +28,9 @@ func normalizeContext(mode string, choice *ContextChoices) (*ContextChoices, err
 	c.Classes = slices.Clone(choice.Classes)
 	slices.Sort(c.Classes)
 	for i, class := range c.Classes {
+		if mode == "research" && class == contextual.Neighbors {
+			return nil, ErrInvalid
+		}
 		if (i > 0 && c.Classes[i-1] == class) || !slices.Contains([]contextual.Class{contextual.Capture, contextual.AlbumLabel, contextual.Hint, contextual.Neighbors}, class) {
 			return nil, ErrInvalid
 		}

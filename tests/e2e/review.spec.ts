@@ -83,3 +83,29 @@ test('inspects ambiguous alternatives by keyboard on a narrow screen without sel
  await expect(page.locator('.ai-review-marker')).toHaveCount(0);
  await expect(page.getByRole('button', {name: 'AI Results', exact: true})).toBeFocused();
 });
+
+test('reviews Research estimates and references by keyboard on a narrow offline map without writes', async ({page, account}) => {
+ test.setTimeout(60000);
+ await connectAccount(page, account);
+ await launchReview(page, 'research-ambiguous', 'research');
+ await expect(page.getByText('Succeeded · Ambiguous location', {exact: true})).toBeVisible();
+ await page.getByRole('button', {name: 'Close dialog'}).click();
+ await page.setViewportSize({width:390,height:844});
+ const before=(await providerState(page.request)).requests.length;
+ const referenceRequests:string[]=[];
+ await page.route('https://example.org/**',async route=>{referenceRequests.push(route.request().url());await route.abort();});
+ await page.route('https://*.basemaps.cartocdn.com/**',async route=>route.abort());
+ await openReview(page);
+ const inspect=page.getByRole('button',{name:'Inspect candidate candidate-2: Synthetic alternative viewpoint',exact:true});
+ await inspect.focus();await inspect.press('Enter');
+ await expect(page.getByText('Camera: 51, 15',{exact:true})).toBeVisible();
+ await expect(page.getByText('Estimated error: ±5 km',{exact:true})).toHaveCount(2);
+ await expect(page.getByText('Estimated error: ±5 km',{exact:true}).nth(1)).toBeVisible();
+ await expect(page.getByRole('link',{name:'Public reference',exact:true})).toHaveAttribute('href','https://example.org/reference');
+ const dialog=page.getByRole('dialog');
+ expect(await dialog.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+ expect(referenceRequests).toEqual([]);
+ expect((await providerState(page.request)).requests.length).toBe(before);
+ expect((await fixtureState(page.request,account.key)).writes).toEqual([]);
+ await page.screenshot({path:'out/checks/research-review-mobile.png'});
+});

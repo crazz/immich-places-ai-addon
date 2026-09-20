@@ -104,12 +104,8 @@ func (c *Client) Transmit(ctx context.Context, dest providers.PinnedDestination,
 }
 
 func (c *Client) doPinnedRequest(ctx context.Context, canonical providers.CanonicalURL, addr netip.Addr, body []byte, authorization, requestID string) (providers.DispatchResult, error) {
-	deadline := time.Now().Add(defaultTimeout)
-	if existing, ok := ctx.Deadline(); !ok || existing.After(deadline) {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, deadline)
-		defer cancel()
-	}
+	ctx, cancel, responseWait := responseContext(ctx, providers.DispatchTimeout(ctx))
+	defer cancel()
 	operationPath := strings.TrimRight(canonical.Path, "/") + "/chat/completions"
 	if canonical.Path == "/" {
 		operationPath = "/chat/completions"
@@ -137,7 +133,8 @@ func (c *Client) doPinnedRequest(ctx context.Context, canonical providers.Canoni
 		DisableCompression:     true,
 		ForceAttemptHTTP2:      false,
 		MaxResponseHeaderBytes: int64(maxHeaderBytes),
-		ResponseHeaderTimeout:  60 * time.Second,
+		ResponseHeaderTimeout:  responseWait,
+		TLSHandshakeTimeout:    10 * time.Second,
 		TLSClientConfig: &tls.Config{
 			ServerName: canonical.Host,
 			MinVersion: tls.VersionTLS12,

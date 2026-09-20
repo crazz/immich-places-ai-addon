@@ -48,7 +48,7 @@ func Normalize(input Submission) (Submission, string, error) {
 	if input.Mode == "" {
 		input.Mode = "visual"
 	}
-	validMode := (input.Mode == "visual" && input.ConsentVersion == "visual-v1") || (input.Mode == "context-assisted" && input.ConsentVersion == "context-v1")
+	validMode := (input.Mode == "visual" && input.ConsentVersion == "visual-v1") || (input.Mode == "context-assisted" && input.ConsentVersion == "context-v1") || (input.Mode == "research" && input.ConsentVersion == "research-v1")
 	if len(input.AssetIDs) == 0 || len(input.AssetIDs) > 10000 || input.Revision < 1 || !validMode || input.MaxCalls < 1 {
 		return Submission{}, "", ErrInvalid
 	}
