@@ -202,3 +202,18 @@ The final MCP change call lost its transport and its concurrent cycle call exhau
 Graph symbol/process counts varied across queries and the index reports receiver/cross-language and process-enumeration limits. These counts are discovery evidence, not proof of complete runtime reachability. Source review covered the complete Git diff and new files; the installed dependency checker, Go compiler/race/SQLite tests and built browser suite verify the affected boundaries independently. No zero/UNKNOWN/capped graph result was treated as safety evidence. No application import cycle was found by either the complete graph cycle check or the source dependency gate.
 
 No private matched-photo geolocation benchmark or deployment was performed. Longer live requests are still limited by the existing upstream 120-second configuration. Local verification does not prove live web-search availability or accuracy.
+
+## 24 September rollout and live comparison
+
+Revision `46e8fa8` was pushed and deployed to the isolated NAS preview; both
+containers became healthy, SQLite was backed up and the original Places and
+proxy containers remained unchanged. See the [rollout record](../../../docs/engineering/nas-research-preview-2026-09-24.md).
+
+The separately authorized [three-photo comparison](../../../docs/engineering/research-live-comparison-2026-09-24.md)
+completed six real requests. All Research wire responses failed with commentary
+and duplicate JSON, although their isolated documents passed the unchanged v2
+validator. This is a confirmed existing proxy aggregation defect, not a successful
+application result or an accuracy failure. Keep the change active pending the
+shared-proxy follow-up; preserve the passing deterministic gates above without
+claiming the live integration gate passed. No private inputs or answers are
+committed. Maintained specs are synchronized and strictly valid.

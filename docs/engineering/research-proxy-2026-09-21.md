@@ -18,3 +18,12 @@ Longer investigations require an authorized update of this existing runtime sett
 ## Interpretation
 
 This is protocol compatibility evidence for the inspected version/configuration, not a geolocation benchmark. The [comparison report](../ai-research-comparison.md) can retain real results for matched approved photos and distinguish model-estimated error from independently measured camera error. No approved matched private-photo dataset with independent camera references was executed for this change.
+
+## Subsequent real-photo evidence
+
+The [24 September comparison](research-live-comparison-2026-09-24.md) supersedes
+an inference about an overall two-minute ceiling: one HTTP response took 212.739
+seconds despite the unchanged 120,000 ms setting. It also exposed commentary and
+duplicate final JSON in all three Research replies, which the earlier clue-free
+synthetic response did not exercise. The synthetic pass above is historical;
+it does not establish successful end-to-end real-photo Research compatibility.

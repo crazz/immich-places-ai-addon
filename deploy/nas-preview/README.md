@@ -1,6 +1,6 @@
 # Isolated NAS AI preview
 
-This Dockhand-managed local stack runs the CH01–CH15 application beside the
+This Dockhand-managed local stack runs the CH01–CH15 application with Research analysis beside the
 existing `immich-places` deployment. It is specific to the inspected `pt-nas`
 installation; review the addresses and network policy before using it elsewhere.
 
@@ -13,8 +13,8 @@ installation; review the addresses and network policy before using it elsewhere.
 | Persistent SQLite directory | `/volume2/docker/immich-places-ai-preview/data` |
 | Private frontend/backend network | `immich-places-ai-preview_default` |
 | Shared upstream network | Existing `npm_proxy`, inspected CIDR `192.168.144.0/20` |
-| Frontend revision | `3c20372c2e5c4b5968ddec2baea1c0642c29f687`, `linux/amd64` |
-| Backend revision | `62a5bd7b7d0fc326625c517fabba82f3bf6dd743`, `linux/amd64` |
+| Frontend revision | `46e8fa85fbeeaafd9a792c1653df377751fb3786`, `linux/amd64` |
+| Backend revision | `46e8fa85fbeeaafd9a792c1653df377751fb3786`, `linux/amd64` |
 
 The existing stack, its port `3032`, images and
 `/volume2/docker/immich-places/data` remain independent. The preview uses a fresh
@@ -33,9 +33,9 @@ Tailscale-bound deployment; the backend has no published host port.
 1. Export each service's committed source revision from the table above with
    `git archive` into a temporary build directory. This excludes local secrets,
    test output and dependency caches.
-2. Build the root Dockerfile as `immich-places-ai-preview-frontend:3c20372` and
+2. Build the root Dockerfile as `immich-places-ai-preview-frontend:46e8fa8` and
    `backend/Dockerfile` with its revision's `backend` build context as
-   `immich-places-ai-preview-backend:62a5bd7`. Use `--platform linux/amd64 --load`
+   `immich-places-ai-preview-backend:46e8fa8`. Use `--platform linux/amd64 --load`
    and label each image with its full `org.opencontainers.image.revision`.
 3. Transfer these two images to the NAS with `docker save` / `docker load`.
    No registry publication is required. `pull_policy: never` prevents replacement
@@ -81,8 +81,8 @@ defaults after a current capability test. Optional operator restrictions are
 explained in the [production guide](../../docs/ai-production-jobs.md). The
 [batch workflow](../../docs/ai-batch-workflow.md) launches with one explicit Start
 action; token estimates are not a billing guarantee. CH15 review remains read-only
-and does not implement AI writeback. The template defaults to frontend `3c20372`
-and backend `62a5bd7`. When updating the Dockhand local stack through its API,
+and does not implement AI writeback. The template defaults to frontend `46e8fa8`
+and backend `46e8fa8`. When updating the Dockhand local stack through its API,
 update the intended image references in the saved Compose content and then
 deploy. Frontend-only fixes preserve the backend image and container. Changing only
 `PREVIEW_REVISION` through the environment endpoint did not change the local
@@ -91,3 +91,5 @@ data mount, and verify actual container image tags after deployment.
 
 The [HTTP launch verification](../../docs/engineering/ai-http-launch-verification.md)
 records the request-key correction and its rollout.
+
+The [Research rollout verification](../../docs/engineering/nas-research-preview-2026-09-24.md) records the current deployment, backup and preserved runtime configuration.
