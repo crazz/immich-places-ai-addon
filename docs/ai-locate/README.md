@@ -19,6 +19,7 @@ Before planning, implementation or review, read the adopted [architecture](../en
 - [OPENSPEC_HANDOFF.md](OPENSPEC_HANDOFF.md): capability mapping and a reference planning prompt; not an implementation backlog or an instruction executed during reconciliation.
 - [OPENSPEC_ROADMAP.md](OPENSPEC_ROADMAP.md): eight capability areas decomposed into 26 smaller candidate changes, dependencies, requirement ownership, and artifact-generation approach.
 - [CH10 and CH12–CH15 planning batch](CH10_CH12_CH15_PLAN.md): change order, dependencies, requirement/task mapping and current implementation status.
+- [CH16 → CH18 → CH19 planning batch](CH16_CH18_CH19_PLAN.md): prepared local drafts, exact GPS previews and confirmed single-photo writes, with ordered prerequisites and verification plans. These changes are not implemented; codex-proxy work is deferred.
 - [Consented context](../ai-consented-context.md): CH10's internal Context-assisted contract and verification.
 - [Persistent history](../ai-results-history.md): CH14 private terminal history, stable pagination and separately authorized current images.
 - [Proposal review](../ai-proposal-review.md): CH15 read-only camera/subject geometry, uncertainty, evidence and exact language descriptions.

@@ -15,6 +15,8 @@ The active [Research design](../../openspec/changes/research-photo-locations-wit
 
 ## 1. Architecture decision
 
+The [CH16 → CH18 → CH19 planning batch](CH16_CH18_CH19_PLAN.md), prepared on 24 September 2026, refines the draft/preview/first-writer boundaries below. The changes are planned, not implemented. They use local revisioned drafts, a separately reviewed image identity that excludes metadata-only timestamp changes, five-minute GPS previews and an initially disabled exact single-photo writer. codex-proxy changes are explicitly deferred.
+
 Implement AI Locate inside the existing Go backend and Next.js/React frontend. Use the existing SQLite database for durable jobs, immutable results, review drafts, and write operations. Preserve the existing frontend/backend deployment boundary. Do not add Python, Redis, PostgreSQL, a second photo catalog, or a direct connection to Immich's database.
 
 The AI module is a **proposal producer**. It can read authorized photographs and permitted context; it cannot call the Immich writer. Only a user-confirmed write operation can invoke writeback.
@@ -288,7 +290,7 @@ Add “AI Locate” to existing selection actions. Preserve current keyboard sel
 
 Add a review panel to the existing image/map experience. Render candidate camera and subject markers differently, use a circle only when a radius exists, and show a heading sector only when direction is supported. The map overlay is draft state; it must not overwrite the synchronized asset coordinates until writeback is verified.
 
-Introduce `source: 'ai'` for staged map coordinates and reference a server draft ID/revision. Do not stuff descriptions or the complete evidence bundle into `TPendingLocation`. A small adapter routes AI-origin save actions through the approved AI write operation. Existing manual changes retain their established path until separately refactored. [R14]
+Keep staged AI decisions under the AI feature, referencing a server draft ID/revision. CH16–CH19 use separate AI actions and never insert AI coordinates, descriptions or evidence into `TPendingLocation`. The existing manual pending type and save path stay unchanged. A future shared presentation would require an explicit typed dispatcher; it is not a prerequisite for this batch. [R14]
 
 Do not allow a mixed manual/AI save bar to send AI drafts through the old coordinate-only handler. Show separate groups if necessary, or unify the presentation behind a typed dispatcher. When an unsaved manual location and an AI proposal target the same asset, present the conflict; neither silently replaces the other.
 
@@ -332,7 +334,7 @@ Do not assume custom JSON will be visible in Immich's standard details UI or exp
 
 After each mutation, read the fields back. Compare coordinates with a documented numerical tolerance, not string equality; compare description content and namespaced metadata semantically. Update the local catalog only after confirmation. If Immich succeeded but the local update failed, retain the write operation and reconcile instead of resending blindly.
 
-A lost response moves the target to verifying. Read current state: intended values mean success; unchanged baseline permits a bounded retry; a different value means conflict. For multi-step work, retry only the incomplete step. A batch may have successful, conflicting, and failed targets without pretending to be atomic.
+A lost response moves the target to verifying. Read current state: intended values establish observed desired GPS; values matching neither intended nor baseline mean conflict. An unchanged baseline permits a bounded explicit retry only when the prior sender is known complete and current approval/authority remain valid. A local timeout or expired lease alone is not evidence of remote completion; unresolved work stays read-only until it can be reconciled. CH19 limits each confirmed operation to two mutation attempts and disables automatic mutation retries. For future multi-step work, retry only the incomplete step. A batch may have successful, conflicting, and failed targets without pretending to be atomic.
 
 The existing frontend `saveAssetLocationsWithRetry` performs a second pass for failures, and the backend Immich factory supplies a shared retrying transport configured with `RetryMax = 3`. AI writes must bypass the manual save helper and use a mutation transport with automatic retries disabled, so the durable writer can reconcile an ambiguous outcome before any resend. Reads and provider calls need separately explicit, bounded retry policies; do not multiply hidden transport retries by worker attempt budgets. [R19, R20]
 
