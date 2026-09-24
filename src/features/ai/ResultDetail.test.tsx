@@ -21,5 +21,5 @@ it('opens an exact saved unknown outcome with original provenance and inert obse
  expect(screen.getByText('Review: unreviewed · Write: not requested')).toBeVisible();
  expect(screen.getByText('No location was established.')).toBeVisible();
  expect(document.querySelector('script')).toBeNull();
- expect(screen.queryByRole('button', {name: /accept|save|apply/i})).not.toBeInTheDocument();
+ expect(screen.getByRole('button', {name: 'Accept as local draft'})).toBeVisible();
 });

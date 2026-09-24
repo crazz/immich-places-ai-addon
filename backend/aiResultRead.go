@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-type aiResultStore struct{ jobs *aiJobStore }
+type aiResultStore struct {
+	jobs   *aiJobStore
+	origin string
+}
 
 func (s *aiResultStore) list(ctx context.Context, owner string, q review.Query) (review.Page, error) {
 	if q.Limit < 1 || q.Limit > 100 {
@@ -80,11 +83,12 @@ func (s *aiResultStore) list(ctx context.Context, owner string, q review.Query) 
 }
 
 const aiResultSummarySQL = `SELECT h.itemID,h.jobID,h.assetID,h.terminalAt,h.executionState,h.captureDay,h.albumID,a.id,a.outcome,j.model,j.requestJSON,i.failure,l.albumLabel,h.label,
- EXISTS(SELECT 1 FROM assets src WHERE src.userID=h.userID AND src.immichID=h.assetID AND src.isHidden=0 AND src.type='IMAGE' AND (src.libraryID IS NULL OR NOT EXISTS(SELECT 1 FROM libraries lib WHERE lib.libraryID=src.libraryID AND lib.isHidden=1)))
+ EXISTS(SELECT 1 FROM assets src WHERE src.userID=h.userID AND src.immichID=h.assetID AND src.isHidden=0 AND src.type='IMAGE' AND (src.libraryID IS NULL OR NOT EXISTS(SELECT 1 FROM libraries lib WHERE lib.libraryID=src.libraryID AND lib.isHidden=1))),COALESCE(d.state,'unreviewed'),d.id,d.revision
  FROM ai_result_history h JOIN ai_jobs j ON j.userID=h.userID AND j.id=h.jobID AND j.installationID=h.installationID
  JOIN ai_job_items i ON i.userID=h.userID AND i.jobID=h.jobID AND i.id=h.itemID
  LEFT JOIN ai_analyses a ON a.userID=h.userID AND a.jobID=h.jobID AND a.itemID=h.itemID
- LEFT JOIN ai_job_launch l ON l.userID=h.userID AND l.jobID=h.jobID AND l.assetID=h.assetID`
+ LEFT JOIN ai_job_launch l ON l.userID=h.userID AND l.jobID=h.jobID AND l.assetID=h.assetID
+ LEFT JOIN ai_drafts d ON d.userID=h.userID AND d.installationID=h.installationID AND d.analysisID=a.id`
 
 type aiResultScanner interface{ Scan(...any) error }
 
@@ -92,7 +96,7 @@ func scanAIResultEntry(row aiResultScanner) (review.Entry, error) {
 	var e review.Entry
 	var terminal int64
 	var raw string
-	err := row.Scan(&e.ID, &e.JobID, &e.AssetID, &terminal, &e.ExecutionState, &e.CaptureDay, &e.AlbumID, &e.AnalysisID, &e.ProposalOutcome, &e.Model, &raw, &e.Failure, &e.AlbumLabel, &e.Label, &e.SourceAvailable)
+	err := row.Scan(&e.ID, &e.JobID, &e.AssetID, &terminal, &e.ExecutionState, &e.CaptureDay, &e.AlbumID, &e.AnalysisID, &e.ProposalOutcome, &e.Model, &raw, &e.Failure, &e.AlbumLabel, &e.Label, &e.SourceAvailable, &e.ReviewState, &e.DraftID, &e.DraftRevision)
 	if err != nil {
 		return e, err
 	}
@@ -105,7 +109,6 @@ func scanAIResultEntry(row aiResultScanner) (review.Entry, error) {
 		e.Mode = "visual"
 	}
 	e.TerminalAt = time.Unix(0, terminal).UTC().Format(time.RFC3339Nano)
-	e.ReviewState = "unreviewed"
 	e.WriteState = "not_requested"
 	return e, nil
 }

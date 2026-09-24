@@ -6,7 +6,7 @@ export type TResultEntry = {
 	id: string; jobId: string; assetId: string; analysisId: string | null;
 	terminalAt: string; mode: 'visual' | 'context-assisted' | 'research'; model: string; label: string | null;
 	executionState: 'succeeded' | 'failed' | 'canceled'; proposalOutcome: 'located' | 'ambiguous' | 'unknown' | null;
-	reviewState: 'unreviewed'; writeState: 'not_requested'; failure?: string;
+	draftId?: string; draftRevision?: number; reviewState: 'unreviewed' | 'draft' | 'staged' | 'rejected'; writeState: 'not_requested'; failure?: string;
 	captureDay: string | null; albumId: string | null; albumLabel: string | null; sourceAvailable: boolean;
 };
 export type TResultPage = {items: TResultEntry[]; nextCursor?: string};
@@ -18,7 +18,8 @@ export function isResultEntry(value: unknown): value is TResultEntry {
 		(value.analysisId !== null && !isUUID(value.analysisId)) ||
 		!['visual', 'context-assisted', 'research'].includes(String(value.mode)) || typeof value.model !== 'string' || value.model.length > 256 ||
 		typeof value.terminalAt !== 'string' || !Number.isFinite(Date.parse(value.terminalAt)) ||
-		value.reviewState !== 'unreviewed' || value.writeState !== 'not_requested' || typeof value.sourceAvailable !== 'boolean') {return false;}
+		!['unreviewed', 'draft', 'staged', 'rejected'].includes(String(value.reviewState)) || value.writeState !== 'not_requested' || typeof value.sourceAvailable !== 'boolean') {return false;}
+	if (value.draftId !== undefined && (!isUUID(value.draftId) || !Number.isSafeInteger(value.draftRevision) || Number(value.draftRevision) < 1)) {return false;}
 	for (const key of ['label', 'captureDay', 'albumId', 'albumLabel']) {if (value[key] !== null && (typeof value[key] !== 'string' || value[key].length > 4096)) {return false;}}
 	if (value.failure !== undefined && (typeof value.failure !== 'string' || value.failure.length > 64)) {return false;}
 	if (value.executionState === 'succeeded') {return isUUID(value.analysisId) && ['located', 'ambiguous', 'unknown'].includes(String(value.proposalOutcome));}

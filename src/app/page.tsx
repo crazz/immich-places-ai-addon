@@ -1,6 +1,8 @@
 'use client';
 
-import {AIResultsWorkspace} from '@/features/ai';
+import {useState} from 'react';
+
+import {AIResultsWorkspace, ManualDraftOverlap} from '@/features/ai';
 import {AuthProvider, useAuth} from '@/features/auth/AuthContext';
 import {AuthMapDynamic} from '@/features/auth/AuthMapDynamic';
 import {AuthSidebar} from '@/features/auth/AuthSidebar';
@@ -144,7 +146,7 @@ function AuthenticatedAppRoutes(): ReactElement {
 	);
 }
 
-function AppRoutes(): ReactElement {
+function AppRoutes({onPendingChange}: {onPendingChange: (ids: string[]) => void}): ReactElement {
 	const {user, hasImmichAPIKey, isLoading} = useAuth();
 
 	if (isLoading) {
@@ -167,21 +169,23 @@ function AppRoutes(): ReactElement {
 
 	return (
 		<AppProvider>
+			<ManualDraftOverlap onChange={onPendingChange} />
 			<AuthenticatedAppRoutes />
 		</AppProvider>
 	);
 }
 
-function ResultNavigation(): ReactElement | null {
+function ResultNavigation({manualPendingIDs}: {manualPendingIDs: string[]}): ReactElement | null {
 	const {user, isLoading} = useAuth();
-	return user && !isLoading ? <AIResultsWorkspace owner={user.ID} /> : null;
+	return user && !isLoading ? <AIResultsWorkspace owner={user.ID} manualPendingIDs={manualPendingIDs} /> : null;
 }
 
 export default function Home(): ReactElement {
+ const [manualPendingIDs, setManualPendingIDs] = useState<string[]>([]);
 	return (
 		<AuthProvider>
-			<AppRoutes />
-			<ResultNavigation />
+			<AppRoutes onPendingChange={setManualPendingIDs} />
+			<ResultNavigation manualPendingIDs={manualPendingIDs} />
 		</AuthProvider>
 	);
 }

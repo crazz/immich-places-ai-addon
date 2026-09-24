@@ -1,6 +1,8 @@
 package review
 
 type Entry struct {
+	DraftID         *string `json:"draftId,omitempty"`
+	DraftRevision   *int    `json:"draftRevision,omitempty"`
 	ID              string  `json:"id"`
 	JobID           string  `json:"jobId"`
 	AssetID         string  `json:"assetId"`

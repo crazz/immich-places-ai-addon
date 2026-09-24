@@ -1,6 +1,6 @@
 # CH16 verification plan
 
-Status: planned, not executed. No implementation or live calls are claimed by this planning artifact. Apply uses OpenSpec Plus TDD for changed behavior; known behavior characterization may pass immediately under the adopted testing standard.
+Status: original verification plan; executed scenario evidence and actual gate results are in [implementation verification](implementation-verification.md). No live calls are claimed. Apply uses OpenSpec Plus TDD for changed behavior; known behavior characterization may pass immediately under the adopted testing standard.
 
 | Scenarios | Tasks | Required automated evidence |
 |---|---|---|

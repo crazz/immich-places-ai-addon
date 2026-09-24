@@ -1,6 +1,6 @@
-# CH16 → CH18 → CH19 planning batch
+# CH16 → CH18 → CH19 batch
 
-Status: prepared, not implemented. Prepared on 24 September 2026 against `0fb8eaf` on `codex/plan-ai-selection-and-validation`. All artifacts are English. OpenSpec Plus proposal, design, specification and task reviews were performed inline under the user's no-subagent instruction. No independent/subagent review is claimed.
+Status: CH16 implemented, verified and synchronized; final verification is recorded in its [implementation record](../../openspec/changes/persist-revisioned-ai-review-drafts/implementation-verification.md). CH18 and CH19 remain prepared. Originally planned on 24 September 2026 against `0fb8eaf` on `codex/plan-ai-selection-and-validation`. All artifacts are English. OpenSpec Plus proposal, design, specification and task reviews were performed inline under the user's no-subagent instruction. No independent/subagent review is claimed.
 
 ## Application order
 
@@ -10,11 +10,11 @@ Status: prepared, not implemented. Prepared on 24 September 2026 against `0fb8ea
 | 2 | [CH18: exact GPS previews](../../openspec/changes/preview-exact-ai-write-plans/proposal.md) | Inspect fresh single-photo GPS before/after values for an exact revision | 6 / 18 / 7 |
 | 3 | [CH19: confirmed GPS writes](../../openspec/changes/execute-confirmed-ai-gps-writes/proposal.md) | Confirm, execute and reconcile one exact GPS operation with durable audit | 9 / 32 / 16 |
 
-Total: 22 requirements, 70 behavioral scenarios and 33 unchecked implementation tasks. Each change includes `proposal.md`, `design.md`, capability deltas, `tasks.md` and `verification-plan.md`.
+Total: 22 requirements, 70 behavioral scenarios and 33 implementation tasks: CH16 completes ten; CH18 and CH19 have 23 pending. Each change includes `proposal.md`, `design.md`, capability deltas, `tasks.md` and `verification-plan.md`. The individual task checklists and execution records track completion.
 
-Apply in the requested order. Finish, verify, synchronize/archive and commit each change before applying its successor. CH16 depends on implemented CH15. CH18 depends on CH16. CH19 depends on CH18 and implemented CH11; CH17 is not required for GPS-only writes. Allocate migrations serially after inspecting the actual tip; 026/027/028 are planning expectations, not reserved applied versions.
+Apply in the requested order. Finish, verify, synchronize and commit each change before applying its successor in a fresh local task using the same checkout. Do not archive, push or deploy this batch. CH16 depends on implemented CH15. CH18 depends on CH16. CH19 depends on CH18 and implemented CH11; CH17 is not required for GPS-only writes. CH16 allocates migration 026. Allocate later migrations serially after inspecting the actual tip; 027/028 remain planning expectations, not reserved applied versions.
 
-CH16 adds requirements to maintained `ai-results-and-review`. CH18 introduces `ai-immich-writeback`; CH19 then adds distinct requirements to it and to `ai-results-and-review`. Do not apply CH19 before CH18 has been synchronized. The three deltas use unique added requirement names and preserve existing read-only inspection/preview requirements. Main specs stay unchanged until implementation and synchronization.
+CH16's seven requirements and twenty scenarios are synchronized into maintained `ai-results-and-review`. CH18 introduces `ai-immich-writeback`; CH19 then adds distinct requirements to it and to `ai-results-and-review`. Do not apply CH19 before CH18 has been synchronized. The three deltas use unique added requirement names and preserve existing read-only inspection/preview requirements. Later deltas remain planned until their own implementation and synchronization.
 
 ## Settled boundaries
 
@@ -37,7 +37,7 @@ codex-proxy work is deferred by the user's explicit instruction. The [live compa
 | CH18 | P01–P18: exact read-only comparison, fresh conflicts, immutable scope, expiry and isolation | [CH18 verification](../../openspec/changes/preview-exact-ai-write-plans/verification-plan.md) |
 | CH19 | W01–W26 and R01–R06: approval, exact writes, concurrency, recovery, verified refresh, lifecycle and review UI | [CH19 verification](../../openspec/changes/execute-confirmed-ai-gps-writes/verification-plan.md) |
 
-Every scenario maps to tasks and planned automated layers. Apply must replace planned evidence with exact executed test names and outcomes in each change's implementation verification record. Real SQLite is required for persistence/race claims; deterministic HTTP fixtures inspect exact fields/targets/request counts. Full installed engineering gates and relevant built-browser journeys remain required. No application tests, migrations, provider requests, Immich mutations or deployments are performed by this planning batch.
+Every scenario maps to tasks and planned automated layers. Apply records exact executed test names and outcomes in each change's implementation verification record. Real SQLite is required for persistence/race claims; deterministic HTTP fixtures inspect exact fields/targets/request counts. Full installed engineering gates and relevant built-browser journeys remain required. The original planning phase performed no application tests or migrations. CH16 implementation exercises synthetic local services and temporary SQLite; no live provider requests, Immich mutations or deployments are authorized for this batch.
 
 GATE-02 remains separate: real write rollout needs an explicitly authorized disposable Immich photo and actual version/route/readback evidence. Until then, finish deterministic implementation checks and keep `AI_WRITE_ENABLED=false`. Passing mocked adapters is not a live compatibility claim. No private photo is to be silently repurposed as a write fixture.
 
@@ -55,6 +55,6 @@ Reviewed proposal scope/non-goals, design alternatives/package ownership, source
 8. A delayed catalog sync can overwrite newly verified GPS. Reuse the existing sync pause/drain boundary for final readback and publication, with deadline/failure coverage.
 9. CH19 modifies two capabilities and depends on CH18's not-yet-created main spec. Record ordered synchronization explicitly instead of pretending the capability already exists.
 
-Planning verification consists of strict OpenSpec validation, ordered delta composition, scenario/task/verification coverage, English/placeholder checks, local-link checks and pre-commit GitNexus change analysis. Implementation and live compatibility remain unverified until their own execution records exist.
+Planning verification consists of strict OpenSpec validation, ordered delta composition, scenario/task/verification coverage, English/placeholder checks, local-link checks and pre-commit GitNexus change analysis. Implementation evidence belongs to each change's execution record. Live compatibility remains unverified by deterministic implementation checks.
 
-Executed document checks: `openspec validate --all --strict --no-interactive` passed all 11 current specs/changes. All three change statuses report planning complete. Ordered composition found no duplicate added requirement names; all 70 scenarios have GIVEN/WHEN/THEN and are covered by task and verification references. The 20 relevant Markdown files passed local-link and English checks, all new artifacts passed placeholder checks, and `git diff --check` passed. No application suite was run for this documentation-only batch.
+Original planning checks: `openspec validate --all --strict --no-interactive` passed all 11 then-current specs/changes. All three change statuses reported planning complete. Ordered composition found no duplicate added requirement names; all 70 scenarios had GIVEN/WHEN/THEN and task/verification references. The 20 relevant Markdown files passed local-link and English checks, all new artifacts passed placeholder checks, and `git diff --check` passed. No application suite was run during that documentation-only phase.

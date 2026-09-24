@@ -6,12 +6,12 @@ import {fetchResultThumbnail} from './resultImageApi';
 import type {TResultEntry} from './resultTypes';
 import type {ReactElement} from 'react';
 
-export function ResultImage({owner, entry}: {owner: string; entry: TResultEntry}): ReactElement {
+export function ResultImage({owner, entry, onAvailable}: {owner: string; entry: TResultEntry; onAvailable?: (available: boolean) => void}): ReactElement {
  const key = `${owner}:${entry.jobId}:${entry.id}:${entry.sourceAvailable}`;
  const [image, setImage] = useState({key: '', url: ''});
  useEffect(() => {
   const controller = new AbortController(); let url = '';
-  setImage({key, url: ''});
+  onAvailable?.(false); setImage({key, url: ''});
   if (owner && entry.sourceAvailable) {
    void fetchResultThumbnail(entry.jobId, entry.id, controller.signal).then(blob => {
     if (controller.signal.aborted) {return;}
@@ -19,6 +19,6 @@ export function ResultImage({owner, entry}: {owner: string; entry: TResultEntry}
    }).catch(() => {if (!controller.signal.aborted) {setImage({key, url: ''});}});
   }
   return () => {controller.abort(); if (url) {URL.revokeObjectURL(url);}};
- }, [owner, key, entry.jobId, entry.id, entry.sourceAvailable]);
- return image.key === key && image.url ? <Image unoptimized src={image.url} width={320} height={200} alt={'Current source photo'} className={'max-h-48 w-full rounded object-contain'} /> : <p className={'rounded bg-(--color-bg) p-3 text-xs text-(--color-text-secondary)'}>{'Current image unavailable'}</p>;
+ }, [owner, key, entry.jobId, entry.id, entry.sourceAvailable, onAvailable]);
+ return image.key === key && image.url ? <Image unoptimized src={image.url} width={320} height={200} alt={'Current source photo'} onLoad={() => onAvailable?.(true)} onError={() => onAvailable?.(false)} className={'max-h-48 w-full rounded object-contain'} /> : <p className={'rounded bg-(--color-bg) p-3 text-xs text-(--color-text-secondary)'}>{'Current image unavailable'}</p>;
 }

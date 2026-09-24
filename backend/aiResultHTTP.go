@@ -10,6 +10,7 @@ import (
 
 func newAIResultHandler(s *aiResultStore, images *aiImagePreparer) http.Handler {
 	mux := http.NewServeMux()
+	registerAIDraftRoutes(mux, s, images)
 	mux.HandleFunc("GET /ai/results", func(w http.ResponseWriter, r *http.Request) {
 		values, err := url.ParseQuery(r.URL.RawQuery)
 		if err != nil || len(r.URL.RawQuery) > 4096 {

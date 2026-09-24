@@ -123,7 +123,8 @@ func main() {
 	if err != nil {
 		log.Printf("[AI results] Current image reads unavailable")
 	}
-	resultHandler := newAIResultHandler(&aiResultStore{jobs: productionRuntime.jobs.store}, resultImages)
+	resultHandler := newAIResultHandler(&aiResultStore{jobs: productionRuntime.jobs.store, origin: cfg.AIPublicOrigin}, resultImages)
+	mainMux.Handle("/ai/drafts/", resultHandler)
 	mainMux.Handle("/ai/results", resultHandler)
 	mainMux.Handle("/ai/results/", resultHandler)
 	mainMux.Handle("GET /ai/jobs/{jobID}/items/{itemID}/result", resultHandler)

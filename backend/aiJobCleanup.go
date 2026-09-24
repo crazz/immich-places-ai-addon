@@ -18,6 +18,8 @@ func (s *aiJobStore) PurgeBefore(ctx context.Context, owner string, cutoff time.
    SELECT j.id FROM ai_jobs j WHERE j.userID=? AND j.createdAt<? AND NOT EXISTS (
     SELECT 1 FROM ai_job_items i WHERE i.userID=j.userID AND i.jobID=j.id AND
     (i.state NOT IN ('succeeded','failed','canceled') OR i.finishedAt IS NULL OR i.finishedAt>=?))
+   AND NOT EXISTS (SELECT 1 FROM ai_drafts d JOIN ai_analyses a ON a.userID=d.userID AND a.id=d.analysisID
+    WHERE a.userID=j.userID AND a.jobID=j.id)
    ORDER BY j.createdAt,j.id LIMIT ?)`, owner, owner, cutoff.UnixNano(), cutoff.UnixNano(), limit)
 		if err != nil {
 			return err
