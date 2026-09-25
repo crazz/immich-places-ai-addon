@@ -28,4 +28,4 @@ Migration 026 adds owner/installation-qualified drafts, immutable revision snaps
 
 Back up SQLite consistently before deployment. Roll back application binaries with draft tables retained. Do not run destructive down migrations as recovery: they remove private decisions. A failed migration rolls back transactionally. Retained tables remain compatible with earlier analysis-read queries; live deployment/rollback has not been exercised.
 
-CH16 contains no write plan or mutation executor. CH18 owns exact read-only previews; CH19 owns confirmed GPS writes. No live provider/Immich compatibility is claimed by synthetic tests. See [implementation verification](../openspec/changes/persist-revisioned-ai-review-drafts/implementation-verification.md).
+CH18 now adds [exact read-only previews](ai-write-previews.md) for reviewed staged GPS revisions. CH19's confirmed GPS writer remains planned. No live provider/Immich compatibility is claimed by synthetic tests. See [draft implementation verification](../openspec/changes/persist-revisioned-ai-review-drafts/implementation-verification.md).

@@ -31,7 +31,7 @@ func (s *aiDraftStore) source(ctx context.Context, owner, asset string, reader *
 	}
 	exif, exists := fields["exifinfo"]
 	if !exists {
-		return baseline, authority, drafts.ErrUnavailable
+		exif = json.RawMessage("null")
 	}
 	if string(exif) != "null" {
 		if _, err = aiImageUniqueObject(exif); err != nil {

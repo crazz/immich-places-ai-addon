@@ -125,6 +125,8 @@ func main() {
 	}
 	resultHandler := newAIResultHandler(&aiResultStore{jobs: productionRuntime.jobs.store, origin: cfg.AIPublicOrigin}, resultImages)
 	mainMux.Handle("/ai/drafts/", resultHandler)
+	mainMux.Handle("/ai/write-previews", resultHandler)
+	mainMux.Handle("/ai/write-previews/", resultHandler)
 	mainMux.Handle("/ai/results", resultHandler)
 	mainMux.Handle("/ai/results/", resultHandler)
 	mainMux.Handle("GET /ai/jobs/{jobID}/items/{itemID}/result", resultHandler)

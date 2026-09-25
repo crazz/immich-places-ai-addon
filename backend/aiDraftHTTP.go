@@ -10,6 +10,7 @@ import (
 
 func registerAIDraftRoutes(mux *http.ServeMux, results *aiResultStore, images *aiImagePreparer) {
 	store := &aiDraftStore{results: results}
+	registerAIWritePreviewRoutes(mux, store, images)
 	registerAIDraftBaselineRoutes(mux, store, images)
 	mux.HandleFunc("POST /ai/results/{analysisID}/draft", func(w http.ResponseWriter, r *http.Request) {
 		if !guardAIDraftMutation(w, r, results.origin) {

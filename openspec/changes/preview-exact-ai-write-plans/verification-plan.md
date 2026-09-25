@@ -1,6 +1,6 @@
 # CH18 verification plan
 
-Status: planned, not executed. CH16 must first be implemented, verified and synchronized. Use its actual public draft contract during apply; reconcile any prerequisite drift before coding.
+Status: implemented against the verified and synchronized CH16 contract at `5543618ff8825c97012e9f23f5efaebb4721dc1f`. See [implementation-verification.md](implementation-verification.md) for executed checks and closure status. The matrix below is the approved verification scope.
 
 | Scenarios | Tasks | Required automated evidence |
 |---|---|---|
