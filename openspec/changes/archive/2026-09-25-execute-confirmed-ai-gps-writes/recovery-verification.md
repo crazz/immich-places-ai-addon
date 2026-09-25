@@ -2,7 +2,7 @@
 
 Date: 25 September 2026. Base: `990a82cb28cee425e87c6105244bf37e198e6d4d`; branch: `codex/plan-ai-selection-and-validation`. This record covers the three reviewed recovery defects and tasks 6.1, 6.2 and 7.1. The earlier [implementation record](implementation-verification.md) remains historical evidence for tasks 1–5.
 
-OpenSpec Plus implementation, spec-compliance, TDD and code-quality reviews were performed inline and sequentially under the user's existing preference. All 19 implementation tasks are complete; all 13 cumulative verification gates pass. The change remains active and uncommitted. No deployment or live mutation was performed; ordinary writing remains disabled and GATE-02 remains unverified.
+OpenSpec Plus implementation, spec-compliance, TDD and code-quality reviews were performed inline and sequentially under the user's existing preference. All 19 implementation tasks are complete; all 13 cumulative verification gates pass. Recovery fixes were committed as `9cc39d1` and CH19 was archived on 25 September 2026 after explicit user authorization. No deployment or live mutation was performed; ordinary writing remains disabled and GATE-02 remains unverified.
 
 ## Changes and scenario evidence
 
@@ -70,4 +70,4 @@ The backend run was freshly instrumented after the changed Go source/tests. The 
 
 ## Release limits
 
-Live GATE-02 was not run. Synthetic results do not establish compatibility with a configured live Immich instance. `AI_WRITE_ENABLED=false` and the unsupported empty default profile remain unchanged. No live provider call, private-photo write, deployment, archive, commit or push occurred. The pre-existing `.brooks-lint-history.json` is untouched.
+Live GATE-02 was not run. Synthetic results do not establish compatibility with a configured live Immich instance. `AI_WRITE_ENABLED=false` and the unsupported empty default profile remain unchanged. No live provider call, private-photo write, deployment or push occurred. The pre-existing `.brooks-lint-history.json` is untouched. The local commit and archive do not authorize ordinary write rollout; the gate still needs a selected disposable fixture and exact approved GPS plan.

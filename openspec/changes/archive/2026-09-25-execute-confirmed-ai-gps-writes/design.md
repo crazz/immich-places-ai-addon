@@ -4,7 +4,7 @@ See [proposal.md](proposal.md). CH16 supplies local draft revisions and reviewed
 
 GitNexus resolved the manual chain from `useLocationAssignment` to `saveAssetLocationsWithRetry`; source confirms a second frontend save pass. `backend/immichClient.go` constructs a retrying client with `RetryMax = 3`, and `backend/handlers.go` expands manual location targets. Neither is the AI writer. Read `aiJobClaim.go`, `aiJobRecovery.go` and `aiJobAccount_test.go` during apply after fresh graph tracing; this design takes their architectural pattern, not unverified implementation compatibility. The graph has unresolved Go references, so the identified boundaries were checked in source and impact must be rerun before edits.
 
-Follow [architecture](../../../docs/engineering/architecture.md), [testing](../../../docs/engineering/testing.md), [coding standards](../../../docs/engineering/coding-standards.md), ADR-07 and [technical design §11](../../../docs/ai-locate/TECHNICAL_DESIGN.md#11-immich-writeback-contract). No architectural departure or new library is proposed.
+Follow [architecture](../../../../docs/engineering/architecture.md), [testing](../../../../docs/engineering/testing.md), [coding standards](../../../../docs/engineering/coding-standards.md), ADR-07 and [technical design §11](../../../../docs/ai-locate/TECHNICAL_DESIGN.md#11-immich-writeback-contract). No architectural departure or new library is proposed.
 
 ## Goals / Non-Goals
 
