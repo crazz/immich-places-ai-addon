@@ -416,7 +416,7 @@ Editing or rejecting a confirmed draft before its next mutation reservation SHAL
 
 ### Requirement: Display verified GPS outcomes independently of proposal and review state
 
-AI Results SHALL show explicit confirmation, durable progress, conflict, unresolved, failed, verified no-op and verified-write outcomes separately from analysis and draft review. It SHALL show the exact approved revision and private before/intended/observed values without claiming causal certainty from readback. Confirming with a known overlapping manual pending edit SHALL require explicit resolution. Lost submissions SHALL reconcile using the same identity, including on HTTP origins without secure-context UUID support. Accessible status and recovery SHALL work without map tiles, and account/result changes SHALL fence late private replies.
+AI Results SHALL show explicit confirmation, durable progress, conflict, unresolved, failed, verified no-op and verified-write outcomes separately from analysis and draft review. It SHALL show the exact approved revision and private before/intended/observed values without claiming causal certainty from readback. Confirming with a known overlapping manual pending edit SHALL require explicit resolution. Lost submissions SHALL reconcile using the same identity, including on HTTP origins without secure-context UUID support. Late initial history SHALL NOT replace a newer confirmation outcome or discard its unresolved identity. A definitive rejection of a repeated confirmation SHALL release that rejected submission for a fresh comparison; missing lookup results or ambiguous failures alone SHALL NOT discard unresolved authority. Accessible status and recovery SHALL work without map tiles, and account/result changes SHALL fence late private replies.
 
 #### Scenario: R03 Retain results after a verified GPS save
 - **GIVEN** an approved GPS operation reaches verified local completion
@@ -437,3 +437,20 @@ AI Results SHALL show explicit confirmation, durable progress, conflict, unresol
 - **GIVEN** an operation has a conflict, readback failure, known failure or pending local refresh
 - **WHEN** its owner inspects AI Results
 - **THEN** the actual state and applicable recovery action are visible without a false saved label, discarded draft or automatic provider call
+
+#### Scenario: R07 Preserve a newer confirmation when initial history arrives late
+- **GIVEN** initial saved-history loading overlaps a new confirmation in the same draft view
+- **WHEN** an older history response arrives after the new submission or its acknowledgement
+- **THEN** the newer confirmed operation or unresolved submission identity remains current and recoverable
+- **AND** older history cannot enable another approval by clearing the pending submission
+
+#### Scenario: R08 Finish recovery after a definitive repeat rejection
+- **GIVEN** an uncertain confirmation never committed and its preview has expired
+- **WHEN** repeating that same identity receives a definitive expired rejection
+- **THEN** the rejected identity no longer blocks a fresh comparison and explicit confirmation
+- **AND** no replacement approval or GPS mutation is requested automatically
+
+#### Scenario: R09 Retain an identity while repeated confirmation is still ambiguous
+- **GIVEN** a confirmation remains uncertain and lookup has no saved result
+- **WHEN** repeating the same identity fails without a definitive rejection
+- **THEN** the same submission stays available for reconciliation and new approval remains blocked

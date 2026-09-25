@@ -205,6 +205,8 @@ Only one unresolved AI write SHALL hold a given installation/asset target at a t
 
 A potentially sent request SHALL be followed by authorized readback before success or resend is decided. Matching intended GPS with unchanged source SHALL establish observed desired state; GPS matching neither intended nor baseline SHALL produce a conflict, and unavailable readback SHALL remain unresolved. An unchanged baseline alone SHALL not prove an earlier timed-out request cannot still act. Retry SHALL require explicit owner action, unchanged fresh baseline, valid current approval/authority, established prior-sender completion and remaining attempt budget. There SHALL be at most two mutation attempts per confirmed operation. Read-only status checks SHALL not reset that budget or create a mutation.
 
+Repeating an already-recorded retry generation SHALL return the current private operation without another upstream read or attempt allocation, including after successful execution, restart, approval expiry or write disablement. Owner and installation scope SHALL remain mandatory. A generation that has not been accepted SHALL still require all fresh retry eligibility checks before allocating an attempt.
+
 #### Scenario: W14 Recover remote success with lost response
 - **GIVEN** Immich applied the approved pair but the mutation response was lost
 - **WHEN** readback observes the intended pair and unchanged source
@@ -229,6 +231,17 @@ A potentially sent request SHALL be followed by authorized readback before succe
 - **GIVEN** a potentially sent request followed by changed source or GPS matching neither approved before nor intended values
 - **WHEN** readback completes
 - **THEN** conflict is recorded with owned observed values and no automatic overwrite occurs
+
+#### Scenario: W27 Recover a retry after its successful execution
+- **GIVEN** a retry for an inspected generation was accepted and its second mutation succeeded
+- **WHEN** the owner repeats that accepted generation after losing its acknowledgement
+- **THEN** the current operation is returned without an upstream read or an additional mutation attempt
+
+#### Scenario: W28 Recover an accepted retry after restart and disablement
+- **GIVEN** an accepted retry is retained across restart, approval expiry and write disablement
+- **WHEN** its owner repeats the accepted generation while Immich is unavailable
+- **THEN** the current private operation is returned locally with its original attempt count
+- **AND** foreign owners, obsolete installations and unaccepted generations receive no duplicate-recovery authority
 
 ### Requirement: Verify GPS before local success publication
 

@@ -28,3 +28,12 @@
 - [x] 5.1 Stop new sends on disablement, shutdown, account deletion and installation changes while retaining recoverable uncertain reservations and preventing late private-data recreation (W10, W13, W23, W25).
 - [x] 5.2 Preserve owner-isolated approval/attempt/outcome history and referenced plans through migration, reopen and ordinary cleanup without private payloads in logs (W01, W24–W25).
 - [x] 5.3 Keep live write rollout unavailable until authorized disposable-fixture compatibility is recorded, with explicit disabled-state behavior and rollback that retains audit without claiming to undo upstream GPS (W08, W26).
+
+## 6. Preserve confirmation recovery through late history and rejected repeats
+
+- [x] 6.1 Preserve the newer confirmation or unresolved identity when initial saved history arrives late in the same draft view, without enabling duplicate approval (R07).
+- [x] 6.2 Allow fresh comparison after a definitive repeated-confirmation rejection while retaining the same identity for ambiguous failures and missing lookups (R08–R09, W02–W03).
+
+## 7. Recover an accepted retry independently of upstream availability
+
+- [x] 7.1 Return the current owner/installation-scoped operation for an already-accepted retry generation after success, restart, expiry or disablement without upstream I/O or another attempt; retain fresh eligibility checks for new retries (W27–W28, W16–W17).

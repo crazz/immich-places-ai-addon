@@ -24,6 +24,7 @@ function OperationSession({owner, draft, preview, disabled, onVerified}: TProps)
  const [pollEpoch, setPollEpoch] = useState(0);
  const operationID = operation?.id; const operationStatus = operation?.status;
  const active = useRef<AbortController | null>(null); const locked = useRef(false);
+ const confirmationVersion = useRef(0);
  const storageKey = `ai-write-confirmation:${owner}:${draft.id}`;
  const notified = useRef('');
  useEffect(() => {
@@ -36,18 +37,20 @@ function OperationSession({owner, draft, preview, disabled, onVerified}: TProps)
  }, [storageKey]);
  useEffect(() => {
   const controller = new AbortController(); active.current = controller;
+  const version = confirmationVersion.current;
   let retained: TWriteConfirmation | null = null;
   try {const value: unknown = JSON.parse(sessionStorage.getItem(storageKey) || 'null'); if (isWriteConfirmation(value)) {retained = value; setPending(value);}} catch { /* No usable retained confirmation. */ }
   void (async () => {
    try {
     const page = await fetchWriteHistory(draft.id, '', controller.signal);
     if (controller.signal.aborted) {return;} setHistory(page);
+    if (version !== confirmationVersion.current) {return;}
     const latest = [...page.items].sort((a, b) => Date.parse(b.approvedAt) - Date.parse(a.approvedAt))[0];
     if (retained || latest) {
      const value = await writeOperationRequest(owner, draft, retained ? `/by-key/${retained.idempotencyKey}` : `/${latest.id}`, undefined, controller.signal);
-     if (!controller.signal.aborted) {accept(value, retained ?? undefined);}
+     if (!controller.signal.aborted && version === confirmationVersion.current) {accept(value, retained ?? undefined);}
     }
-   } catch {if (!controller.signal.aborted) {setError('Saved GPS history unavailable. Reconcile any pending confirmation before continuing.');}}
+   } catch {if (!controller.signal.aborted && version === confirmationVersion.current) {setError('Saved GPS history unavailable. Reconcile any pending confirmation before continuing.');}}
   })();
   return () => controller.abort();
  }, [owner, draft, storageKey, accept]);
@@ -64,20 +67,22 @@ function OperationSession({owner, draft, preview, disabled, onVerified}: TProps)
   timer = setTimeout(() => void poll(), 2_000);
   return () => {controller.abort(); clearTimeout(timer);};
  }, [owner, draft, operationID, operationStatus, pollEpoch]);
+ function handleConfirmationRejection(failure: unknown): boolean {
+  if (!(failure instanceof AIRequestError) || !['WRITE_DISABLED', 'PREVIEW_EXPIRED', 'PREVIEW_CONSUMED', 'DRAFT_CONFLICT', 'PLAN_CONFLICT', 'TARGET_BUSY', 'INVALID_WRITE', 'IDEMPOTENCY_CONFLICT'].includes(failure.code)) {return false;}
+  setPending(null); try {sessionStorage.removeItem(storageKey);} catch { /* A definitive rejection grants no authority. */ }
+  setError(failure.code === 'WRITE_DISABLED' ? 'GPS writing is disabled. Saved review and status remain available.' : 'Confirmation was rejected. Inspect saved GPS history and create a fresh comparison after resolving the conflict.');
+  return true;
+ }
  async function confirm(): Promise<void> {
   if (!preview || disabled || pending || locked.current || preview.plan.draftRevision !== draft.revision || Date.parse(preview.plan.expiresAt) <= Date.now()) {return;}
   locked.current = true; setBusy(true); setError('');
+  confirmationVersion.current++;
   const signal = active.current?.signal;
   try {
    const input = {previewId: preview.plan.id, digest: preview.digest, idempotencyKey: Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('')};
    sessionStorage.setItem(storageKey, JSON.stringify(input)); setPending(input);
    try {const value = await writeOperationRequest(owner, draft, '', input, signal); if (!signal?.aborted) {accept(value, input);}}
-   catch (failure) {if (!signal?.aborted) {
-    if (failure instanceof AIRequestError && ['WRITE_DISABLED', 'PREVIEW_EXPIRED', 'PREVIEW_CONSUMED', 'DRAFT_CONFLICT', 'PLAN_CONFLICT', 'TARGET_BUSY', 'INVALID_WRITE', 'IDEMPOTENCY_CONFLICT'].includes(failure.code)) {
-     setPending(null); try {sessionStorage.removeItem(storageKey);} catch { /* A definitive rejection grants no authority. */ }
-     setError(failure.code === 'WRITE_DISABLED' ? 'GPS writing is disabled. Saved review and status remain available.' : 'Confirmation was rejected. Inspect saved GPS history and create a fresh comparison after resolving the conflict.');
-    } else {setError('Confirmation acknowledgement unavailable. Reconcile this confirmation before another approval.');}
-   }}
+   catch (failure) {if (!signal?.aborted && !handleConfirmationRejection(failure)) {setError('Confirmation acknowledgement unavailable. Reconcile this confirmation before another approval.');}}
   } catch {if (!signal?.aborted) {setError('Confirmation could not be retained safely in this browser. No request was sent.');}}
   finally {locked.current = false; if (!signal?.aborted) {setBusy(false);}}
  }
@@ -91,7 +96,7 @@ function OperationSession({owner, draft, preview, disabled, onVerified}: TProps)
   if (!pending || disabled || locked.current || preview?.plan.id !== pending.previewId || preview.digest !== pending.digest) {return;}
   locked.current = true; setBusy(true); const signal = active.current?.signal;
   try {const value = await writeOperationRequest(owner, draft, '', pending, signal); if (!signal?.aborted) {accept(value, pending);}}
-  catch {if (!signal?.aborted) {setError('Confirmation remains unresolved. The same identity was used; reconcile before another approval.');}}
+  catch (failure) {if (!signal?.aborted && !handleConfirmationRejection(failure)) {setError('Confirmation remains unresolved. The same identity was used; reconcile before another approval.');}}
   finally {locked.current = false; if (!signal?.aborted) {setBusy(false);}}
  }
  async function historyPage(cursor: string): Promise<void> {

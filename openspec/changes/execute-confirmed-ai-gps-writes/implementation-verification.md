@@ -1,5 +1,7 @@
 # CH19 implementation verification
 
+Follow-up: the [recovery verification record](recovery-verification.md) documents tasks 6–7 addressing the subsequent late-history, repeated-confirmation and accepted-retry findings. The record below describes the original implementation at its stated base.
+
 Status: complete — implemented, verified and synchronized. Base `c409835a24903280ecef562ec885ecc90c3bdc3c`; current local branch `codex/plan-ai-selection-and-validation`. Inline implementation and self-reviews; no subagents. Live GATE-02 is unverified; ordinary dispatch remains disabled. No archive, push, deployment or live calls authorized.
 
 ## Workflow

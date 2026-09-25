@@ -35,18 +35,27 @@ func registerAIWriteRetryRoute(mux *http.ServeMux, store *aiWriteStore, origin s
 }
 
 func (s *aiWriteStore) retry(ctx context.Context, owner, id string, generation int) (writeback.Operation, error) {
-	op, err := s.get(ctx, owner, id, false)
-	if err != nil {
+	var op writeback.Operation
+	var repeated bool
+	err := s.drafts.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		var err error
+		op, err = s.read(ctx, tx, owner, id, false)
+		if err != nil {
+			return err
+		}
+		var from int
+		if tx.QueryRowContext(ctx, `SELECT retryFrom FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`, owner, s.drafts.results.jobs.binding, id).Scan(&from) != nil {
+			return drafts.ErrStorage
+		}
+		repeated = from == generation
+		return nil
+	})
+	if err != nil || repeated {
 		return op, err
 	}
 	a := &aiWriteAttempt{store: s}
 	fresh, err := a.Read(ctx, op)
-	if err != nil {
-		return op, writeback.Failure("RETRY_UNAVAILABLE")
-	}
-	if fresh.ImageIdentity != op.Plan.ImageIdentity || !writepreview.EqualGPS(fresh.GPS, op.Plan.Before) {
-		return op, writeback.Failure("RETRY_UNAVAILABLE")
-	}
+	eligible := err == nil && fresh.ImageIdentity == op.Plan.ImageIdentity && writepreview.EqualGPS(fresh.GPS, op.Plan.Before)
 	err = s.drafts.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		current, err := s.read(ctx, tx, owner, id, false)
 		if err != nil {
@@ -61,7 +70,7 @@ func (s *aiWriteStore) retry(ctx context.Context, owner, id string, generation i
 		if from == generation {
 			return nil
 		}
-		if current.Status != "retryable" || current.Generation != generation || !known || active || current.Attempts >= 2 {
+		if !eligible || current.Status != "retryable" || current.Generation != generation || !known || active || current.Attempts >= 2 {
 			return writeback.Failure("RETRY_UNAVAILABLE")
 		}
 		if err = s.dispatchAuthority(ctx, tx, current, a.authority); err != nil {

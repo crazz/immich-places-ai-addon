@@ -2,6 +2,8 @@
 
 Status: planned, not executed. CH16 and CH18 must be applied, verified and synchronized first; CH11's implemented analysis runtime is supporting evidence, not proof of mutation recovery. All CH19 slices ship together before dispatch is enabled.
 
+Execution records: [initial implementation](implementation-verification.md) and [recovery follow-up, tasks 6–7](recovery-verification.md). The status above records this plan's original preparation state; actual outcomes and remaining release limits belong to those records.
+
 | Scenarios | Tasks | Required automated evidence |
 |---|---|---|
 | W01–W04 | 1.1–1.2 | Protected handler + file-backed SQLite approval/plan consumption, same-key/different-key races, storage failure around commit, restart and lost-ack lookup; zero sends before durable approval. |
@@ -15,6 +17,8 @@ Status: planned, not executed. CH16 and CH18 must be applied, verified and synch
 | W23–W25 | 4.3, 5.1–5.2 | Disable/shutdown barriers, account deletion and installation rotation during work, private audit reopening/cleanup protection, other-owner survival and sanitized errors/logs. |
 | R01–R02 | 2.4 | Draft edit/reject versus dispatch reservation in real SQLite, retryable cancellation, in-progress rejection with preserved client edits, and no stale approval dispatch. |
 | R03–R06 | 1.2, 3.3, 4.2–4.3 | Built-browser staged draft→preview→confirm→readback→history journey; HTTP-origin UUID fallback, keyboard/narrow-screen/tile failure, missing-GPS refresh, manual pending conflict and account/result late-response fencing. |
+| R07–R09 | 6.1–6.2 | Controlled late initial history before/after a new acknowledgement, expired repeated confirmation permitting a fresh preview, and missing lookup/ambiguous repeat retaining its exact key through the real frontend request boundary. |
+| W27–W28, W16–W17 | 7.1 | Real SQLite accepted-generation replay after success and reopen with expired/disabled approval and unavailable Immich; zero upstream reads/writes on replay, exact attempt budget, and owner/installation/unaccepted-generation rejection. |
 
 Every scenario receives exact automated test references and actual execution results in `implementation-verification.md` during apply. Required additional branches are corrupted stored plans/digests, unknown request fields, oversized bodies, revision precondition failures, no-op versus causal-write labeling, account-scoped errors and installation-scoped target exclusion. Use deterministic clocks, channels and barriers; avoid timing sleeps as concurrency proof.
 
