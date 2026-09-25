@@ -2,7 +2,7 @@ name: immich-places-ai-preview
 
 services:
   ai-preview-frontend:
-    image: immich-places-ai-preview-frontend:${PREVIEW_FRONTEND_REVISION:-46e8fa8}
+    image: immich-places-ai-preview-frontend:${PREVIEW_FRONTEND_REVISION:-3c2a042}
     pull_policy: never
     container_name: immich-places-ai-preview
     ports:
@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
 
   ai-preview-backend:
-    image: immich-places-ai-preview-backend:${PREVIEW_BACKEND_REVISION:-46e8fa8}
+    image: immich-places-ai-preview-backend:${PREVIEW_BACKEND_REVISION:-3c2a042}
     pull_policy: never
     container_name: immich-places-ai-preview-backend
     environment:
