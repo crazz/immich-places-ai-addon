@@ -24,7 +24,7 @@ it('retires the stored reference before a replacement comparison fails', async (
  expect(screen.queryByText('Preview status: usable')).not.toBeInTheDocument();
 });
 
-it('shows an exact numeric GPS comparison for a coarse staged decision without a mutation control', async () => {
+it('shows an exact numeric GPS comparison for a coarse staged decision before explicit confirmation', async () => {
  const draft = stagedPreviewDraft();
  const detail = resultDetail(); detail.entry.draftId = draft.id;
  const request = vi.fn().mockImplementation(async (path: string) => new Response(JSON.stringify(path.includes('/write-previews') ? savedPreview() : draft), {status: 200}));
@@ -38,7 +38,8 @@ it('shows an exact numeric GPS comparison for a coarse staged decision without a
  expect(screen.getByText('GPS comparison: changed')).toBeVisible();
  expect(screen.getByText('Preview status: usable')).toBeVisible();
  expect(screen.getByText(/Single photo · GPS only/)).toBeVisible();
- expect(screen.queryByRole('button', {name: /Confirm|Write to Immich/})).not.toBeInTheDocument();
+ expect(await screen.findByRole('button', {name: 'Confirm GPS write'})).toBeEnabled();
+ expect(request.mock.calls.some(([path, init]) => String(path).endsWith('/ai/write-operations') && init.method === 'POST')).toBe(false);
  const calls = request.mock.calls.filter(([path]) => String(path).includes('write-previews'));
  expect(calls).toHaveLength(1);
  expect(JSON.parse(calls[0][1].body)).toEqual({draftId: draft.id, draftRevision: draft.revision});

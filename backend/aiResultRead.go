@@ -10,6 +10,7 @@ import (
 )
 
 type aiResultStore struct {
+	writer *aiWriteStore
 	jobs   *aiJobStore
 	origin string
 }

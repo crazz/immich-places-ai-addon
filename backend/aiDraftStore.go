@@ -95,6 +95,9 @@ func (s *aiDraftStore) accept(ctx context.Context, owner, analysis string, candi
 }
 
 func (s *aiDraftStore) snapshot(ctx context.Context, tx *sql.Tx, owner string, value drafts.Draft) error {
+	if err := s.guardWriteRevision(ctx, tx, owner, value.ID); err != nil {
+		return err
+	}
 	data, err := json.Marshal(value)
 	if err != nil || len(data) > 128<<10 {
 		return drafts.ErrInvalid

@@ -32,6 +32,8 @@ type Config struct {
 	GeocodeTimeoutSecs       int    `env:"GEOCODE_TIMEOUT" envDefault:"10"`
 	NeighborWindowHours      int    `env:"SUGGESTIONS_NEIGHBOR_WINDOW_HOURS" envDefault:"6"`
 	Debug                    bool   `env:"DEBUG" envDefault:"false"`
+	AIWriteEnabled           bool   `env:"AI_WRITE_ENABLED" envDefault:"false"`
+	AIWriteProfile           string `env:"AI_WRITE_PROFILE"`
 	AIEnabled                bool   `env:"AI_ENABLED" envDefault:"false"`
 	AIPublicOrigin           string `env:"AI_PUBLIC_ORIGIN"`
 	AIEgressPolicyJSON       string `env:"AI_PROVIDER_EGRESS_POLICY"`

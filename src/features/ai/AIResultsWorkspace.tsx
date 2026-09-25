@@ -12,7 +12,7 @@ import {ResultsFilters} from './ResultsFilters';
 import type {TResultLocation} from './resultLocation';
 import type {ReactElement} from 'react';
 
-function ResultsSession({owner, manualPendingIDs}: {owner: string; manualPendingIDs?: string[]}): ReactElement {
+function ResultsSession({owner, manualPendingIDs, onVerified}: {owner: string; manualPendingIDs?: string[]; onVerified?: () => void}): ReactElement {
  const [state, setState] = useState<TResultLocation>({open: false, query: {}, reference: null});
  const [isDirty, setIsDirty] = useState(false); const [pendingNavigation, setPendingNavigation] = useState<TResultLocation | null>(null);
  const entry = useRef<HTMLButtonElement>(null);
@@ -59,10 +59,10 @@ owner={owner} query={state.query} onPageAction={cursor => navigate({...state, qu
     </div>
     {state.reference && <div className={'max-h-[65dvh] space-y-3 overflow-y-auto'}>
      <button autoFocus type={'button'} onClick={() => navigate({...state, reference: null})}>{'Back to results'}</button>
-     <ResultDetail owner={owner} reference={state.reference} manualPendingIDs={manualPendingIDs} onDirtyChange={setIsDirty} />
+     <ResultDetail onVerified={onVerified} owner={owner} reference={state.reference} manualPendingIDs={manualPendingIDs} onDirtyChange={setIsDirty} />
                         </div>}
                   </div>}
   </DialogShell>
         </>;
 }
-export function AIResultsWorkspace(props: {owner: string; manualPendingIDs?: string[]}): ReactElement {return <ResultsSession key={props.owner} {...props} />;}
+export function AIResultsWorkspace(props: {owner: string; manualPendingIDs?: string[]; onVerified?: () => void}): ReactElement {return <ResultsSession key={props.owner} {...props} />;}

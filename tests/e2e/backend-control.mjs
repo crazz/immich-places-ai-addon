@@ -2,6 +2,11 @@ import {createServer} from 'node:http';
 import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 
+export function writeFixtureEnvironment(input) {
+ if (input.writeEnabled === true && input.disposableFixture !== 'synthetic-gps-only-v1') {throw new Error('Explicit disposable fixture authorization required');}
+ return {AI_WRITE_ENABLED: input.writeEnabled === true ? 'true' : 'false', AI_WRITE_PROFILE: input.writeEnabled === true ? 'immich-v3.2.2' : ''};
+}
+
 export function startBackendControl(dataDir, restart) {
  const policies = new Map();
  let isBusy = false;
@@ -39,7 +44,7 @@ maxImageBytes: 65536,
      });
     } finally {db.close();}
    }
-   await restart({AI_EXECUTION_POLICIES: JSON.stringify([...policies.values()]), AI_ENABLED: input.enabled === false ? 'false' : 'true'});
+   await restart({AI_EXECUTION_POLICIES: JSON.stringify([...policies.values()]), AI_ENABLED: input.enabled === false ? 'false' : 'true', ...writeFixtureEnvironment(input)});
    response.writeHead(200, {'Content-Type': 'application/json'}); response.end('{"ready":true}');
   } catch (error) {
    response.writeHead(500, {'Content-Type': 'application/json'}); response.end(JSON.stringify({error: error.message}));

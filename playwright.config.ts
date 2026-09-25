@@ -11,7 +11,7 @@ const serverDefaults = {
 
 export default defineConfig({
 	testDir: './tests/e2e',
-	testMatch: isAIEnabled ? ['providers.spec.ts', 'workflows.spec.ts', 'history.spec.ts', 'review.spec.ts'] : ['auth.spec.ts', 'manual.spec.ts', 'gpx.spec.ts'],
+	testMatch: isAIEnabled ? ['providers.spec.ts', 'workflows.spec.ts', 'history.spec.ts', 'review.spec.ts', 'writeback.spec.ts'] : ['auth.spec.ts', 'manual.spec.ts', 'gpx.spec.ts'],
 	outputDir: `test-results/${mode}`,
 	forbidOnly: true,
 	fullyParallel: false,

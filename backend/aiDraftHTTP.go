@@ -62,6 +62,8 @@ func registerAIDraftRoutes(mux *http.ServeMux, results *aiResultStore, images *a
 func writeAIDraftFailure(w http.ResponseWriter, err error) {
 	status, code := 503, "STORAGE_ERROR"
 	switch {
+	case errors.Is(err, drafts.ErrWriteInProgress):
+		status, code = 409, "WRITE_IN_PROGRESS"
 	case errors.Is(err, drafts.ErrUnavailable):
 		status, code = 404, "DRAFT_UNAVAILABLE"
 	case errors.Is(err, drafts.ErrInvalid):

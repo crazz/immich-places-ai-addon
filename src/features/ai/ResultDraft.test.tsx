@@ -90,3 +90,24 @@ it('fences an unacknowledged acceptance across owner and result changes', async 
  expect(screen.queryByLabelText('Camera latitude')).not.toBeInTheDocument();
  expect(screen.getByRole('button', {name: 'Accept as local draft'})).toBeEnabled();
 });
+
+
+it('keeps unsaved coordinates when an active GPS operation protects the revision', async () => {
+ const detail = resultDetail(); vi.mocked(fetchResult).mockResolvedValue(detail);
+ const request = vi.fn().mockImplementation(async (_path: string, init: RequestInit) => {
+  if (init.method === 'PATCH') {return new Response(JSON.stringify({code: 'WRITE_IN_PROGRESS'}), {status: 409});}
+  return new Response(JSON.stringify(savedDraft()), {status: 200});
+ }); vi.stubGlobal('fetch', request);
+ render(<ResultDetail owner={'owner'} reference={{analysisId: detail.entry.analysisId!}} />);
+ fireEvent.click(await screen.findByRole('button', {name: 'Accept as local draft'}));
+ fireEvent.change(await screen.findByLabelText('Camera latitude'), {target: {value: '7'}});
+ fireEvent.change(screen.getByLabelText('Camera longitude'), {target: {value: '8'}});
+ fireEvent.click(screen.getByRole('button', {name: 'Save draft'}));
+ expect(await screen.findByText(/A GPS operation can still act on this revision/)).toBeVisible();
+ expect(screen.getByLabelText('Camera latitude')).toHaveValue(7);
+ expect(screen.getByLabelText('Camera longitude')).toHaveValue(8);
+ expect(screen.getByText('Saved draft · Revision 1')).toBeVisible();
+ expect(screen.getByRole('button', {name: 'Save draft'})).toBeDisabled();
+ expect(request.mock.calls.filter(([, init]) => init.method === 'PATCH')).toHaveLength(1);
+ expect(request.mock.calls.some(([path, init]) => String(path).includes('write-operations') && init.method === 'POST')).toBe(false);
+});

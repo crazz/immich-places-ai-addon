@@ -19,7 +19,7 @@ export function ResultList({owner, query, onOpenAction, onPageAction}: {owner: s
    <ResultImage owner={owner} entry={entry} />
    <h3 className={'font-semibold break-words'}>{entry.label || 'Saved AI run'}</h3>
    <p>{`Execution: ${entry.executionState} · Proposal: ${entry.proposalOutcome || 'none'}`}</p>
-   <p className={'text-xs text-(--color-text-secondary)'}>{'Review: unreviewed · Write: not requested'}</p>
+   <p className={'text-xs text-(--color-text-secondary)'}>{`Review: ${entry.reviewState} · ${entry.draftId ? 'GPS status in result' : 'Write: not requested'}`}</p>
    <p>{`${entry.mode === 'visual' ? 'Visual' : 'Context-assisted'} · ${entry.model}`}</p>
    <p>{entry.captureDay ? `Captured ${entry.captureDay}` : 'Capture date unknown'}</p>
    <p>{entry.albumId ? `Album at launch: ${entry.albumLabel || entry.albumId}` : 'No retained album selection'}</p>

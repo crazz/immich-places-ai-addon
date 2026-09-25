@@ -35,3 +35,11 @@ it('offers explicit bounded retry after a failed history request and describes a
  expect(await screen.findByText('No results match these filters.')).toBeVisible();
  expect(fetchResults).toHaveBeenCalledTimes(2);
 });
+
+it('shows the saved review state and directs draft owners to GPS history without claiming no write was requested', async () => {
+ const entry = resultEntry({draftId: '66666666-6666-4666-8666-666666666666', draftRevision: 4, reviewState: 'staged'});
+ vi.mocked(fetchResults).mockResolvedValue({items: [entry]});
+ render(<ResultList owner={'owner'} query={{}} onOpenAction={() => {}} onPageAction={() => {}} />);
+ expect(await screen.findByText('Review: staged · GPS status in result')).toBeVisible();
+ expect(screen.queryByText(/Write: not requested/)).not.toBeInTheDocument();
+});

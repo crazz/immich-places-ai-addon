@@ -30,6 +30,10 @@ type aiImageMetadata struct {
 }
 
 func aiImageSourceDigest(data []byte, asset string) (string, error) {
+	return aiImageMetadataDigest(data, asset, true)
+}
+
+func aiImageMetadataDigest(data []byte, asset string, requirePrimary bool) (string, error) {
 	fields, err := aiImageUniqueObject(data)
 	if err != nil {
 		return "", err
@@ -57,7 +61,10 @@ func aiImageSourceDigest(data []byte, asset string) (string, error) {
 		return "", errAIImageUpstream
 	}
 	if meta.Stack != nil {
-		if _, err := uuid.Parse(meta.Stack.ID); err != nil || meta.Stack.PrimaryAssetID != asset || meta.Stack.AssetCount < 1 {
+		if _, err := uuid.Parse(meta.Stack.PrimaryAssetID); err != nil {
+			return "", errAIImageDenied
+		}
+		if _, err := uuid.Parse(meta.Stack.ID); err != nil || (requirePrimary && meta.Stack.PrimaryAssetID != asset) || meta.Stack.AssetCount < 1 {
 			return "", errAIImageDenied
 		}
 	}

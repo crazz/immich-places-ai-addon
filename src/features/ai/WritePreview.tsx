@@ -6,13 +6,13 @@ import type {TDraft} from './draftTypes';
 import type {TPreviewConflict, TWritePreview} from './writePreviewTypes';
 import type {ReactElement} from 'react';
 
-type TProps = {owner: string; draft: TDraft; disabled?: boolean; hasManualConflict?: boolean; onCompare?: () => void};
+type TProps = {owner: string; draft: TDraft; disabled?: boolean; hasManualConflict?: boolean; onCompare?: () => void; onPreview?: (preview: TWritePreview | null) => void};
 
 export function WritePreview(props: TProps): ReactElement {
  return <PreviewSession key={`${props.owner}:${props.draft.id}:${props.draft.revision}`} {...props} />;
 }
 
-function PreviewSession({owner, draft, disabled, hasManualConflict, onCompare}: TProps): ReactElement {
+function PreviewSession({owner, draft, disabled, hasManualConflict, onCompare, onPreview}: TProps): ReactElement {
  const [preview, setPreview] = useState<TWritePreview | null>(null);
  const [error, setError] = useState('');
  const [conflict, setConflict] = useState<TPreviewConflict | null>(null);
@@ -21,6 +21,10 @@ function PreviewSession({owner, draft, disabled, hasManualConflict, onCompare}: 
  const [hasExpired, setHasExpired] = useState(false);
  const active = useRef<AbortController | null>(null);
  const storageKey = `ai-write-preview:${owner}:${draft.id}:${draft.revision}`;
+ useEffect(() => {
+  onPreview?.(preview?.status === 'usable' && !hasExpired && !disabled && !hasManualConflict ? preview : null);
+  return () => onPreview?.(null);
+ }, [preview, hasExpired, disabled, hasManualConflict, onPreview]);
  useEffect(() => {
   const controller = new AbortController(); active.current = controller;
   let id: string | null = null;
@@ -58,7 +62,7 @@ function PreviewSession({owner, draft, disabled, hasManualConflict, onCompare}: 
  return <section aria-label={'Exact GPS preview'} className={'space-y-2 border-t pt-3'}>
   <h4 className={'font-semibold'}>{'Exact GPS comparison'}</h4>
   <p>{'Single photo · GPS only. Other metadata is preserved.'}</p>
-  <p>{'This is a read-only comparison. No Immich changes have been made. Source read access does not verify write permission.'}</p>
+  <p>{'Creating this comparison does not change Immich. Source read access does not verify write permission.'}</p>
   <button type={'button'} disabled={disabled || hasManualConflict || isBusy || draft.state !== 'staged' || draft.baseline.status !== 'reviewed'} onClick={() => void create()}>{'Preview exact GPS'}</button>
   {hasManualConflict && <p role={'alert'}>{'Resolve the pending manual location by explicitly saving or discarding it before creating a fresh AI preview. Both decisions are preserved.'}</p>}
   {disabled && <p>{'Save or reconcile local edits before creating a fresh comparison.'}</p>}

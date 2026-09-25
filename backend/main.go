@@ -123,7 +123,11 @@ func main() {
 	if err != nil {
 		log.Printf("[AI results] Current image reads unavailable")
 	}
-	resultHandler := newAIResultHandler(&aiResultStore{jobs: productionRuntime.jobs.store, origin: cfg.AIPublicOrigin}, resultImages)
+	resultStore := &aiResultStore{jobs: productionRuntime.jobs.store, origin: cfg.AIPublicOrigin}
+	writeRuntime := newAIWriteRuntime(resultStore, resultImages, syncService, cfg)
+	resultHandler := newAIResultHandler(resultStore, resultImages)
+	mainMux.Handle("/ai/write-operations", resultHandler)
+	mainMux.Handle("/ai/write-operations/", resultHandler)
 	mainMux.Handle("/ai/drafts/", resultHandler)
 	mainMux.Handle("/ai/write-previews", resultHandler)
 	mainMux.Handle("/ai/write-previews/", resultHandler)
@@ -150,6 +154,8 @@ func main() {
 	defer selectionCleanupTicker.Stop()
 	go selectionHandler.store.runCleanup(ctx, selectionCleanupTicker.C, func() { log.Printf("[AI selection] Expired snapshot cleanup failed; next pass will retry") })
 
+	writeDone := make(chan struct{})
+	go func() { defer close(writeDone); writeRuntime.run(ctx) }()
 	syncService.shutdownCtx = ctx
 	dawarichSync.shutdownCtx = ctx
 
@@ -196,6 +202,11 @@ func main() {
 	}
 
 	<-productionDone
+	select {
+	case <-writeDone:
+	case <-time.After(7 * time.Second):
+		log.Printf("[AI writes] Shutdown deadline reached; durable reservations require read-only recovery")
+	}
 	syncService.wg.Wait()
 	dawarichSync.wg.Wait()
 	log.Println("[Server] All sync goroutines completed")

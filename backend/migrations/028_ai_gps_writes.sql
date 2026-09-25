@@ -1,0 +1,90 @@
+-- +goose Up
+CREATE TABLE ai_write_operations (
+ userID TEXT NOT NULL REFERENCES users(ID) ON DELETE CASCADE,
+ installationID TEXT NOT NULL,
+ id TEXT NOT NULL,
+ previewID TEXT NOT NULL,
+ draftID TEXT NOT NULL,
+ revision INTEGER NOT NULL,
+ assetID TEXT NOT NULL,
+ idempotencyKey TEXT NOT NULL,
+ payload TEXT NOT NULL CHECK(length(CAST(payload AS BLOB))<=16384),
+ digest TEXT NOT NULL CHECK(length(digest)=64),
+ approvedAt INTEGER NOT NULL,
+ credentialHash TEXT NOT NULL,
+ status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','writing','verifying','retryable','succeeded','conflict','failed','canceled')),
+ code TEXT NOT NULL DEFAULT '',
+ PRIMARY KEY(userID,installationID,id),
+ UNIQUE(userID,installationID,idempotencyKey),
+ UNIQUE(userID,installationID,previewID),
+ FOREIGN KEY(userID,installationID,previewID) REFERENCES ai_write_previews(userID,installationID,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(userID,installationID,draftID,revision) REFERENCES ai_draft_revisions(userID,installationID,draftID,revision) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TABLE ai_write_targets (
+ userID TEXT NOT NULL,
+ installationID TEXT NOT NULL,
+ operationID TEXT NOT NULL,
+ attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 2),
+ generation INTEGER NOT NULL DEFAULT 0,
+ retryFrom INTEGER NOT NULL DEFAULT -1,
+ leaseToken TEXT NOT NULL DEFAULT '',
+ leaseUntil INTEGER NOT NULL DEFAULT 0,
+ completionKnown INTEGER NOT NULL DEFAULT 1 CHECK(completionKnown IN (0,1)),
+ senderActive INTEGER NOT NULL DEFAULT 0 CHECK(senderActive IN (0,1)),
+ reads INTEGER NOT NULL DEFAULT 0 CHECK(reads BETWEEN 0 AND 3),
+ dueAt INTEGER NOT NULL DEFAULT 0,
+ observed TEXT,
+ verified INTEGER NOT NULL DEFAULT 0 CHECK(verified IN (0,1)),
+ refreshed INTEGER NOT NULL DEFAULT 0 CHECK(refreshed IN (0,1)),
+ noop INTEGER NOT NULL DEFAULT 0 CHECK(noop IN (0,1)),
+ PRIMARY KEY(userID,installationID,operationID),
+ FOREIGN KEY(userID,installationID,operationID) REFERENCES ai_write_operations(userID,installationID,id) ON DELETE CASCADE
+);
+CREATE TABLE ai_write_events (
+ sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+ userID TEXT NOT NULL,
+ installationID TEXT NOT NULL,
+ operationID TEXT NOT NULL,
+ code TEXT NOT NULL,
+ at INTEGER NOT NULL,
+ attempt INTEGER NOT NULL,
+ FOREIGN KEY(userID,installationID,operationID) REFERENCES ai_write_operations(userID,installationID,id) ON DELETE CASCADE
+);
+-- No account FK: an opaque reservation survives deletion while a sender may still act.
+CREATE TABLE ai_write_target_guards (
+ installationID TEXT NOT NULL,
+ assetID TEXT NOT NULL,
+ token TEXT NOT NULL UNIQUE,
+ PRIMARY KEY(installationID,assetID)
+);
+CREATE INDEX ai_write_pending ON ai_write_operations(installationID,status,approvedAt);
+CREATE INDEX ai_write_draft ON ai_write_operations(userID,installationID,draftID);
+-- +goose StatementBegin
+CREATE TRIGGER ai_write_approval_immutable BEFORE UPDATE OF userID,installationID,id,previewID,draftID,revision,assetID,idempotencyKey,payload,digest,approvedAt,credentialHash ON ai_write_operations
+BEGIN
+ SELECT RAISE(ABORT,'Write approval is immutable');
+END;
+-- +goose StatementEnd
+-- +goose StatementBegin
+CREATE TRIGGER ai_write_events_immutable BEFORE UPDATE ON ai_write_events
+BEGIN
+ SELECT RAISE(ABORT,'Write events are immutable');
+END;
+-- +goose StatementEnd
+
+-- +goose StatementBegin
+CREATE TRIGGER ai_write_deleted_account_guard BEFORE DELETE ON users
+BEGIN
+ DELETE FROM ai_write_target_guards WHERE token IN (
+  SELECT o.id FROM ai_write_operations o JOIN ai_write_targets t ON t.userID=o.userID AND t.installationID=o.installationID AND t.operationID=o.id
+  WHERE o.userID=OLD.ID AND t.senderActive=0 AND t.completionKnown=1
+ );
+END;
+-- +goose StatementEnd
+
+-- +goose Down
+DROP TRIGGER ai_write_deleted_account_guard;
+DROP TABLE ai_write_events;
+DROP TABLE ai_write_targets;
+DROP TABLE ai_write_target_guards;
+DROP TABLE ai_write_operations;

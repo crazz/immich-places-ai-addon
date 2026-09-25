@@ -1,8 +1,8 @@
 'use client';
 
-import {useState} from 'react';
+import {useCallback, useState} from 'react';
 
-import {AIResultsWorkspace, ManualDraftOverlap} from '@/features/ai';
+import {AIResultsWorkspace, ManualDraftOverlap, VerifiedGPSRefresh} from '@/features/ai';
 import {AuthProvider, useAuth} from '@/features/auth/AuthContext';
 import {AuthMapDynamic} from '@/features/auth/AuthMapDynamic';
 import {AuthSidebar} from '@/features/auth/AuthSidebar';
@@ -146,7 +146,7 @@ function AuthenticatedAppRoutes(): ReactElement {
 	);
 }
 
-function AppRoutes({onPendingChange}: {onPendingChange: (ids: string[]) => void}): ReactElement {
+function AppRoutes({onPendingChange, verifiedRevision}: {verifiedRevision: number; onPendingChange: (ids: string[]) => void}): ReactElement {
 	const {user, hasImmichAPIKey, isLoading} = useAuth();
 
 	if (isLoading) {
@@ -170,22 +170,25 @@ function AppRoutes({onPendingChange}: {onPendingChange: (ids: string[]) => void}
 	return (
 		<AppProvider>
 			<ManualDraftOverlap onChange={onPendingChange} />
+ <VerifiedGPSRefresh key={user.ID} revision={verifiedRevision} />
 			<AuthenticatedAppRoutes />
 		</AppProvider>
 	);
 }
 
-function ResultNavigation({manualPendingIDs}: {manualPendingIDs: string[]}): ReactElement | null {
+function ResultNavigation({manualPendingIDs, onVerified}: {manualPendingIDs: string[]; onVerified: () => void}): ReactElement | null {
 	const {user, isLoading} = useAuth();
-	return user && !isLoading ? <AIResultsWorkspace owner={user.ID} manualPendingIDs={manualPendingIDs} /> : null;
+	return user && !isLoading ? <AIResultsWorkspace onVerified={onVerified} owner={user.ID} manualPendingIDs={manualPendingIDs} /> : null;
 }
 
 export default function Home(): ReactElement {
+ const [verifiedRevision, setVerifiedRevision] = useState(0);
+ const verified = useCallback(() => setVerifiedRevision(value => value + 1), []);
  const [manualPendingIDs, setManualPendingIDs] = useState<string[]>([]);
 	return (
 		<AuthProvider>
-			<AppRoutes onPendingChange={setManualPendingIDs} />
-			<ResultNavigation manualPendingIDs={manualPendingIDs} />
+			<AppRoutes verifiedRevision={verifiedRevision} onPendingChange={setManualPendingIDs} />
+			<ResultNavigation onVerified={verified} manualPendingIDs={manualPendingIDs} />
 		</AuthProvider>
 	);
 }

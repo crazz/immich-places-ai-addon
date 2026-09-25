@@ -168,6 +168,14 @@ async function handle(request, response) {
 		}
 	}
 	const body = raw ? JSON.parse(raw) : {};
+	const gpsAsset = state.assets.find(asset => url.pathname === `/api/assets/${asset.id}`);
+	if (request.method === 'PATCH' && gpsAsset) {
+		if (Object.keys(body).sort().join(',') !== 'latitude,longitude' || !Number.isFinite(body.latitude) || !Number.isFinite(body.longitude)) {throw new Error('GPS fixture requires exactly one finite coordinate pair');}
+		state.writes.push({ids: [gpsAsset.id], latitude: body.latitude, longitude: body.longitude});
+		gpsAsset.exifInfo.latitude = body.latitude;
+		gpsAsset.exifInfo.longitude = body.longitude;
+		return respond(response, 200, gpsAsset);
+	}
 	if (request.method === 'POST' && url.pathname === '/api/search/metadata') {
 		return respond(response, 200, {assets: {items: state.assets, nextPage: null}});
 	}
