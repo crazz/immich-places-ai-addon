@@ -2,7 +2,14 @@ import {createServer} from 'node:http';
 import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 
-export function writeFixtureEnvironment(input) {
+export function writeFixtureEnvironment(input, installation) {
+ if (input.descriptionEnabled === true || input.stackEnabled === true || input.metadataEnabled === true) {
+  const fixture = input.metadataEnabled === true ? 'synthetic-metadata-v4' : input.stackEnabled === true ? 'synthetic-stack-targets-v3' : 'synthetic-standard-fields-v2';
+  if (input.writeEnabled !== true || input.disposableFixture !== fixture) {throw new Error('Explicit disposable field/scope fixture authorization required');}
+  if (typeof installation !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(installation)) {throw new Error('Synthetic installation binding required');}
+  const capabilities = [...(input.descriptionEnabled === true ? ['description'] : []), ...(input.stackEnabled === true ? ['stack_gps'] : []), ...(input.metadataEnabled === true ? ['metadata'] : [])];
+  return {AI_WRITE_ENABLED: 'true', AI_WRITE_PROFILE: 'immich-v3.2.2', AI_WRITE_CAPABILITIES: JSON.stringify({version: 1, installation, profile: 'immich-v3.2.2', evidence: fixture.replace('synthetic-', 'loopback-'), capabilities})};
+ }
  if (input.writeEnabled === true && input.disposableFixture !== 'synthetic-gps-only-v1') {throw new Error('Explicit disposable fixture authorization required');}
  return {AI_WRITE_ENABLED: input.writeEnabled === true ? 'true' : 'false', AI_WRITE_PROFILE: input.writeEnabled === true ? 'immich-v3.2.2' : ''};
 }
@@ -44,7 +51,12 @@ maxImageBytes: 65536,
      });
     } finally {db.close();}
    }
-   await restart({AI_EXECUTION_POLICIES: JSON.stringify([...policies.values()]), AI_ENABLED: input.enabled === false ? 'false' : 'true', ...writeFixtureEnvironment(input)});
+   let installation;
+   if (input.descriptionEnabled === true || input.stackEnabled === true || input.metadataEnabled === true) {
+    const db = new DatabaseSync(path.join(dataDir, 'immich-places.db'), {readOnly: true});
+    try {installation = db.prepare('SELECT id FROM ai_installation_identity WHERE singleton=1').get()?.id;} finally {db.close();}
+   }
+   await restart({AI_EXECUTION_POLICIES: JSON.stringify([...policies.values()]), AI_ENABLED: input.enabled === false ? 'false' : 'true', AI_WRITE_CAPABILITIES: '', ...writeFixtureEnvironment(input, installation)});
    response.writeHead(200, {'Content-Type': 'application/json'}); response.end('{"ready":true}');
   } catch (error) {
    response.writeHead(500, {'Content-Type': 'application/json'}); response.end(JSON.stringify({error: error.message}));

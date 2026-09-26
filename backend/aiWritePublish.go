@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"slices"
 	"time"
 
 	"immich-places-backend/internal/ai/drafts"
@@ -47,7 +48,7 @@ func (a *aiWriteAttempt) pending(ctx context.Context, op writeback.Operation, co
 		if err := a.fence(ctx, tx, op); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE ai_write_operations SET status='verifying',code=? WHERE userID=? AND installationID=? AND id=? AND status IN ('writing','verifying')`, code, op.Plan.Owner, op.Plan.Installation, op.ID); err != nil {
+		if _, err := tx.ExecContext(ctx, aiWriteStatement(op.Plan, `UPDATE ai_write_operations SET status='verifying',code=? WHERE userID=? AND installationID=? AND id=? AND status IN ('writing','verifying')`), code, op.Plan.Owner, op.Plan.Installation, op.ID); err != nil {
 			return err
 		}
 		current, err := a.store.read(ctx, tx, op.Plan.Owner, op.ID, false)
@@ -59,6 +60,9 @@ func (a *aiWriteAttempt) pending(ctx context.Context, op writeback.Operation, co
 }
 
 func (a *aiWriteAttempt) publish(ctx context.Context, op writeback.Operation, fresh writepreview.Metadata) error {
+	if err := a.retainVerification(ctx, op, fresh); err != nil {
+		return err
+	}
 	return a.store.drafts.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		if err := a.fence(ctx, tx, op); err != nil {
 			return err
@@ -72,7 +76,7 @@ func (a *aiWriteAttempt) publish(ctx context.Context, op writeback.Operation, fr
 			return err
 		}
 		var completed bool
-		if tx.QueryRowContext(ctx, `SELECT completionKnown FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`, op.Plan.Owner, op.Plan.Installation, op.ID).Scan(&completed) != nil {
+		if tx.QueryRowContext(ctx, aiWriteStatement(op.Plan, `SELECT completionKnown FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`), op.Plan.Owner, op.Plan.Installation, op.ID).Scan(&completed) != nil {
 			return drafts.ErrStorage
 		}
 		decision := writeback.Readback(current, fresh, completed)
@@ -81,7 +85,8 @@ func (a *aiWriteAttempt) publish(ctx context.Context, op writeback.Operation, fr
 			return drafts.ErrStorage
 		}
 		refreshed := false
-		if decision.Verified {
+		gpsVerified := decision.GPSVerified || (op.Plan.Version == "gps-preview-v1" && decision.Verified)
+		if gpsVerified && slices.Contains(op.Plan.Fields, "gps") {
 			result, err := tx.ExecContext(ctx, `UPDATE assets SET latitude=?,longitude=? WHERE userID=? AND immichID=?`, *fresh.GPS.Latitude, *fresh.GPS.Longitude, op.Plan.Owner, op.Plan.TargetID)
 			if err != nil {
 				return drafts.ErrStorage
@@ -95,13 +100,13 @@ func (a *aiWriteAttempt) publish(ctx context.Context, op writeback.Operation, fr
 				decision.Status, decision.Code = "verifying", "LOCAL_REFRESH_PENDING"
 			}
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_write_targets SET observed=?,verified=?,refreshed=?,leaseUntil=0,senderActive=0 WHERE userID=? AND installationID=? AND operationID=?`, string(observed), decision.Verified, refreshed, op.Plan.Owner, op.Plan.Installation, op.ID); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(op.Plan, `UPDATE ai_write_targets SET observed=?,verified=?,refreshed=?,leaseUntil=0,senderActive=0 WHERE userID=? AND installationID=? AND operationID=?`), string(observed), decision.Verified, refreshed, op.Plan.Owner, op.Plan.Installation, op.ID); err != nil {
 			return drafts.ErrStorage
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_write_operations SET status=?,code=? WHERE userID=? AND installationID=? AND id=?`, decision.Status, decision.Code, op.Plan.Owner, op.Plan.Installation, op.ID); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(op.Plan, `UPDATE ai_write_operations SET status=?,code=? WHERE userID=? AND installationID=? AND id=?`), decision.Status, decision.Code, op.Plan.Owner, op.Plan.Installation, op.ID); err != nil {
 			return drafts.ErrStorage
 		}
-		if completed && (decision.Status == "succeeded" || decision.Status == "conflict" || decision.Status == "failed") {
+		if completed && (decision.Status == "succeeded" || decision.Status == "partial" || decision.Status == "conflict" || decision.Status == "failed") {
 			if _, err = tx.ExecContext(ctx, `DELETE FROM ai_write_target_guards WHERE token=?`, op.ID); err != nil {
 				return drafts.ErrStorage
 			}

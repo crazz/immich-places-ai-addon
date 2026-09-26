@@ -124,6 +124,10 @@ func main() {
 		log.Printf("[AI results] Current image reads unavailable")
 	}
 	resultStore := &aiResultStore{jobs: productionRuntime.jobs.store, origin: cfg.AIPublicOrigin}
+	translationRuntime := &aiTranslationRuntime{store: &aiTranslationStore{drafts: &aiDraftStore{results: resultStore}, policies: cfg.AIExecutionPolicies, fingerprint: policyFingerprint(cfg.AIProviderEgressPolicy), capacity: cfg.AIJobSettings.Policy}, dispatcher: providerDispatcher}
+	translationHandler := newAITranslationHandler(translationRuntime.store, cfg.AIPublicOrigin)
+	mainMux.Handle("/ai/translations", translationHandler)
+	mainMux.Handle("/ai/translations/", translationHandler)
 	writeRuntime := newAIWriteRuntime(resultStore, resultImages, syncService, cfg)
 	resultHandler := newAIResultHandler(resultStore, resultImages)
 	mainMux.Handle("/ai/write-operations", resultHandler)
@@ -131,6 +135,7 @@ func main() {
 	mainMux.Handle("/ai/drafts/", resultHandler)
 	mainMux.Handle("/ai/write-previews", resultHandler)
 	mainMux.Handle("/ai/write-previews/", resultHandler)
+	mainMux.Handle("/ai/stack-reviews", resultHandler)
 	mainMux.Handle("/ai/results", resultHandler)
 	mainMux.Handle("/ai/results/", resultHandler)
 	mainMux.Handle("GET /ai/jobs/{jobID}/items/{itemID}/result", resultHandler)
@@ -156,6 +161,13 @@ func main() {
 
 	writeDone := make(chan struct{})
 	go func() { defer close(writeDone); writeRuntime.run(ctx) }()
+	translationDone := make(chan struct{})
+	go func() {
+		defer close(translationDone)
+		if err := translationRuntime.run(ctx, func() { log.Printf("[AI translations] Worker operation failed") }); err != nil {
+			log.Printf("[AI translations] Runtime recovery failed")
+		}
+	}()
 	syncService.shutdownCtx = ctx
 	dawarichSync.shutdownCtx = ctx
 
@@ -202,6 +214,7 @@ func main() {
 	}
 
 	<-productionDone
+	<-translationDone
 	select {
 	case <-writeDone:
 	case <-time.After(7 * time.Second):

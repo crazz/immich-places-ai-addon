@@ -27,7 +27,7 @@ func (s *aiWriteStore) authority(ctx context.Context, tx *sql.Tx, op writeback.O
 		return a, err
 	}
 	var hash string
-	if tx.QueryRowContext(ctx, `SELECT credentialHash FROM ai_write_operations WHERE userID=? AND installationID=? AND id=?`, op.Plan.Owner, op.Plan.Installation, op.ID).Scan(&hash) != nil || hash != aiWriteCredentialHash(key) {
+	if tx.QueryRowContext(ctx, aiWriteStatement(op.Plan, `SELECT credentialHash FROM ai_write_operations WHERE userID=? AND installationID=? AND id=?`), op.Plan.Owner, op.Plan.Installation, op.ID).Scan(&hash) != nil || hash != aiWriteCredentialHash(key) {
 		return a, drafts.ErrUnavailable
 	}
 	var facts struct {

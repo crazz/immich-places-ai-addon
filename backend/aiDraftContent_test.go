@@ -58,7 +58,7 @@ func TestAIDraftGeometryAndScopeValidationIsAtomic(t *testing.T) {
 	for _, body := range []string{
 		`{"camera":{"latitude":91,"longitude":0}}`, `{"camera":{"latitude":0}}`,
 		`{"camera":{"latitude":0,"longitude":181}}`, `{"heading":360}`, `{"heading":-1}`,
-		`{"fields":["description"]}`, `{"fields":["gps","gps"]}`, `{"assetId":"other"}`,
+		`{"fields":["heading"]}`, `{"fields":["gps","gps"]}`, `{"assetId":"other"}`,
 		`{"descriptions":{"fr":{"text":"unrequested"}}}`, `{"camera":{"latitude":null,"longitude":0}}`,
 	} {
 		rec = draftPatch(f, value.ID, `"2"`, body)

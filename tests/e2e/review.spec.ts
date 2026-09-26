@@ -262,3 +262,42 @@ test('keeps manual pending coordinates isolated and asks before discarding unsav
  await page.getByRole('button', {name: 'Save Location', exact: true}).click();
  await expect.poll(async () => (await fixtureState(page.request, account.key)).writes).toEqual([{ids: [MATCHED_ID], latitude: 52.25, longitude: 21.05}]);
 });
+
+test('translates reviewed text by keyboard with partial failure and explicit local adoption', async ({page, account}) => {
+ test.setTimeout(90000);
+ await connectAccount(page,account);await launchReview(page,'review-located');
+ await page.getByRole('button',{name:'Close dialog'}).click();
+ await page.route('https://*.basemaps.cartocdn.com/**',async route => route.abort());
+ await page.route('**/api/backend/ai/jobs/*/items/*/thumbnail',async route => route.fulfill({status:404,body:'{}'}));
+ await page.setViewportSize({width:390,height:844});await openReview(page);
+ await page.getByRole('button',{name:'Accept as local draft'}).press('Enter');
+ await expect(page.getByText('Saved draft · Revision 1',{exact:true})).toBeVisible();
+ const before = (await providerState(page.request)).requests.length;
+ await page.getByRole('button',{name:'Translate reviewed text'}).press('Enter');
+ await page.getByLabel('Reviewed text basis').fill('A bridge with uncertain location.');
+ await page.getByLabel('Translation provider').selectOption({label:'Review synthetic · review-located'});
+ await page.getByLabel('I approve sending this text to the selected provider and model.').check();
+ await page.getByRole('button',{name:'Generate translations'}).press('Enter');
+ await expect(page.getByRole('button',{name:'Refresh translations'})).toBeVisible();
+ await expect.poll(async () => {
+  await page.getByRole('button',{name:'Refresh translations'}).click();
+  return page.getByText('uk: failed',{exact:true}).count();
+ }).toBe(1);
+ await expect(page.getByText('en: complete',{exact:true})).toBeVisible();
+ await expect(page.getByText('Saved draft · Revision 1',{exact:true})).toBeVisible();
+ const adoption = page.getByLabel('Adopt en',{exact:true});
+ await expect(adoption).toBeEnabled();
+ await adoption.focus();await page.keyboard.press('Space');
+ await expect(adoption).toBeChecked();
+ const adoptSelected = page.getByRole('button',{name:'Adopt selected translations'});
+ await expect(adoptSelected).toBeEnabled();await adoptSelected.press('Enter');
+ await expect(page.getByText('Saved draft · Revision 2',{exact:true})).toBeVisible();
+ await page.reload();await page.getByRole('button',{name:'Translate reviewed text'}).press('Enter');
+ await expect(page.getByText('uk: failed',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Adopt selected translations'})).toBeDisabled();
+ await page.screenshot({path:'out/checks/ch17/translation-mobile.png'});
+ expect(await page.getByRole('dialog').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+ const requests = (await providerState(page.request)).requests.slice(before);
+ expect(requests).toHaveLength(2);expect(requests.every(request => !request.hasImage)).toBe(true);
+ expect((await fixtureState(page.request,account.key)).writes).toEqual([]);
+});

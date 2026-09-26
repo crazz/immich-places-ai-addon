@@ -26,6 +26,10 @@ func (t *Transport) Send(ctx context.Context, key, asset string, point writeprev
 	if err != nil {
 		return Outcome{CompletionKnown: true, Code: "not_sent"}
 	}
+	return t.send(ctx, key, asset, raw)
+}
+
+func (t *Transport) send(ctx context.Context, key, asset string, raw []byte) Outcome {
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, t.Endpoint+"/api/assets/"+asset, io.NopCloser(strings.NewReader(string(raw))))

@@ -10,6 +10,9 @@ func invalidateAIJobInstallation(ctx context.Context, tx *sql.Tx, previous strin
 	if previous == "" {
 		return nil
 	}
+	if _, err := tx.ExecContext(ctx, `UPDATE ai_translation_items SET state='interrupted',cancelRequested=1,failure='installation' WHERE installationID=? AND state IN ('queued','reserved')`, previous); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `UPDATE ai_jobs SET cancelRequested=1 WHERE installationID=? AND EXISTS (SELECT 1 FROM ai_job_items i WHERE i.userID=ai_jobs.userID AND i.jobID=ai_jobs.id AND i.state IN ('queued','running','retry_wait','blocked'))`, previous); err != nil {
 		return err
 	}

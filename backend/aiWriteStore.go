@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"immich-places-backend/internal/ai/writepreview"
+	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -17,13 +19,14 @@ import (
 )
 
 type aiWriteStore struct {
-	mu      sync.Mutex
-	active  map[string]string
-	images  *aiImagePreparer
-	sync    *SyncService
-	drafts  *aiDraftStore
-	enabled func() bool
-	profile string
+	capabilities writeback.CapabilityPolicy
+	mu           sync.Mutex
+	active       map[string]string
+	images       *aiImagePreparer
+	sync         *SyncService
+	drafts       *aiDraftStore
+	enabled      func() bool
+	profile      string
 }
 
 func (s *aiWriteStore) available() bool {
@@ -54,6 +57,13 @@ func (s *aiWriteStore) confirm(ctx context.Context, owner string, input writebac
 		if err != nil {
 			return err
 		}
+		if !s.permitsPlan(plan) {
+			return writeback.Failure("WRITE_DISABLED")
+		}
+		if plan.Version == "stack-preview-v3" || plan.Version == "mirror-preview-v4" {
+			result, err = s.confirmStack(ctx, tx, owner, input, plan, raw, digest)
+			return err
+		}
 		result.Plan = plan
 
 		result.ID = uuid.NewString()
@@ -70,20 +80,25 @@ func (s *aiWriteStore) confirm(ctx context.Context, owner string, input writebac
 		if err != nil {
 			return writeback.Failure("TARGET_BUSY")
 		}
-		_, err = tx.ExecContext(ctx, `INSERT INTO ai_write_operations(userID,installationID,id,previewID,draftID,revision,assetID,idempotencyKey,payload,digest,approvedAt,credentialHash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`, owner, result.Plan.Installation, result.ID, input.PreviewID, result.Plan.DraftID, result.Plan.DraftRevision, result.Plan.TargetID, input.Key, string(raw), digest, now.UnixNano(), aiWriteCredentialHash(key))
+		_, err = tx.ExecContext(ctx, aiWriteStatement(plan, `INSERT INTO ai_write_operations(userID,installationID,id,previewID,draftID,revision,assetID,idempotencyKey,payload,digest,approvedAt,credentialHash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`), owner, result.Plan.Installation, result.ID, input.PreviewID, result.Plan.DraftID, result.Plan.DraftRevision, result.Plan.TargetID, input.Key, string(raw), digest, now.UnixNano(), aiWriteCredentialHash(key))
 		if err != nil {
 			return drafts.ErrStorage
 		}
-		if _, err = tx.ExecContext(ctx, `INSERT INTO ai_write_targets(userID,installationID,operationID) VALUES(?,?,?)`, owner, result.Plan.Installation, result.ID); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(plan, `INSERT INTO ai_write_targets(userID,installationID,operationID) VALUES(?,?,?)`), owner, result.Plan.Installation, result.ID); err != nil {
 			return drafts.ErrStorage
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_write_previews SET protected=1 WHERE userID=? AND installationID=? AND id=?`, owner, result.Plan.Installation, input.PreviewID); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(plan, `UPDATE ai_write_previews SET protected=1 WHERE userID=? AND installationID=? AND id=?`), owner, result.Plan.Installation, input.PreviewID); err != nil {
 			return drafts.ErrStorage
 		}
 		if err = s.event(ctx, tx, result, "approved"); err != nil {
 			return err
 		}
 		result.Events = []writeback.Event{{Code: "approved", At: result.ApprovedAt, Attempt: 0}}
+		if plan.Version == "standard-preview-v2" {
+			for _, field := range plan.Fields {
+				result.Fields = append(result.Fields, writeback.FieldOutcome{Field: field, Status: "pending"})
+			}
+		}
 		return nil
 	})
 	return result, err
@@ -103,7 +118,7 @@ func (s *aiWriteStore) credential(ctx context.Context, tx *sql.Tx, owner string)
 }
 
 func (s *aiWriteStore) event(ctx context.Context, tx *sql.Tx, op writeback.Operation, code string) error {
-	_, err := tx.ExecContext(ctx, `INSERT INTO ai_write_events(userID,installationID,operationID,code,at,attempt) SELECT ?,?,?,?,?,? WHERE (SELECT count(*) FROM ai_write_events WHERE userID=? AND installationID=? AND operationID=?)<100`, op.Plan.Owner, op.Plan.Installation, op.ID, code, s.drafts.results.jobs.now().UnixNano(), op.Attempts, op.Plan.Owner, op.Plan.Installation, op.ID)
+	_, err := tx.ExecContext(ctx, aiWriteStatement(op.Plan, `INSERT INTO ai_write_events(userID,installationID,operationID,code,at,attempt) SELECT ?,?,?,?,?,? WHERE (SELECT count(*) FROM ai_write_events WHERE userID=? AND installationID=? AND operationID=?)<100`), op.Plan.Owner, op.Plan.Installation, op.ID, code, s.drafts.results.jobs.now().UnixNano(), op.Attempts, op.Plan.Owner, op.Plan.Installation, op.ID)
 	if err != nil {
 		return drafts.ErrStorage
 	}
@@ -117,7 +132,7 @@ func (s *aiWriteStore) approvalPlan(ctx context.Context, tx *sql.Tx, owner strin
 	var expires int64
 	var invalidated, protected bool
 	var plan writepreview.Plan
-	err := tx.QueryRowContext(ctx, `SELECT payload,digest,draftID,revision,expiresAt,invalidated,protected FROM ai_write_previews WHERE userID=? AND installationID=? AND id=?`, owner, s.drafts.results.jobs.binding, input.PreviewID).Scan(&raw, &digest, &draftID, &revision, &expires, &invalidated, &protected)
+	err := tx.QueryRowContext(ctx, `SELECT payload,digest,draftID,revision,expiresAt,invalidated,protected FROM ai_all_write_previews WHERE userID=? AND installationID=? AND id=?`, owner, s.drafts.results.jobs.binding, input.PreviewID).Scan(&raw, &digest, &draftID, &revision, &expires, &invalidated, &protected)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, plan, "", drafts.ErrUnavailable
 	}
@@ -144,8 +159,37 @@ func (s *aiWriteStore) approvalPlan(ctx context.Context, tx *sql.Tx, owner strin
 	if invalidated || draft.State != "staged" || draft.Revision != revision {
 		return nil, plan, "", writeback.Failure("DRAFT_CONFLICT")
 	}
-	if draft.Camera == nil || draft.AssetID != plan.TargetID || draft.AnalysisID != plan.AnalysisID || draft.Baseline.ImageIdentity != plan.ImageIdentity || draft.Camera.Latitude != plan.Intended.Latitude || draft.Camera.Longitude != plan.Intended.Longitude || !writepreview.EqualGPS(plan.Before, writepreview.GPS{Latitude: draft.Baseline.Latitude, Longitude: draft.Baseline.Longitude}) {
+	if draft.AssetID != plan.TargetID || draft.AnalysisID != plan.AnalysisID || draft.Baseline.ImageIdentity != plan.ImageIdentity || !slices.Equal(draft.Fields, plan.Fields) {
+		return nil, plan, "", drafts.ErrStorage
+	}
+	if slices.Contains(plan.Fields, "gps") && (draft.Camera == nil || draft.Camera.Latitude != plan.Intended.Latitude || draft.Camera.Longitude != plan.Intended.Longitude || !writepreview.EqualGPS(plan.Before, writepreview.GPS{Latitude: draft.Baseline.Latitude, Longitude: draft.Baseline.Longitude})) {
+		return nil, plan, "", drafts.ErrStorage
+	}
+	if plan.Description != nil {
+		owned, err := aiReadAppendLineage(ctx, tx, owner, plan.Installation, plan.TargetID)
+		if err != nil || !aiApprovedDescriptionMatches(draft, *plan.Description, owned) {
+			return nil, plan, "", drafts.ErrStorage
+		}
+	}
+	if plan.Mirror != nil {
+		if err := s.approvedMirrorMatches(ctx, tx, draft, plan); err != nil {
+			return nil, plan, "", err
+		}
+	} else if draft.Mirror != nil {
 		return nil, plan, "", drafts.ErrStorage
 	}
 	return raw, plan, digest, nil
+}
+
+func aiApprovedDescriptionMatches(draft drafts.Draft, plan writepreview.DescriptionPlan, owned *writepreview.AppendLineage) bool {
+	text, ready := drafts.SelectedDescription(draft)
+	if !ready || draft.PrimaryLanguage != plan.Language || draft.DescriptionPolicy != plan.Policy || draft.Baseline.Description == nil || draft.Baseline.Description.Value != plan.Before.Value {
+		return false
+	}
+	input := writepreview.DescriptionInput{Text: text, Language: plan.Language, Policy: plan.Policy, Owned: owned}
+	if plan.Lineage != nil {
+		input.NewLineageID = plan.Lineage.ID
+	}
+	expected, err := writepreview.PlanDescription(plan.Before, input)
+	return err == nil && reflect.DeepEqual(expected, &plan)
 }

@@ -30,6 +30,14 @@ func FromProposal(value Draft, document results.Document, choice *string) (Draft
 				return Draft{}, ErrInvalid
 			}
 			value.Heading = &heading
+			value.HeadingMethod = candidate.CameraDirection.Method
+			if candidate.CameraDirection.UncertaintyDeg != nil {
+				uncertainty, err := candidate.CameraDirection.UncertaintyDeg.Float64()
+				if err != nil {
+					return Draft{}, ErrInvalid
+				}
+				value.HeadingUncertainty = &uncertainty
+			}
 		}
 		if candidate.CameraLocation != nil {
 			lat, err := candidate.CameraLocation.Latitude.Float64()

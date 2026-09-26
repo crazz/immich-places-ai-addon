@@ -27,3 +27,8 @@ baseline: {status: 'unavailable', latitude: null, longitude: null, imageIdentity
 updatedAt: '2026-09-24T12:00:00Z'
 };
 }
+
+export function descriptionDraft(): TDraft {
+ const draft = savedDraft();
+ return {...draft, baseline: {...draft.baseline, status: 'reviewed', imageIdentity: `v1:${'a'.repeat(64)}`, description: {presence: 'value', value: '  Before\n前  '}}, descriptions: [{language: 'uk', status: 'complete', text: '  Місто\n河  ', basis: 'scene_only', stale: false, factsRevision: 1, userSupplied: false}]};
+}

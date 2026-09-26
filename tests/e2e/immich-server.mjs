@@ -2,6 +2,8 @@ import {readFileSync} from 'node:fs';
 import {createServer} from 'node:http';
 import {setTimeout as delay} from 'node:timers/promises';
 
+import {makeStackFixture} from './stack-fixture.mjs';
+
 const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGIySpkGCAAA//8CAAEvG2k5CAAAAABJRU5ErkJggg==', 'base64');
 const users = new Map();
 const errors = [];
@@ -62,7 +64,8 @@ async function handleProvider(request, response, url, raw) {
 	const messages = Array.isArray(payload.messages) ? payload.messages : [];
 	const content = messages.flatMap(message => Array.isArray(message.content) ? message.content : []);
 	const hasImage = content.some(part => part?.type === 'image_url' && typeof part.image_url?.url === 'string' && part.image_url.url.startsWith('data:image/'));
-	if (!hasImage) {
+	const translationTag = content.find(part => part?.type === 'text' && part.text?.startsWith("Translate only the user's reviewed facts"))?.text.match(/into language ([\w-]+)/)?.[1];
+	if (!hasImage && !translationTag) {
 		recordProviderError('Synthetic provider request missing image_url data URL');
 	}
 	if (payload.stream !== false) {
@@ -75,9 +78,14 @@ async function handleProvider(request, response, url, raw) {
 		path: url.pathname,
 		authorization: request.headers.authorization ?? '',
 		model: payload.model,
-		hasImage: true,
+		hasImage,
 		stream: payload.stream
 	});
+	if (translationTag) {
+		if (hasImage || content.some(part => part.type !== 'text')) {recordProviderError('Translation included unapproved image context');}
+		if (translationTag === 'uk') {return respond(response,500,{error:'Synthetic partial translation failure'});}
+		return respond(response,200,{choices:[{message:{role:'assistant',content:JSON.stringify({language:translationTag,status:'complete',text:'A bridge in an uncertain location.'})},finish_reason:'stop'}],usage:{prompt_tokens:100,completion_tokens:20,total_tokens:120}});
+	}
 	const bodyText = raw;
 	let assistant = 'color: blue\nshape: circle';
 	if (bodyText.includes('"json_object"') || bodyText.includes('"json_schema"')) {
@@ -123,7 +131,7 @@ async function handle(request, response) {
 	}
 	if (request.method === 'GET' && url.pathname.startsWith('/__state/')) {
 		const state = users.get(url.pathname.slice('/__state/'.length));
-		return respond(response, 200, {writes: state?.writes ?? [], imageRequests: state?.imageRequests ?? 0, errors, blockedGeocoding});
+		return respond(response, 200, {writes: state?.writes ?? [], metadataWrites: state?.metadataWrites ?? [], metadata: state?.metadata ?? {}, imageRequests: state?.imageRequests ?? 0, errors, blockedGeocoding});
 	}
 	if (url.pathname.startsWith('/v1/')) {
 		let raw = '';
@@ -144,6 +152,16 @@ async function handle(request, response) {
 	}
 	const state = users.get(key);
 	if (request.method === 'GET') {
+		const metadataAsset = state.assets.find(asset => url.pathname === `/api/assets/${asset.id}/metadata`);
+		if (metadataAsset && state.metadata) {
+			return respond(response, 200, state.metadata[metadataAsset.id]);
+		}
+		if (state.stack && url.pathname === `/api/stacks/${state.stack.id}`) {
+			return respond(response, 200, state.stack);
+		}
+		if (url.pathname === '/api/stacks') {
+			return respond(response, 200, state.stack ? [state.stack] : []);
+		}
 		const asset = state.assets.find(item => url.pathname === `/api/assets/${item.id}`);
 		if (asset) {
 			return respond(response, 200, {...asset, ownerId: '99999999-9999-4999-8999-999999999999', visibility: 'timeline', isTrashed: false, checksum: Buffer.alloc(20, 1).toString('base64'), updatedAt: '2026-08-04T00:00:00Z'});
@@ -151,7 +169,7 @@ async function handle(request, response) {
 		if (url.pathname === '/api/users/me') {
 			return respond(response, 200, {id: key});
 		}
-		if (['/api/libraries', '/api/stacks', '/api/albums', '/api/tags'].includes(url.pathname)) {
+		if (['/api/libraries', '/api/albums', '/api/tags'].includes(url.pathname)) {
 			return respond(response, 200, []);
 		}
 		if (state.assets.some(asset => url.pathname === `/api/assets/${asset.id}/thumbnail`)) {
@@ -168,12 +186,41 @@ async function handle(request, response) {
 		}
 	}
 	const body = raw ? JSON.parse(raw) : {};
+	if (request.method === 'POST' && url.pathname === '/__mirror_fixture') {
+		if (state.writes.length || state.metadata || !state.assets.some(asset => asset.id === body.assetId)) {throw new Error('Synthetic mirror must precede writes and identify an exact asset');}
+		Object.assign(state, {mirrorAsset: body.assetId, rejectMirrorOnce: body.rejectOnce === true, metadataWrites: [], metadata: Object.fromEntries(state.assets.map(asset => [asset.id, [{key: 'unrelated-fixture', value: {keep: true}}]]))});
+		return respond(response, 200, {ready: true});
+	}
+	if (request.method === 'PUT' && state.metadata && url.pathname === `/api/assets/${state.mirrorAsset}/metadata`) {
+		if (Object.keys(body).join(',') !== 'items' || !Array.isArray(body.items) || body.items.length !== 1) {throw new Error('Synthetic mirror requires one exact namespace item');}
+		const item = body.items[0];
+		if (Object.keys(item).sort().join(',') !== 'key,value' || item.key !== 'immich-places-ai-addon' || !item.value || typeof item.value !== 'object' || Array.isArray(item.value) || Buffer.byteLength(JSON.stringify(item.value)) > 65536) {throw new Error('Synthetic mirror requires the bounded app namespace');}
+		state.metadataWrites.push({ids: [state.mirrorAsset], ...item});
+		if (state.rejectMirrorOnce) {
+			state.rejectMirrorOnce = false;
+			return respond(response, 400, {error: 'Synthetic known unsuccessful metadata step'});
+		}
+		const items = state.metadata[state.mirrorAsset];
+		const index = items.findIndex(existing => existing.key === item.key);
+		if (index < 0) {items.push(item);} else {items[index] = item;}
+		return respond(response, 200, [item]);
+	}
+	if (request.method === 'POST' && url.pathname === '/__stack_fixture') {
+		if (state.stack || state.writes.length) {throw new Error('Synthetic stack must precede all writes');}
+		const fixture = makeStackFixture(state.assets);
+		if (body.rejectAsset && !fixture.stack.assets.some(asset => asset.id === body.rejectAsset)) {throw new Error('Synthetic rejection must identify a stack member');}
+		Object.assign(state, fixture, {rejectAsset: body.rejectAsset});
+		return respond(response, 200, {ready: true});
+	}
 	const gpsAsset = state.assets.find(asset => url.pathname === `/api/assets/${asset.id}`);
 	if (request.method === 'PATCH' && gpsAsset) {
-		if (Object.keys(body).sort().join(',') !== 'latitude,longitude' || !Number.isFinite(body.latitude) || !Number.isFinite(body.longitude)) {throw new Error('GPS fixture requires exactly one finite coordinate pair');}
-		state.writes.push({ids: [gpsAsset.id], latitude: body.latitude, longitude: body.longitude});
-		gpsAsset.exifInfo.latitude = body.latitude;
-		gpsAsset.exifInfo.longitude = body.longitude;
+		const keys = Object.keys(body).sort().join(',');
+		if (!['latitude,longitude', 'description', 'description,latitude,longitude'].includes(keys)) {throw new Error('Standard fixture requires exact selected fields');}
+		if ('latitude' in body && (!Number.isFinite(body.latitude) || !Number.isFinite(body.longitude))) {throw new Error('GPS fixture requires exactly one finite coordinate pair');}
+		if ('description' in body && (typeof body.description !== 'string' || Buffer.byteLength(body.description) > 65536)) {throw new Error('Description fixture requires bounded exact text');}
+		state.writes.push({ids: [gpsAsset.id], ...body});
+		if (state.rejectAsset === gpsAsset.id) {return respond(response, 400, {error: 'Synthetic known unsuccessful target'});}
+		Object.assign(gpsAsset.exifInfo, body);
 		return respond(response, 200, gpsAsset);
 	}
 	if (request.method === 'POST' && url.pathname === '/api/search/metadata') {

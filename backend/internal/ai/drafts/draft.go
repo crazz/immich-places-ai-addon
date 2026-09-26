@@ -15,16 +15,22 @@ type Point struct {
 }
 
 type Baseline struct {
-	Latitude      *float64 `json:"latitude"`
-	Longitude     *float64 `json:"longitude"`
-	ImageIdentity string   `json:"imageIdentity"`
-	SourceDigest  string   `json:"sourceDigest"`
-	AssetID       string   `json:"assetId"`
-	OwnerID       string   `json:"ownerId"`
-	Checksum      string   `json:"checksum"`
-	Type          string   `json:"type"`
-	ObservedAt    string   `json:"observedAt"`
-	Status        string   `json:"status"`
+	Description   *DescriptionBaseline `json:"description,omitempty"`
+	Latitude      *float64             `json:"latitude"`
+	Longitude     *float64             `json:"longitude"`
+	ImageIdentity string               `json:"imageIdentity"`
+	SourceDigest  string               `json:"sourceDigest"`
+	AssetID       string               `json:"assetId"`
+	OwnerID       string               `json:"ownerId"`
+	Checksum      string               `json:"checksum"`
+	Type          string               `json:"type"`
+	ObservedAt    string               `json:"observedAt"`
+	Status        string               `json:"status"`
+}
+
+type DescriptionBaseline struct {
+	Presence string `json:"presence"`
+	Value    string `json:"value"`
 }
 
 type Description struct {
@@ -38,13 +44,18 @@ type Description struct {
 }
 
 type Draft struct {
-	FactsRevision        int           `json:"factsRevision"`
-	Heading              *float64      `json:"heading"`
-	HeadingStale         bool          `json:"headingStale"`
-	HeadingUserSupplied  bool          `json:"headingUserSupplied"`
-	HeadingFactsRevision int           `json:"headingFactsRevision"`
-	RadiusStale          bool          `json:"radiusStale"`
-	Descriptions         []Description `json:"descriptions"`
+	Mirror               *MirrorSelection `json:"mirror,omitempty"`
+	PrimaryLanguage      string           `json:"primaryLanguage,omitempty"`
+	DescriptionPolicy    string           `json:"descriptionPolicy,omitempty"`
+	FactsRevision        int              `json:"factsRevision"`
+	Heading              *float64         `json:"heading"`
+	HeadingMethod        string           `json:"headingMethod,omitempty"`
+	HeadingUncertainty   *float64         `json:"headingUncertainty,omitempty"`
+	HeadingStale         bool             `json:"headingStale"`
+	HeadingUserSupplied  bool             `json:"headingUserSupplied"`
+	HeadingFactsRevision int              `json:"headingFactsRevision"`
+	RadiusStale          bool             `json:"radiusStale"`
+	Descriptions         []Description    `json:"descriptions"`
 
 	CandidateID          *string  `json:"candidateId"`
 	Radius               *float64 `json:"radius"`

@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"time"
 
 	"immich-places-backend/internal/ai/drafts"
@@ -35,29 +32,10 @@ func (a *aiWriteAttempt) Read(ctx context.Context, op writeback.Operation) (writ
 		return result, err
 	}
 	defer clear(raw)
-	if _, err = aiImageMetadataDigest(raw, op.Plan.TargetID, false); err != nil {
-		return result, err
-	}
-	fields, err := aiImageUniqueObject(raw)
+	result, _, err = aiParseWriteMetadata(raw, op.Plan.TargetID, op.Plan.Version == "standard-preview-v2")
 	if err != nil {
 		return result, err
 	}
-	exif := fields["exifinfo"]
-	if len(exif) > 0 && string(exif) != "null" {
-		if _, err = aiImageUniqueObject(exif); err != nil {
-			return result, err
-		}
-		if json.Unmarshal(exif, &result.GPS) != nil || !aiDraftGPSValue(result.GPS.Latitude, 90) || !aiDraftGPSValue(result.GPS.Longitude, 180) {
-			return result, drafts.ErrUnavailable
-		}
-	}
-	var meta aiImageMetadata
-	if json.Unmarshal(raw, &meta) != nil {
-		return result, drafts.ErrUnavailable
-	}
-	identity, _ := json.Marshal([]string{"reviewed-image-v1", meta.ID, meta.OwnerID, meta.Type, meta.Checksum})
-	sum := sha256.Sum256(identity)
-	result.ImageIdentity = "v1:" + hex.EncodeToString(sum[:])
 	current, err := s.readAuthority(ctx, op)
 	if err != nil || current != authority {
 		return result, drafts.ErrUnavailable

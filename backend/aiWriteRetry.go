@@ -7,7 +7,6 @@ import (
 
 	"immich-places-backend/internal/ai/drafts"
 	"immich-places-backend/internal/ai/writeback"
-	"immich-places-backend/internal/ai/writepreview"
 )
 
 func registerAIWriteRetryRoute(mux *http.ServeMux, store *aiWriteStore, origin string) {
@@ -43,8 +42,11 @@ func (s *aiWriteStore) retry(ctx context.Context, owner, id string, generation i
 		if err != nil {
 			return err
 		}
+		if op.Plan.Manifest != nil {
+			return writeback.Failure("TARGET_REQUIRED")
+		}
 		var from int
-		if tx.QueryRowContext(ctx, `SELECT retryFrom FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`, owner, s.drafts.results.jobs.binding, id).Scan(&from) != nil {
+		if tx.QueryRowContext(ctx, aiWriteStatement(op.Plan, `SELECT retryFrom FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`), owner, s.drafts.results.jobs.binding, id).Scan(&from) != nil {
 			return drafts.ErrStorage
 		}
 		repeated = from == generation
@@ -55,7 +57,7 @@ func (s *aiWriteStore) retry(ctx context.Context, owner, id string, generation i
 	}
 	a := &aiWriteAttempt{store: s}
 	fresh, err := a.Read(ctx, op)
-	eligible := err == nil && fresh.ImageIdentity == op.Plan.ImageIdentity && writepreview.EqualGPS(fresh.GPS, op.Plan.Before)
+	eligible := err == nil && writeback.CompareBefore(op.Plan, fresh) == ""
 	err = s.drafts.write(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		current, err := s.read(ctx, tx, owner, id, false)
 		if err != nil {
@@ -63,7 +65,7 @@ func (s *aiWriteStore) retry(ctx context.Context, owner, id string, generation i
 		}
 		var from int
 		var known, active bool
-		if tx.QueryRowContext(ctx, `SELECT retryFrom,completionKnown,senderActive FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`, owner, s.drafts.results.jobs.binding, id).Scan(&from, &known, &active) != nil {
+		if tx.QueryRowContext(ctx, aiWriteStatement(op.Plan, `SELECT retryFrom,completionKnown,senderActive FROM ai_write_targets WHERE userID=? AND installationID=? AND operationID=?`), owner, s.drafts.results.jobs.binding, id).Scan(&from, &known, &active) != nil {
 			return drafts.ErrStorage
 		}
 		op = current
@@ -80,10 +82,10 @@ func (s *aiWriteStore) retry(ctx context.Context, owner, id string, generation i
 		if tx.QueryRowContext(ctx, `SELECT token FROM ai_write_target_guards WHERE installationID=? AND assetID=?`, op.Plan.Installation, op.Plan.TargetID).Scan(&guard) != nil || guard != id {
 			return writeback.Failure("TARGET_BUSY")
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_write_targets SET retryFrom=?,generation=generation+1,reads=0,dueAt=0 WHERE userID=? AND installationID=? AND operationID=?`, generation, owner, op.Plan.Installation, id); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(op.Plan, `UPDATE ai_write_targets SET retryFrom=?,generation=generation+1,reads=0,dueAt=0 WHERE userID=? AND installationID=? AND operationID=?`), generation, owner, op.Plan.Installation, id); err != nil {
 			return drafts.ErrStorage
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_write_operations SET status='queued',code='EXPLICIT_RETRY' WHERE userID=? AND installationID=? AND id=?`, owner, op.Plan.Installation, id); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(op.Plan, `UPDATE ai_write_operations SET status='queued',code='EXPLICIT_RETRY' WHERE userID=? AND installationID=? AND id=?`), owner, op.Plan.Installation, id); err != nil {
 			return drafts.ErrStorage
 		}
 		if err = s.event(ctx, tx, current, "EXPLICIT_RETRY"); err != nil {

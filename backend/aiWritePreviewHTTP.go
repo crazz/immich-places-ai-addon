@@ -13,13 +13,16 @@ import (
 )
 
 func registerAIWritePreviewRoutes(mux *http.ServeMux, store *aiDraftStore, images *aiImagePreparer) {
+	registerAIStackReviewRoutes(mux, store, images)
 	mux.HandleFunc("POST /ai/write-previews", func(w http.ResponseWriter, r *http.Request) {
 		if !guardAIDraftMutation(w, r, store.results.origin) {
 			return
 		}
 		var body struct {
-			DraftID       string `json:"draftId"`
-			DraftRevision int    `json:"draftRevision"`
+			MirrorDisclosure string `json:"mirrorDisclosure,omitempty"`
+			StackReviewID    string `json:"stackReviewId,omitempty"`
+			DraftID          string `json:"draftId"`
+			DraftRevision    int    `json:"draftRevision"`
 		}
 		media, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		raw, readErr := io.ReadAll(http.MaxBytesReader(w, r.Body, 4<<10))
@@ -31,8 +34,18 @@ func registerAIWritePreviewRoutes(mux *http.ServeMux, store *aiDraftStore, image
 			writeAIWritePreviewFailure(w, writepreview.Failure{Code: "INVALID_PREVIEW"})
 			return
 		}
-		session := &aiWritePreviewSession{drafts: store, images: images}
-		value, err := writepreview.Create(r.Context(), session, session, session, getUserFromContext(r).ID, body.DraftID, body.DraftRevision, uuid.NewString(), store.results.jobs.now)
+		session := &aiWritePreviewSession{drafts: store, images: images, mirrorDisclosure: body.MirrorDisclosure}
+		var value writepreview.Preview
+		var err error
+		if body.StackReviewID != "" {
+			if _, err = uuid.Parse(body.StackReviewID); err != nil {
+				writeAIWritePreviewFailure(w, writepreview.Failure{Code: "INVALID_PREVIEW"})
+				return
+			}
+			value, err = session.createStack(r.Context(), getUserFromContext(r).ID, body.DraftID, body.DraftRevision, body.StackReviewID)
+		} else {
+			value, err = writepreview.Create(r.Context(), session, session, session, getUserFromContext(r).ID, body.DraftID, body.DraftRevision, uuid.NewString(), store.results.jobs.now)
+		}
 		if err != nil {
 			writeAIWritePreviewFailure(w, err)
 			return

@@ -48,7 +48,8 @@ func (s *aiDraftStore) read(ctx context.Context, tx *sql.Tx, owner, id string) (
 	if err != nil || len(raw) > 128<<10 || json.Unmarshal(raw, &value) != nil {
 		return value, drafts.ErrStorage
 	}
-	return value, nil
+	value.Baseline.Description, err = aiScanDescription(tx.QueryRowContext(ctx, `SELECT presence,value FROM ai_draft_description_baselines WHERE userID=? AND installationID=? AND draftID=? AND revision=?`, owner, s.results.jobs.binding, id, value.Revision))
+	return value, err
 }
 
 func (s *aiDraftStore) get(ctx context.Context, owner, id string) (drafts.Draft, error) {
@@ -98,7 +99,9 @@ func (s *aiDraftStore) snapshot(ctx context.Context, tx *sql.Tx, owner string, v
 	if err := s.guardWriteRevision(ctx, tx, owner, value.ID); err != nil {
 		return err
 	}
-	data, err := json.Marshal(value)
+	stored := value
+	stored.Baseline.Description = nil
+	data, err := json.Marshal(stored)
 	if err != nil || len(data) > 128<<10 {
 		return drafts.ErrInvalid
 	}
@@ -106,5 +109,5 @@ func (s *aiDraftStore) snapshot(ctx context.Context, tx *sql.Tx, owner string, v
 	if err != nil {
 		return drafts.ErrStorage
 	}
-	return nil
+	return s.saveDescriptionBaseline(ctx, tx, owner, value)
 }

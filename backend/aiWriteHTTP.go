@@ -19,6 +19,8 @@ func registerAIWriteRoutes(mux *http.ServeMux, results *aiResultStore) {
 	registerAIWriteRetryRoute(mux, store, results.origin)
 	registerAIWriteReconcileRoute(mux, store, results.origin)
 	registerAIWriteHistoryRoute(mux, store)
+	registerAIStackTargetActions(mux, store, results.origin)
+	registerAIMirrorActions(mux, store, results.origin)
 	mux.HandleFunc("POST /ai/write-operations", func(w http.ResponseWriter, r *http.Request) {
 		if !guardAIDraftMutation(w, r, results.origin) {
 			return

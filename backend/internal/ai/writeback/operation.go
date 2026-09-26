@@ -15,6 +15,9 @@ type Event struct {
 }
 
 type Operation struct {
+	Mirror     *MirrorOutcome    `json:"mirror,omitempty"`
+	Targets    []TargetOutcome   `json:"targets,omitempty"`
+	Fields     []FieldOutcome    `json:"fields,omitempty"`
 	ID         string            `json:"id"`
 	Plan       writepreview.Plan `json:"plan"`
 	Digest     string            `json:"digest"`

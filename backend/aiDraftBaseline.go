@@ -54,7 +54,9 @@ func (s *aiDraftStore) observe(ctx context.Context, owner, id string, revision i
 		if active >= 10 {
 			return drafts.ErrConflict
 		}
-		data, err := json.Marshal(observation)
+		stored := observation
+		stored.Baseline.Description = nil
+		data, err := json.Marshal(stored)
 		if err != nil {
 			return drafts.ErrStorage
 		}
@@ -62,7 +64,7 @@ func (s *aiDraftStore) observe(ctx context.Context, owner, id string, revision i
 		if err != nil {
 			return drafts.ErrStorage
 		}
-		return nil
+		return s.saveDescriptionObservation(ctx, tx, owner, observation)
 	})
 	return observation, err
 }
@@ -83,6 +85,10 @@ func (s *aiDraftStore) acknowledge(ctx context.Context, owner, id string, revisi
 	err = s.results.jobs.db.db.QueryRowContext(ctx, `SELECT content,expiresAt FROM ai_draft_baseline_observations WHERE userID=? AND installationID=? AND draftID=? AND revision=? AND id=?`, owner, s.results.jobs.binding, id, revision, observationID).Scan(&data, &expires)
 	if err != nil || json.Unmarshal(data, &observation) != nil || expires <= s.results.jobs.now().UnixNano() {
 		return drafts.Draft{}, drafts.ErrConflict
+	}
+	observation.Baseline.Description, err = aiScanDescription(s.results.jobs.db.db.QueryRowContext(ctx, `SELECT presence,value FROM ai_draft_description_observations WHERE userID=? AND installationID=? AND draftID=? AND observationID=?`, owner, s.results.jobs.binding, id, observationID))
+	if err != nil {
+		return drafts.Draft{}, err
 	}
 	baseline, authority, err := s.source(ctx, owner, value.AssetID, reader)
 	if err != nil {

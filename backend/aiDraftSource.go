@@ -52,6 +52,7 @@ func (s *aiDraftStore) source(ctx context.Context, owner, asset string, reader *
 	identity, _ := json.Marshal([]string{"reviewed-image-v1", meta.ID, meta.OwnerID, meta.Type, meta.Checksum})
 	sum := sha256.Sum256(identity)
 	baseline = drafts.Baseline{Status: "reviewed", Latitude: gps.Latitude, Longitude: gps.Longitude, ImageIdentity: "v1:" + hex.EncodeToString(sum[:]), SourceDigest: digest, AssetID: meta.ID, OwnerID: meta.OwnerID, Checksum: meta.Checksum, Type: meta.Type}
+	baseline.Description = aiDescriptionBaseline(exif)
 	if current, err := s.results.imageAuthority(ctx, owner, asset); err != nil || current != authority {
 		return drafts.Baseline{}, authority, drafts.ErrUnavailable
 	}

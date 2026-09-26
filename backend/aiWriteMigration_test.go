@@ -36,7 +36,7 @@ func TestAIWriteUpgradeFromPrerequisitesAndPooledOwnerConstraints(t *testing.T) 
 			if err := runMigrations(f.db.db); err != nil {
 				t.Fatal(err)
 			}
-			if version, err := goose.GetDBVersion(f.db.db); err != nil || version != 28 {
+			if version, err := goose.GetDBVersion(f.db.db); err != nil || version != 45 {
 				t.Fatal(version, err)
 			}
 			var err error

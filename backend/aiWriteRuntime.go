@@ -19,6 +19,7 @@ func newAIWriteRuntime(results *aiResultStore, images *aiImagePreparer, syncServ
 	r := &aiWriteRuntime{}
 	r.lock, _ = acquireAIWriteLock(filepath.Join(cfg.DataDir, "ai-write.lock"))
 	r.store = &aiWriteStore{drafts: &aiDraftStore{results: results}, images: images, sync: syncService, profile: cfg.AIWriteProfile, enabled: func() bool { return r.lock != nil && !r.stopping.Load() && cfg.AIEnabled && cfg.AIWriteEnabled }}
+	r.store.capabilities = cfg.AIWriteCapabilities
 	results.writer = r.store
 	return r
 }
@@ -28,7 +29,15 @@ func (r *aiWriteRuntime) sweep(ctx context.Context) error {
 		return nil
 	}
 	s := r.store
-	rows, err := s.drafts.results.jobs.db.db.QueryContext(ctx, `SELECT o.userID,o.id FROM ai_write_operations o JOIN ai_write_targets t ON t.userID=o.userID AND t.installationID=o.installationID AND t.operationID=o.id WHERE o.installationID=? AND (o.status='queued' OR (o.status IN ('writing','verifying') AND t.reads<3 AND t.dueAt<=? AND (t.senderActive=0 OR t.leaseUntil<=?))) ORDER BY o.approvedAt,o.id LIMIT 100`, s.drafts.results.jobs.binding, s.drafts.results.jobs.now().UnixNano(), s.drafts.results.jobs.now().UnixNano())
+	rows, err := s.drafts.results.jobs.db.db.QueryContext(ctx, `SELECT userID,id FROM (
+ SELECT o.userID,o.id,o.approvedAt FROM ai_all_write_operations o JOIN ai_all_write_targets t ON t.userID=o.userID AND t.installationID=o.installationID AND t.operationID=o.id WHERE o.installationID=? AND (o.status='queued' OR (o.status IN ('writing','verifying') AND t.reads<3 AND t.dueAt<=? AND (t.senderActive=0 OR t.leaseUntil<=?)))
+ UNION ALL
+ SELECT o.userID,o.id,o.approvedAt FROM ai_stack_write_operations o WHERE o.installationID=? AND (
+ EXISTS(SELECT 1 FROM ai_stack_write_targets t WHERE t.userID=o.userID AND t.installationID=o.installationID AND t.operationID=o.id AND (t.status='queued' OR (t.status IN ('writing','verifying') AND t.reads<3 AND t.dueAt<=? AND (t.senderActive=0 OR t.leaseUntil<=?))))
+ OR EXISTS(SELECT 1 FROM ai_mirror_write_steps m JOIN ai_stack_write_targets t ON t.userID=m.userID AND t.installationID=m.installationID AND t.operationID=m.operationID AND t.assetID=m.assetID WHERE m.userID=o.userID AND m.installationID=o.installationID AND m.operationID=o.id AND (
+  (m.status IN ('blocked','queued') AND t.status='succeeded' AND t.verified=1 AND t.completionKnown=1 AND t.senderActive=0)
+  OR (m.status IN ('writing','verifying') AND m.reads<3 AND m.dueAt<=? AND (m.senderActive=0 OR m.leaseUntil<=?)))))
+ ) ORDER BY approvedAt,id LIMIT 100`, s.drafts.results.jobs.binding, s.drafts.results.jobs.now().UnixNano(), s.drafts.results.jobs.now().UnixNano(), s.drafts.results.jobs.binding, s.drafts.results.jobs.now().UnixNano(), s.drafts.results.jobs.now().UnixNano(), s.drafts.results.jobs.now().UnixNano(), s.drafts.results.jobs.now().UnixNano())
 	if err != nil {
 		return err
 	}

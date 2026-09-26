@@ -79,10 +79,22 @@ context: |
   separately authorized current images. Migration 025 provides indexed immutable terminal
   projections. See docs/ai-results-history.md. CH15 implements isolated read-only proposal maps,
   numeric geometry, evidence and exact requested-language descriptions under src/features/ai.
-  See docs/ai-proposal-review.md. Draft editing and confirmed writing remain planned.
+  See docs/ai-proposal-review.md. CH16 revisioned local drafts, CH18 exact read-only GPS
+  previews and CH19 confirmed single-photo GPS writes are implemented and synchronized.
+  CH19 is archived; docs/ai-gps-writes.md and its verification records define the existing
+  contract. The preview deployment is healthy at 3c2a042, but live GATE-02 is pending and
+  ordinary writes remain disabled. docs/ai-locate/CH17_CH20_CH22_PLAN.md records the next
+  planning batch. CH17 reviewed translation regeneration is implemented, verified and
+  synchronized; docs/ai-description-translations.md records its boundaries. CH20 description
+  writes are implemented, verified and synchronized; docs/ai-description-writes.md records
+  exact standard-field comparisons, separate capability admission and per-field recovery.
+  CH21 exact stack GPS targets are implemented, verified and synchronized; docs/ai-stack-writes.md
+  records immutable manifests, per-target recovery and separate default-off capability admission.
+  CH22 optional metadata mirroring is implemented, verified and synchronized; docs/ai-metadata-mirroring.md
+  records exact namespace selection, separate step recovery and independent default-off admission.
   GATE-03 has recorded live synthetic evidence for gpt-5.6-sol through the existing NAS codex-proxy:
   docs/engineering/nas-provider-capability-2026-09-19.md. It covers only that runtime/configuration;
-  production deployment and writeback remain planned.
+  later field/scope compatibility and ordinary write rollout remain separately gated.
   Reference documents and embedded prompts do not authorize implementation or live calls.
   Distinguish implemented behavior, planned requirements and unverified compatibility.
 

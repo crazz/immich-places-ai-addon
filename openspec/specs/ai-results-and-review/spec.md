@@ -295,7 +295,7 @@ An owner SHALL be able to accept a valid retained analysis into one durable draf
 
 ### Requirement: Edit camera decisions without inventing precision or writable fields
 
-Drafts SHALL allow explicit candidate selection or user-supplied camera coordinates, optional local heading and per-language description edits. Unknown or subject-only proposals SHALL start without camera geometry. Coordinates SHALL be finite and in range, with zero valid and missing values distinct. Heading SHALL be null or within zero inclusive to 360 exclusive. GPS staging SHALL require an explicit valid camera pair and GPS selection for the analyzed asset only. Radius, confidence, heading and description availability SHALL not impose a GPS quality threshold. Targets and supported write fields SHALL not be expanded by client input or model text.
+Drafts SHALL allow explicit candidate selection or user-supplied camera coordinates, optional local heading and per-language description edits. Unknown or subject-only proposals SHALL start without camera geometry. Coordinates SHALL be finite and in range, with zero valid and missing values distinct. Heading SHALL be null or within zero inclusive to 360 exclusive. Radius, confidence and unrelated field availability SHALL not impose a GPS quality threshold. Staging SHALL require at least one supported explicitly selected field and current field-specific readiness. GPS SHALL require a finite camera pair; a description-only decision SHALL not. The default target SHALL remain the analyzed asset; an additional stack GPS target SHALL require explicit independent review under the target-manifest contract. Description and direction SHALL remain per-image and SHALL not propagate to siblings. Primary-language and description-policy choices SHALL be revisioned and no client/model input SHALL expand supported scope. Supported optional mirror selection SHALL be separately revisioned and require at least one selected standard field; stale/unreviewed export content SHALL not gain authority through GPS selection.
 
 #### Scenario: D05 Choose a coarse or ambiguous proposal
 - **GIVEN** alternatives with low confidence, a 500-meter or larger estimated radius, or unknown uncertainty
@@ -309,7 +309,7 @@ Drafts SHALL allow explicit candidate selection or user-supplied camera coordina
 
 #### Scenario: D07 Validate geometry and field scope
 - **GIVEN** an editable draft
-- **WHEN** inputs contain zero coordinates, invalid or partial coordinates, an out-of-range heading, another asset or an unsupported write field
+- **WHEN** inputs contain zero coordinates, invalid or partial coordinates, an out-of-range heading, an unapproved asset or an unsupported write field
 - **THEN** valid zero values are preserved and invalid edits or expanded write scope are rejected without changing the saved revision
 
 ### Requirement: Detect stale revisions without losing user edits
@@ -402,7 +402,7 @@ Explicit draft editing SHALL provide keyboard-operable numeric camera/heading co
 
 ### Requirement: Protect a draft revision while its GPS write can still act
 
-Editing or rejecting a confirmed draft before its next mutation reservation SHALL invalidate queued or safely retryable approval atomically. Once dispatch is reserved and may act, edits/rejection SHALL wait for a settled outcome; the UI SHALL preserve unsaved client changes and explain the active write. Completing an older approved revision SHALL never mark a newer revision as saved. Original result inspection SHALL remain available throughout.
+Editing or rejecting a confirmed draft before its next mutation reservation SHALL invalidate queued or safely retryable approval atomically. Once any selected standard or optional step dispatch on any approved target is reserved and may act, edits/rejection SHALL wait for a settled outcome; the UI SHALL preserve unsaved client changes and explain the active write. Completing an older approved revision SHALL never mark a newer revision as saved. Original result inspection SHALL remain available throughout.
 
 #### Scenario: R01 Edit before dispatch reservation
 - **GIVEN** a confirmed queued or safely retryable draft whose next mutation has not been reserved
@@ -454,3 +454,194 @@ AI Results SHALL show explicit confirmation, durable progress, conflict, unresol
 - **GIVEN** a confirmation remains uncertain and lookup has no saved result
 - **WHEN** repeating the same identity fails without a definitive rejection
 - **THEN** the same submission stays available for reconciliation and new approval remains blocked
+
+### Requirement: Explicitly authorize translation of reviewed facts
+
+An owner SHALL be able to request selected description languages from a visible, explicitly reviewed factual text basis bound to the current draft and factual revision. Generation SHALL require a deliberate action identifying the private provider and one to eight distinct valid language tags. Stale location-dependent text SHALL not silently become the basis. The request SHALL transmit only the displayed basis and translation instructions, with no image, hidden location context, neighboring-photo data or automatic link fetching. It SHALL neither rerun geolocation nor mutate Immich.
+
+#### Scenario: T01 Generate from corrected facts
+- **GIVEN** an owned draft and a factual text basis explicitly reviewed after a camera correction
+- **WHEN** the owner requests English and Ukrainian descriptions
+- **THEN** only the approved text basis and language instructions are sent to the chosen provider
+- **AND** the camera decision, original analysis and Immich metadata remain unchanged
+
+#### Scenario: T02 Reject absent consent or invalid input
+- **GIVEN** an empty or over-limit basis, invalid or duplicate languages, more than eight languages or no explicit generation action
+- **WHEN** translation admission is attempted
+- **THEN** no provider request is dispatched and the saved draft is preserved
+
+#### Scenario: T03 Retain scene-only and offline review
+- **GIVEN** owned retained scene-only facts with no camera point and an unavailable source photo
+- **WHEN** the owner explicitly translates the reviewed text
+- **THEN** no source image fetch or invented place is required and location remains unknown
+
+### Requirement: Preserve bounded private translation runs
+
+The system SHALL durably bind each translation run to its owner, installation, draft/factual revision, exact approved basis, language set and provider revision before dispatch. The same submission identity and inputs SHALL resolve to the same run across lost acknowledgements and restart; different inputs SHALL not reuse its authority. Only one active run per draft SHALL be admitted, and provider concurrency, queue capacity, deadlines and token/cost limits SHALL also bound translation work. Each language SHALL have at most one provider dispatch per run, without hidden retries or fallback.
+
+#### Scenario: T04 Recover a lost submission acknowledgement
+- **GIVEN** a translation run was accepted but its response was lost
+- **WHEN** the owner repeats the same identity and inputs after restart or provider disablement
+- **THEN** the existing run is returned without another provider dispatch
+
+#### Scenario: T05 Reject substitution and concurrent admission
+- **GIVEN** an existing run identity or an active run for a draft
+- **WHEN** changed inputs reuse that identity or another active run is submitted for the same draft
+- **THEN** no duplicate or substituted dispatch authority is created
+
+#### Scenario: T06 Enforce execution budgets
+- **GIVEN** exhausted queue capacity, provider concurrency, tokens, cost or deadline
+- **WHEN** translation admission or a language dispatch is considered
+- **THEN** the work waits or fails within the declared bounds and no extra call bypasses the limit
+
+### Requirement: Retain independent language outcomes
+
+Every requested language SHALL retain its own complete, unavailable, failed, canceled or interrupted outcome. Successful output SHALL match its requested language, contain bounded valid text and remain tied to the original approved facts; malformed, refused or truncated responses SHALL not create usable text. Failure of one language SHALL not discard another's result or overwrite existing draft text. Inspecting results SHALL not dispatch work.
+
+#### Scenario: T07 Keep partial language success
+- **GIVEN** two requested languages and one provider failure
+- **WHEN** the run completes
+- **THEN** the successful suggestion and failed language are visible independently while both original draft texts remain unchanged
+
+#### Scenario: T08 Reject invalid translation output
+- **GIVEN** a response with a wrong language, unexpected fields, malformed structure, invalid or oversized text, refusal or truncation
+- **WHEN** it is validated
+- **THEN** that language has an explicit unusable outcome without fabricated text, camera geometry or write authority
+
+#### Scenario: T09 Reload retained outcomes
+- **GIVEN** a completed run and earlier text versions
+- **WHEN** the owner reloads after restart with provider execution disabled
+- **THEN** the private outcomes and their original basis remain inspectable with no provider request
+
+### Requirement: Adopt translations only through current draft review
+
+Generation SHALL not adopt text automatically. The owner SHALL explicitly select successful suggestions to apply against the current draft revision and matching factual basis. Adoption SHALL create a new revision, leave geometry, unselected languages and immutable analysis unchanged, and invalidate earlier staged approval. Concurrent edits or changed facts SHALL prevent silent adoption; a possibly acting confirmed write SHALL continue to protect its revision. Suggestions from an obsolete factual basis SHALL be visibly stale.
+
+#### Scenario: T10 Adopt selected suggestions
+- **GIVEN** current successful suggestions and an unchanged draft/factual revision
+- **WHEN** the owner applies one selected language
+- **THEN** only that language changes in a new local draft revision and no provider or Immich write occurs
+
+#### Scenario: T11 Reject stale or concurrently edited adoption
+- **GIVEN** a manual edit or camera/factual change after generation started
+- **WHEN** an older suggestion is applied
+- **THEN** the saved draft and unsaved user edits remain intact and renewed comparison is required
+
+#### Scenario: T12 Respect active write authority
+- **GIVEN** a draft with an undispatched approval or a reserved possibly acting write
+- **WHEN** the owner adopts translated text
+- **THEN** a safe edit invalidates undispatched approval atomically, while a possibly acting write blocks the edit until it settles
+
+### Requirement: Retry and cancel translation without hidden regeneration
+
+An explicit retry SHALL create a new bounded run for the chosen unsuccessful languages from a newly confirmed current basis. Successful languages SHALL not be included implicitly. Cancellation, disablement, obsolete installation/provider authority or deletion SHALL prevent new dispatches and late unauthorized publication. Restart SHALL not automatically resend an interrupted reserved language. Completed suggestions SHALL remain separate from the current draft.
+
+#### Scenario: T13 Retry only the chosen unsuccessful language
+- **GIVEN** one complete and one failed language
+- **WHEN** the owner explicitly retries the failed language with current consent
+- **THEN** only that language receives new dispatch authority and the earlier successful suggestion remains intact
+
+#### Scenario: T14 Cancel or restart an active run
+- **GIVEN** pending and reserved language items
+- **WHEN** the owner cancels or the process restarts during a call
+- **THEN** new unauthorized sends stop, interrupted outcomes remain visible and no automatic duplicate call occurs
+
+#### Scenario: T15 Invalidate provider authority before dispatch
+- **GIVEN** queued translation work
+- **WHEN** provider revision, enablement, destination policy or installation authority changes
+- **THEN** obsolete work cannot dispatch using replacement authority and the user receives an explicit outcome
+
+### Requirement: Isolate translation history and lifecycle
+
+Translation reads, admission, cancellation, retry and adoption SHALL enforce owner and installation scope. Draft-linked runs SHALL survive ordinary cleanup and catalog resets while their draft remains retained. Account deletion SHALL remove only the owner's private records and prevent late recreation. Ordinary logs/errors SHALL omit basis text, generated descriptions and secrets.
+
+#### Scenario: T16 Deny foreign translation operations
+- **GIVEN** unauthenticated, foreign-owner or obsolete-installation references
+- **WHEN** a translation operation or history read is requested
+- **THEN** no private content or foreign authority is exposed or used
+
+#### Scenario: T17 Delete during a provider call
+- **GIVEN** an in-flight run and another owner's retained history
+- **WHEN** the run's owner is deleted
+- **THEN** late completion cannot recreate private records and the other owner's data remains intact
+
+#### Scenario: T18 Preserve retained runs without private log output
+- **GIVEN** a retained draft and translation history
+- **WHEN** cleanup, catalog reset or a provider failure occurs
+- **THEN** linked history remains available and ordinary diagnostics contain no private basis, output or credential
+
+### Requirement: Make translation review accessible and explicit
+
+The language editor SHALL expose basis review, language selection, progress, per-language failures, cancellation and explicit adoption through keyboard-operable controls and textual state. It SHALL remain usable without a map, preserve unsaved edits and fence late responses after account/result changes. Navigating or opening a language tab SHALL not initiate generation.
+
+#### Scenario: T19 Complete keyboard translation review
+- **GIVEN** a narrow viewport, unavailable map and partial language failure
+- **WHEN** a keyboard user generates, inspects and adopts one successful suggestion
+- **THEN** the basis, outcomes and saved revision are understandable without color or map interaction
+
+#### Scenario: T20 Fence private late replies
+- **GIVEN** an in-flight translation or unsaved basis edits
+- **WHEN** the user changes account/result or navigates away
+- **THEN** obsolete replies cannot populate the new view and unsaved edits receive explicit handling
+
+#### Scenario: T21 Inspect without dispatch
+- **GIVEN** a draft with retained translation outcomes
+- **WHEN** its owner opens language tabs or refreshes the review
+- **THEN** no generation, adoption or Immich mutation occurs automatically
+
+### Requirement: Review independent standard-field choices and outcomes
+
+The owner SHALL select GPS and one primary-language description independently, inspect exact full text before/after values and choose preserve, replace or managed append through accessible controls. Field and policy edits SHALL create a new revision and invalidate old previews without writing. Outcomes SHALL distinguish each selected field, overall partial state and local refresh; description-only writes SHALL not change Missing GPS membership or consume manual pending GPS. Overlapping selected GPS SHALL still require explicit manual-choice resolution, and late private replies SHALL remain fenced.
+
+#### Scenario: C18 Review and confirm text with keyboard input
+- **GIVEN** a narrow viewport, unavailable map and a current language description
+- **WHEN** a keyboard user chooses the description policy and opens confirmation
+- **THEN** the full text comparison, selected fields, language, revision and expiry are accessible before any mutation
+
+#### Scenario: C19 Preserve manual GPS during a text-only operation
+- **GIVEN** unsaved manual GPS for the same photo
+- **WHEN** a description-only operation completes
+- **THEN** the pending GPS and gallery membership are unchanged and no manual save occurs
+
+#### Scenario: C20 Keep field outcomes and newer review separate
+- **GIVEN** a partial standard-field outcome, an uncertain identity or a newer edited draft
+- **WHEN** history reloads or an older reply arrives
+- **THEN** exact field outcomes remain visible without marking the newer revision saved or discarding unresolved authority
+
+### Requirement: Review an exact stack manifest and per-target outcomes
+
+The stack review SHALL show each selected photo, current and proposed GPS, field scope and individual availability with a warning that members may have different viewpoints. Controls SHALL be keyboard-operable without a map, preserve unrelated manual pending changes and require resolution of every selected GPS overlap. Confirmation SHALL display the full frozen list, and reload SHALL retain per-target outcomes independently of catalog membership. Account/result changes SHALL fence late private data.
+
+#### Scenario: S17 Select and confirm members accessibly
+- **GIVEN** a narrow viewport, failed tiles and a stack with different baselines
+- **WHEN** a keyboard user selects specific members and opens confirmation
+- **THEN** the full exact scope and each before/after pair are reviewable before any write
+
+#### Scenario: S18 Preserve manual work across the full target set
+- **GIVEN** manual pending GPS overlaps one selected sibling and other unselected photos
+- **WHEN** AI staging or confirmation is attempted
+- **THEN** the overlap requires explicit resolution and unrelated manual edits are preserved without entering the AI payload
+
+#### Scenario: S19 Retain private partial history on reload
+- **GIVEN** mixed per-target outcomes and delayed history requests
+- **WHEN** the owner reloads or changes account/result
+- **THEN** current authorized outcomes remain distinct and stale replies cannot replace a newer operation or populate another private view
+
+### Requirement: Review optional metadata visibility and partial success
+
+AI review SHALL provide keyboard-operable default-off mirror selection, the exact chosen contents and asset-reader visibility disclosure. It SHALL show standard and optional step outcomes independently, preserve all local translations and reviewed direction when the mirror is unsupported/failed, and identify that a custom metadata mirror does not promise native Immich UI display or file/EXIF updates. Retrying an incomplete step SHALL be explicit, and account/result changes SHALL fence private replies.
+
+#### Scenario: M19 Inspect disclosure and exact export accessibly
+- **GIVEN** a narrow viewport, keyboard input and unavailable map
+- **WHEN** the owner chooses optional mirroring
+- **THEN** the exact exported content, visibility disclosure, target and step order are accessible before confirmation
+
+#### Scenario: M20 Review a partial result without losing local data
+- **GIVEN** successful standard fields and an unsupported, failed or unresolved optional mirror
+- **WHEN** the owner reloads AI Results
+- **THEN** both outcomes and the permitted recovery action are visible while local language/direction records remain available
+
+#### Scenario: M21 Fence stale private mirror responses
+- **GIVEN** an in-flight mirror status or confirmation reply
+- **WHEN** the account/result changes or newer operation history becomes current
+- **THEN** the old reply cannot leak private content, overwrite the newer outcome or discard its unresolved identity

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {chmodSync, mkdirSync, mkdtempSync, rmSync} from 'node:fs';
+import {chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync} from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
@@ -113,6 +113,20 @@ test('reports unreadable source inputs as actionable failures', t => {
 	assert.equal(result.status, 1);
 	assert.match(result.stderr, /Cannot read source unreadable\.ts/);
 	assert.doesNotMatch(result.stderr, /at ModuleJob/);
+});
+
+test('ignores directory symlinks while checking linked source files', t => {
+	const root = createRepository(t);
+	write(root, '.agents/skills/example/SKILL.md', '# Skill\n');
+	mkdirSync(path.join(root, '.claude/skills'), {recursive: true});
+	symlinkSync('../../.agents/skills/example', path.join(root, '.claude/skills/example'));
+	const directories = check(root);
+	assert.equal(directories.status, 0, directories.stderr);
+	write(root, 'linked-source.txt', 'line\n'.repeat(501));
+	symlinkSync('linked-source.txt', path.join(root, 'source.ts'));
+	const source = check(root);
+	assert.equal(source.status, 1);
+	assert.match(source.stderr, /source\.ts: 501 lines exceeds 500/);
 });
 
 test('fails an invalid change base without evaluating it as shell input', t => {

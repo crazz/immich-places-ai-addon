@@ -8,9 +8,22 @@ import (
 type Decision struct {
 	Status, Code string
 	Verified     bool
+	GPSVerified  bool
+	Fields       []FieldOutcome
+}
+
+type FieldOutcome struct {
+	WasVerified bool                          `json:"wasVerified"`
+	Field       string                        `json:"field"`
+	Status      string                        `json:"status"`
+	GPS         *writepreview.GPS             `json:"gps,omitempty"`
+	Description *writepreview.TextObservation `json:"description,omitempty"`
 }
 
 func Readback(op Operation, fresh writepreview.Metadata, completed bool) Decision {
+	if op.Plan.Version == "standard-preview-v2" || op.Plan.Version == "stack-preview-v3" {
+		return standardReadback(op, fresh, completed)
+	}
 	if fresh.ImageIdentity != op.Plan.ImageIdentity {
 		return Decision{Status: "conflict", Code: "SOURCE_CHANGED"}
 	}

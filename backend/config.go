@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"immich-places-backend/internal/ai/jobs"
 	"immich-places-backend/internal/ai/providers"
+	"immich-places-backend/internal/ai/writeback"
 )
 
 type Config struct {
@@ -34,6 +35,8 @@ type Config struct {
 	Debug                    bool   `env:"DEBUG" envDefault:"false"`
 	AIWriteEnabled           bool   `env:"AI_WRITE_ENABLED" envDefault:"false"`
 	AIWriteProfile           string `env:"AI_WRITE_PROFILE"`
+	AIWriteCapabilitiesJSON  string `env:"AI_WRITE_CAPABILITIES"`
+	AIWriteCapabilities      writeback.CapabilityPolicy
 	AIEnabled                bool   `env:"AI_ENABLED" envDefault:"false"`
 	AIPublicOrigin           string `env:"AI_PUBLIC_ORIGIN"`
 	AIEgressPolicyJSON       string `env:"AI_PROVIDER_EGRESS_POLICY"`
@@ -64,6 +67,10 @@ func loadConfig() (*Config, error) {
 
 	if cfg.ImmichExternalURL == "" {
 		cfg.ImmichExternalURL = cfg.ImmichURL
+	}
+	cfg.AIWriteCapabilities, err = writeback.ParseCapabilityPolicy(cfg.AIWriteCapabilitiesJSON)
+	if err != nil {
+		return nil, fmt.Errorf("AI_WRITE_CAPABILITIES is invalid; provide an installation/profile capability attestation")
 	}
 	cfg.AIExecutionPolicies, err = jobs.ParseExecutionPolicies(cfg.AIExecutionPoliciesJSON)
 	if err != nil {

@@ -14,13 +14,17 @@ type DescriptionEdit struct {
 }
 
 type Edit struct {
-	CandidateID   *string                    `json:"candidateId"`
-	Heading       json.RawMessage            `json:"heading"`
-	ReviewHeading bool                       `json:"reviewHeading"`
-	Descriptions  map[string]DescriptionEdit `json:"descriptions"`
-	State         string                     `json:"state"`
-	Camera        json.RawMessage            `json:"camera"`
-	Fields        json.RawMessage            `json:"fields"`
+	Mirror            json.RawMessage            `json:"mirror"`
+	PrimaryLanguage   *string                    `json:"primaryLanguage"`
+	DescriptionPolicy *string                    `json:"descriptionPolicy"`
+	CandidateID       *string                    `json:"candidateId"`
+	Heading           json.RawMessage            `json:"heading"`
+	ReviewHeading     bool                       `json:"reviewHeading"`
+	ReviewPrecision   bool                       `json:"reviewPrecision"`
+	Descriptions      map[string]DescriptionEdit `json:"descriptions"`
+	State             string                     `json:"state"`
+	Camera            json.RawMessage            `json:"camera"`
+	Fields            json.RawMessage            `json:"fields"`
 }
 
 func ParsePoint(raw json.RawMessage) (*Point, error) {
@@ -81,11 +85,22 @@ func Apply(current Draft, edit Edit, document *results.Document) (Draft, error) 
 
 	if len(edit.Fields) > 0 {
 		var fields []string
-		if json.Unmarshal(edit.Fields, &fields) != nil || fields == nil || len(fields) > 1 || (len(fields) == 1 && fields[0] != "gps") {
+		if json.Unmarshal(edit.Fields, &fields) != nil || !validFields(fields) {
 			return Draft{}, ErrInvalid
 		}
 		changed = changed || !reflect.DeepEqual(current.Fields, fields)
 		current.Fields = fields
+	}
+	if edit.PrimaryLanguage != nil {
+		changed = changed || current.PrimaryLanguage != *edit.PrimaryLanguage
+		current.PrimaryLanguage = *edit.PrimaryLanguage
+	}
+	if edit.DescriptionPolicy != nil {
+		if *edit.DescriptionPolicy != "preserve" && *edit.DescriptionPolicy != "replace" && *edit.DescriptionPolicy != "managed_append" {
+			return Draft{}, ErrInvalid
+		}
+		changed = changed || current.DescriptionPolicy != *edit.DescriptionPolicy
+		current.DescriptionPolicy = *edit.DescriptionPolicy
 	}
 	if len(edit.Heading) > 0 || edit.ReviewHeading {
 		if len(edit.Heading) > 0 {
@@ -129,6 +144,18 @@ func Apply(current Draft, edit Edit, document *results.Document) (Draft, error) 
 		}
 		changed = true
 	}
+	if edit.ReviewPrecision {
+		current.RadiusStale = false
+		changed = true
+	}
+	if len(edit.Mirror) > 0 {
+		selection, err := parseMirrorSelection(edit.Mirror)
+		if err != nil {
+			return Draft{}, err
+		}
+		changed = changed || !reflect.DeepEqual(selection, current.Mirror)
+		current.Mirror = selection
+	}
 	if changed && current.State == "staged" {
 		current.State = "draft"
 	}
@@ -137,7 +164,7 @@ func Apply(current Draft, edit Edit, document *results.Document) (Draft, error) 
 	case "draft", "rejected":
 		current.State = edit.State
 	case "staged":
-		if current.Camera == nil || len(current.Fields) != 1 {
+		if !Ready(current) {
 			return Draft{}, ErrInvalid
 		}
 		if !wasStaged || !changed {

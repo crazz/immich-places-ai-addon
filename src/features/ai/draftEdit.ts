@@ -1,6 +1,6 @@
 import type {TDraft, TDraftPoint} from './draftTypes';
 
-export type TDraftEdit = {camera?: TDraftPoint | null; fields?: 'gps'[]; heading?: number | null; reviewHeading?: boolean; descriptions?: Record<string, {text?: string; review?: boolean}>; state?: TDraft['state']; candidateId?: string};
+export type TDraftEdit = {mirror?: TDraft['mirror'] | null; reviewPrecision?: boolean; camera?: TDraftPoint | null; fields?: TDraft['fields']; primaryLanguage?: string; descriptionPolicy?: TDraft['descriptionPolicy']; heading?: number | null; reviewHeading?: boolean; descriptions?: Record<string, {text?: string; review?: boolean}>; state?: TDraft['state']; candidateId?: string};
 export function cameraInput(latitude: string, longitude: string): TDraftPoint | null {
  if (!latitude.trim() && !longitude.trim()) {return null;}
  const lat = Number(latitude); const lon = Number(longitude);

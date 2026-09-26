@@ -1,6 +1,9 @@
 package writepreview
 
-import "math"
+import (
+	"math"
+	"slices"
+)
 
 type Conflict struct {
 	Before   GPS   `json:"before"`
@@ -22,8 +25,24 @@ func Validate(snapshot Snapshot, revision int) error {
 	if snapshot.State != "staged" {
 		return Failure{Code: "DRAFT_NOT_STAGED"}
 	}
-	if snapshot.Camera == nil || !finite(snapshot.Camera.Latitude, 90) || !finite(snapshot.Camera.Longitude, 180) || len(snapshot.Fields) != 1 || snapshot.Fields[0] != "gps" {
+	if len(snapshot.Fields) < 1 || len(snapshot.Fields) > 2 || (len(snapshot.Fields) == 2 && snapshot.Fields[0] == snapshot.Fields[1]) {
 		return Failure{Code: "INVALID_PREVIEW"}
+	}
+	for _, field := range snapshot.Fields {
+		if field != "gps" && field != "description" {
+			return Failure{Code: "INVALID_PREVIEW"}
+		}
+	}
+	if slices.Contains(snapshot.Fields, "gps") && (snapshot.Camera == nil || !finite(snapshot.Camera.Latitude, 90) || !finite(snapshot.Camera.Longitude, 180)) {
+		return Failure{Code: "INVALID_PREVIEW"}
+	}
+	if slices.Contains(snapshot.Fields, "description") {
+		if snapshot.Description == nil || len(snapshot.PolicyID) != 64 {
+			return Failure{Code: "INVALID_PREVIEW"}
+		}
+		if snapshot.DescriptionBaseline == nil || !ValidTextObservation(*snapshot.DescriptionBaseline) {
+			return Failure{Code: "BASELINE_REVIEW_REQUIRED"}
+		}
 	}
 	if !snapshot.BaselineReviewed || snapshot.ImageIdentity == "" {
 		return Failure{Code: "BASELINE_REVIEW_REQUIRED"}
@@ -46,8 +65,16 @@ func Compare(snapshot Snapshot, current Metadata) error {
 	if snapshot.ImageIdentity != current.ImageIdentity {
 		return Failure{Code: "SOURCE_CHANGED"}
 	}
-	if !EqualGPS(snapshot.Baseline, current.GPS) {
+	if slices.Contains(snapshot.Fields, "gps") && !EqualGPS(snapshot.Baseline, current.GPS) {
 		return Failure{Code: "IMMICH_CONFLICT", Conflict: &Conflict{Before: snapshot.Baseline, Current: current.GPS, Proposed: *snapshot.Camera}}
+	}
+	if slices.Contains(snapshot.Fields, "description") {
+		if snapshot.DescriptionBaseline == nil || current.Description == nil || !ValidTextObservation(*current.Description) {
+			return Failure{Code: "SOURCE_UNAVAILABLE"}
+		}
+		if snapshot.DescriptionBaseline.Value != current.Description.Value {
+			return Failure{Code: "DESCRIPTION_CONFLICT"}
+		}
 	}
 	return nil
 }

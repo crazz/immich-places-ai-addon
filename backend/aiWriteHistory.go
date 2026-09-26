@@ -47,7 +47,7 @@ func (s *aiWriteStore) history(ctx context.Context, owner, draftID, cursor strin
 		if _, err := s.drafts.read(ctx, tx, owner, draftID); err != nil {
 			return err
 		}
-		rows, err := tx.QueryContext(ctx, `SELECT id,status,revision,approvedAt FROM ai_write_operations WHERE userID=? AND installationID=? AND draftID=? AND (?='' OR id<?) ORDER BY id DESC LIMIT 101`, owner, s.drafts.results.jobs.binding, draftID, cursor, cursor)
+		rows, err := tx.QueryContext(ctx, `SELECT id,status,revision,approvedAt FROM ai_all_write_operations WHERE userID=? AND installationID=? AND draftID=? AND (?='' OR id<?) ORDER BY id DESC LIMIT 101`, owner, s.drafts.results.jobs.binding, draftID, cursor, cursor)
 		if err != nil {
 			return err
 		}

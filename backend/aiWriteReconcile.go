@@ -36,10 +36,13 @@ func (s *aiWriteStore) reconcile(ctx context.Context, owner, id string) (writeba
 		if err != nil {
 			return err
 		}
+		if op.Plan.Manifest != nil {
+			return writeback.Failure("TARGET_REQUIRED")
+		}
 		if op.Status != "writing" && op.Status != "verifying" {
 			return nil
 		}
-		if _, err = tx.ExecContext(ctx, `UPDATE ai_write_targets SET reads=0,dueAt=? WHERE userID=? AND installationID=? AND operationID=? AND reads=3`, s.drafts.results.jobs.now().Add(time.Second).UnixNano(), owner, op.Plan.Installation, id); err != nil {
+		if _, err = tx.ExecContext(ctx, aiWriteStatement(op.Plan, `UPDATE ai_write_targets SET reads=0,dueAt=? WHERE userID=? AND installationID=? AND operationID=? AND reads=3`), s.drafts.results.jobs.now().Add(time.Second).UnixNano(), owner, op.Plan.Installation, id); err != nil {
 			return drafts.ErrStorage
 		}
 		return nil

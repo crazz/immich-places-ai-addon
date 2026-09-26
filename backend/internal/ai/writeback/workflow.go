@@ -2,6 +2,7 @@ package writeback
 
 import (
 	"context"
+	"errors"
 	"immich-places-backend/internal/ai/writepreview"
 )
 
@@ -33,13 +34,14 @@ type Executor struct {
 func (e Executor) Execute(ctx context.Context, op Operation) error {
 	fresh, err := e.Source.Read(ctx, op)
 	if err != nil {
+		var failure Failure
+		if errors.As(err, &failure) && (failure == "SOURCE_CHANGED" || failure == "STACK_MEMBERSHIP_CHANGED") {
+			return e.Store.Stop(ctx, op, "conflict", string(failure))
+		}
 		return e.Store.Stop(ctx, op, "failed", "SOURCE_UNAVAILABLE")
 	}
-	if fresh.ImageIdentity != op.Plan.ImageIdentity {
-		return e.Store.Stop(ctx, op, "conflict", "SOURCE_CHANGED")
-	}
-	if !writepreview.EqualGPS(fresh.GPS, op.Plan.Before) {
-		return e.Store.Stop(ctx, op, "conflict", "IMMICH_CONFLICT")
+	if conflict := CompareBefore(op.Plan, fresh); conflict != "" {
+		return e.Store.Stop(ctx, op, "conflict", conflict)
 	}
 	noop := writepreview.Diff(op.Plan) == "unchanged"
 	if err = e.Store.Reserve(ctx, op, noop); err != nil {

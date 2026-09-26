@@ -39,6 +39,7 @@ const applicationConfig = compat.config({
 		ignorePatterns: [
 			'.eslintrc.js',
 			'.next',
+			'out',
 			'coverage',
 			'playwright-report',
 			'test-results',

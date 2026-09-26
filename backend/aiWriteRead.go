@@ -22,6 +22,10 @@ func (s *aiWriteStore) get(ctx context.Context, owner, id string, byKey bool) (w
 }
 
 func (s *aiWriteStore) read(ctx context.Context, tx *sql.Tx, owner, id string, byKey bool) (writeback.Operation, error) {
+	stack, err := s.readStackOperation(ctx, tx, owner, id, byKey)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return stack, err
+	}
 	var op writeback.Operation
 	var raw, observed []byte
 	var at int64
@@ -31,7 +35,7 @@ func (s *aiWriteStore) read(ctx context.Context, tx *sql.Tx, owner, id string, b
 	if byKey {
 		column = "o.idempotencyKey"
 	}
-	err := tx.QueryRowContext(ctx, `SELECT o.id,o.payload,o.digest,o.status,o.code,o.approvedAt,o.previewID,o.draftID,o.revision,o.assetID,t.attempts,t.generation,t.observed,t.verified,t.refreshed,t.noop,(t.completionKnown=1 AND t.senderActive=0) FROM ai_write_operations o JOIN ai_write_targets t ON t.userID=o.userID AND t.installationID=o.installationID AND t.operationID=o.id WHERE o.userID=? AND o.installationID=? AND `+column+`=?`, owner, s.drafts.results.jobs.binding, id).Scan(&op.ID, &raw, &op.Digest, &op.Status, &op.Code, &at, &previewID, &draftID, &revision, &assetID, &op.Attempts, &op.Generation, &observed, &op.Verified, &op.Refreshed, &op.Noop, &op.Settled)
+	err = tx.QueryRowContext(ctx, `SELECT o.id,o.payload,o.digest,o.status,o.code,o.approvedAt,o.previewID,o.draftID,o.revision,o.assetID,t.attempts,t.generation,t.observed,t.verified,t.refreshed,t.noop,(t.completionKnown=1 AND t.senderActive=0) FROM ai_all_write_operations o JOIN ai_all_write_targets t ON t.userID=o.userID AND t.installationID=o.installationID AND t.operationID=o.id WHERE o.userID=? AND o.installationID=? AND `+column+`=?`, owner, s.drafts.results.jobs.binding, id).Scan(&op.ID, &raw, &op.Digest, &op.Status, &op.Code, &at, &previewID, &draftID, &revision, &assetID, &op.Attempts, &op.Generation, &observed, &op.Verified, &op.Refreshed, &op.Noop, &op.Settled)
 	if errors.Is(err, sql.ErrNoRows) {
 		return op, drafts.ErrUnavailable
 	}
@@ -46,8 +50,11 @@ func (s *aiWriteStore) read(ctx context.Context, tx *sql.Tx, owner, id string, b
 		return op, drafts.ErrStorage
 	}
 	op.ApprovedAt = time.Unix(0, at).UTC().Format(time.RFC3339Nano)
+	if err = aiReadWriteFields(ctx, tx, &op); err != nil {
+		return op, err
+	}
 	op.Events = []writeback.Event{}
-	rows, err := tx.QueryContext(ctx, `SELECT code,at,attempt FROM ai_write_events WHERE userID=? AND installationID=? AND operationID=? ORDER BY sequence LIMIT 100`, owner, op.Plan.Installation, op.ID)
+	rows, err := tx.QueryContext(ctx, aiWriteStatement(op.Plan, `SELECT code,at,attempt FROM ai_write_events WHERE userID=? AND installationID=? AND operationID=? ORDER BY sequence LIMIT 100`), owner, op.Plan.Installation, op.ID)
 	if err != nil {
 		return op, drafts.ErrStorage
 	}

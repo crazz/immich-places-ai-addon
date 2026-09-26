@@ -1,4 +1,4 @@
-import {readFileSync, statSync} from 'node:fs';
+import {lstatSync, readFileSync, statSync} from 'node:fs';
 import path from 'node:path';
 
 import {parseBaseline, policyPath} from './baseline.mjs';
@@ -21,12 +21,17 @@ function main() {
 	const base = resolveBase(root, options['--base']);
 	const files = currentPaths(root).filter(name => !excludedPath(name)).flatMap(name => {
 		let content;
+		let metadata;
 		try {
+			metadata = statSync(path.join(root, name));
+			if (metadata.isDirectory() && lstatSync(path.join(root, name)).isSymbolicLink()) {
+				return [];
+			}
 			content = readFileSync(path.join(root, name), 'utf8');
 		} catch (error) {
 			throw new Error(`Cannot read source ${name}: ${error.message}`);
 		}
-		return isHandwrittenSource(name, content, statSync(path.join(root, name)).mode) ? [{path: name, lines: physicalLines(content)}] : [];
+		return isHandwrittenSource(name, content, metadata.mode) ? [{path: name, lines: physicalLines(content)}] : [];
 	});
 	const baseline = parseBaseline(readFileSync(path.join(root, policyPath), 'utf8'));
 	const basePaths = new Set(revisionPaths(root, base));

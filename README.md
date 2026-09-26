@@ -47,7 +47,8 @@ The app has two parts:
 - Saving settings makes no provider request. Explicit capability tests and production execution use the configured destination and resource policies.
 - [Batch analysis](docs/ai-batch-workflow.md) previews exact assets, records mode-specific consent and provides durable progress, cancellation and explicit reruns.
 - [Persistent results](docs/ai-results-history.md) retain private run history independently of current GPS; [proposal inspection](docs/ai-proposal-review.md) shows separate camera/subject locations, uncertainty, evidence and requested-language descriptions.
-- AI review is read-only. Draft editing and confirmed Immich writeback remain planned.
+- [Local drafts](docs/ai-review-drafts.md) retain explicit edits; [reviewed translations](docs/ai-description-translations.md) regenerate selected languages and require explicit adoption.
+- [Exact previews](docs/ai-write-previews.md) precede [confirmed GPS writes](docs/ai-gps-writes.md) and [independent description writes](docs/ai-description-writes.md), with exact comparisons and per-field recovery. [Explicit stack GPS targets](docs/ai-stack-writes.md) add a separately reviewed member list and independent outcomes. [Optional metadata mirroring](docs/ai-metadata-mirroring.md) exports selected reviewed content after standard fields verify, with independent recovery. Writes remain disabled by default pending capability-specific live compatibility verification.
 
 ## Prerequisites
 
